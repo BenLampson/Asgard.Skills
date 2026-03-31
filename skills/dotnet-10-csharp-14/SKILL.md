@@ -1,9 +1,17 @@
 ---
 name: dotnet-10-csharp-14
-description: Use when building .NET 10 or C# 14 applications; when using minimal APIs, modular monolith patterns, or feature folders; when implementing HTTP resilience, Options pattern, Channels, or validation; when seeing outdated patterns like old extension method syntax
+description: Generic .NET 10 / C# 14 reference skill. Use when building non-Asgard .NET 10 or C# 14 applications, especially minimal APIs, modular monolith patterns, feature folders, HTTP resilience, Options pattern, Channels, or validation. Do not use this skill as the coding-rules authority for Asgard; in Asgard repositories prefer $asgard-dotnet-10-csharp-14.
 ---
 
 # .NET 10 & C# 14 Best Practices
+
+## Scope
+
+这个 skill 是 **通用 .NET 10 / C# 14 参考**，不是 Asgard 仓库中的编码规则权威。
+
+- 处理 Asgard 仓库时，编码硬规则统一使用 `$asgard-dotnet-10-csharp-14`
+- 处理 Asgard 仓库时，项目结构统一使用 `$asgard-plugin-structure`
+- 本 skill 适合非 Asgard 场景，或作为通用语言/框架能力补充参考
 
 .NET 10 (LTS, Nov 2025) with C# 14. Covers minimal APIs, not MVC.
 

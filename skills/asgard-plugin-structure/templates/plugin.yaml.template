@@ -1,0 +1,6 @@
+# 插件级配置文件，固定放在项目根目录。
+
+{PluginConfigRootKey}:
+  enabled: true
+  {PluginSectionName}:
+    {PluginSectionEntries}

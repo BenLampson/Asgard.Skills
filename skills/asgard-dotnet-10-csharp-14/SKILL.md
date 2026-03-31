@@ -1,6 +1,6 @@
 ---
 name: asgard-dotnet-10-csharp-14
-description: Asgard .NET 10 / C# 14 coding conventions skill. Use when writing C# 14 code for Asgard framework, following modern .NET conventions including primary constructors, extension blocks, file-scoped namespaces, dependency injection patterns, resilience, security, and testing. Asgard uses traditional Controllers, not Minimal API.
+description: Asgard .NET 10 / C# 14 coding conventions skill. This is the mandatory coding-rules authority for Asgard. Use when writing any C# code for Asgard framework, following required .NET 10 / C# 14 conventions, comments, file rules, dependency injection patterns, and testing expectations.
 ---
 
 # Asgard .NET 10 / C# 14 Coding Conventions
@@ -9,7 +9,12 @@ description: Asgard .NET 10 / C# 14 coding conventions skill. Use when writing C
 
 本 skill 定义了 Asgard 框架下编写 .NET 10 / C# 14 代码时必须遵循的编码规范和最佳实践。包括语言特性使用、基础设施模式、安全、测试、反模式避免、推荐类库等内容。
 
-**重要**: Asgard 使用传统 `Controller` 开发 Web API，不使用 Minimal API。请参考 `$asgard-api-development` skill。
+**重要**：
+
+- 这是 Asgard 唯一的强制编码规则权威
+- 其他 skill 只能引用本 skill，不能改写、放宽、忽略或给出冲突建议
+- Asgard 使用传统 `Controller` 开发 Web API，不使用 Minimal API。接口层请参考 `$asgard-api-development`
+- 项目结构请参考 `$asgard-plugin-structure`
 
 ## 什么时候使用
 
@@ -171,6 +176,8 @@ public static extension {ExtensionName} on {TargetType}<{GenericParameter}>
 | **文件大小** | 不超过 400 行 |
 | **空检查** | 使用 `XXXXException.ThrowIfNull()`，不手动 throw |
 | **Global using** | 利用 Global using，减少重复 |
+
+这些规则属于**必须遵守**的硬约束，不允许其他 skill 自行覆盖。
 
 完整规则见 `references/project_rules.md` 和 `references/never-do-this.md`。
 

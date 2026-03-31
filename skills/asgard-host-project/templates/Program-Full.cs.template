@@ -1,6 +1,6 @@
 using Asgard.Yggdrasil.AspNetCore;
 
-var builder = YggdrasilHost.CreateBuilder("config/app.yaml")
+var builder = YggdrasilHost.CreateBuilder("app.yaml")
     .UseBuiltInPlugin<{PluginName}>()
     .ConfigureMiddleware(app =>
     {

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Asgard Plugin Structure"
+  short_description: "定义 Asgard 插件项目结构、依赖、GlobalUsings 与层间流转"
+  default_prompt: "Use $asgard-plugin-structure to scaffold the standard Asgard plugin project layout, starter files, dependencies, and layer flow."

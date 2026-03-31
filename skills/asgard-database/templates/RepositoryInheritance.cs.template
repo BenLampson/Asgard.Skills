@@ -1,7 +1,7 @@
-namespace {Namespace}.Repositories;
+namespace {Namespace}.Domains.Repositories;
 
 [Repository]
-public class {EntityName}Repository : AbsAsgardRepositoryBase<{EntityName}, {KeyType}>
+public class {EntityName}Repository : AbsAsgardRepositoryBase<{EntityName}, {KeyType}>, I{EntityName}Repository
 {
     public {EntityName}Repository(IFreeSql fsql, IMultiLevelCache cache, ILogger<{EntityName}Repository> logger)
         : base(fsql, cache, logger)

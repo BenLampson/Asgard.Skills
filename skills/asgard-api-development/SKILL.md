@@ -15,6 +15,12 @@ description: Asgard Web API 开发 skill。Use when creating or updating control
 - 集成异常处理
 - 遵循框架约定编写控制器代码
 
+结构与规则边界：
+
+- 控制器文件默认位于 `Controllers/`，目录权威见 `$asgard-plugin-structure`
+- 输入模型默认位于 `Models/DTO`，输出模型默认位于 `Models/VO`
+- 编码硬规则统一见 `$asgard-dotnet-10-csharp-14`
+
 ## 什么时候使用
 
 - **需要创建控制器时** - 继承 `BaseController` 并遵循框架约定
@@ -30,6 +36,7 @@ description: Asgard Web API 开发 skill。Use when creating or updating control
 | **上下文注入** | 构造函数必须注入 `AbsAsgardContext` 并传给基类 |
 | **响应统一** | 始终返回框架统一的响应模型，不要发明新格式 |
 | **职责分离** | 控制器只做输入输出编排，业务逻辑放服务，数据访问放仓储 |
+| **模型位置** | 输入 DTO 默认位于 `Models/DTO`，输出 VO 默认位于 `Models/VO` |
 | **异常处理** | 启用 `UseAsgardExceptionHandler()` 全局处理，不要每个 Action 都写 try/catch |
 
 ## 响应方法对照表
@@ -86,19 +93,19 @@ public class {ControllerName} : BaseController
 /// <param name="{ParameterName}">{ParameterSummary}</param>
 /// <returns>操作结果</returns>
 [HttpGet("{Route}")]
-[ProducesResponseType(typeof(Response<{ResultType}>), StatusCodes.Status200OK)]
+[ProducesResponseType(typeof(Response<{VoType}>), StatusCodes.Status200OK)]
 [ProducesResponseType(typeof(Response<object>), StatusCodes.Status400BadRequest)]
 [ProducesResponseType(typeof(Response<object>), StatusCodes.Status404NotFound)]
-public async Task<ActionResult<Response<{ResultType}>>> {ActionName}(
+public async Task<ActionResult<Response<{VoType}>>> {ActionName}(
     [FromRoute] {ParameterType} {ParameterName})
 {
-    var result = await _{serviceName}.{MethodName}({ParameterName});
-    if (result == null)
+    var vo = await _{serviceName}.{MethodName}({ParameterName});
+    if (vo == null)
     {
-        return NotFound<{ResultType}>({NotFoundMessage});
+        return NotFound<{VoType}>({NotFoundMessage});
     }
 
-    return Success(result);
+    return Success(vo);
 }
 ```
 
@@ -112,8 +119,8 @@ public async Task<ActionResult<Response<{ResultType}>>> {ActionName}(
 /// <param name="size">每页大小</param>
 /// <returns>分页数据列表</returns>
 [HttpGet]
-[ProducesResponseType(typeof(PageResponse<{ItemType}>), StatusCodes.Status200OK)]
-public async Task<ActionResult<PageResponse<{ItemType}>>> {ActionName}(
+[ProducesResponseType(typeof(PageResponse<{VoType}>), StatusCodes.Status200OK)]
+public async Task<ActionResult<PageResponse<{VoType}>>> {ActionName}(
     [FromQuery] int page = 1,
     [FromQuery] int size = 20)
 {
@@ -132,8 +139,8 @@ public async Task<ActionResult<PageResponse<{ItemType}>>> {ActionName}(
 /// <param name="size">每页大小</param>
 /// <returns>游标分页数据列表</returns>
 [HttpGet]
-[ProducesResponseType(typeof(CursorResponse<{ItemType}>), StatusCodes.Status200OK)]
-public async Task<ActionResult<CursorResponse<{ItemType}>>> {ActionName}(
+[ProducesResponseType(typeof(CursorResponse<{VoType}>), StatusCodes.Status200OK)]
+public async Task<ActionResult<CursorResponse<{VoType}>>> {ActionName}(
     [FromQuery] string? cursor = null,
     [FromQuery] int size = 20)
 {
@@ -156,7 +163,9 @@ app.UseAsgardExceptionHandler();
 - 为每个 Action 添加 `[ProducesResponseType]` 注释，便于 Swagger 生成文档
 - 通过 `AsgardContext` 获取当前用户、租户等上下文信息
 - 保持 Action 简洁，只做参数编排和结果返回
-- 需要文档时，在 `appsettings.yaml` 中开启 `host.swagger.enabled: true`
+- 控制器文件放在 `Controllers/`，不要另起结构
+- 需要文档时，在项目根目录 `app.yaml` 中开启 `host.swagger.enabled: true`
+- 所有实现继续遵守 `$asgard-dotnet-10-csharp-14`
 
 ## 不要这样做
 
@@ -176,5 +185,7 @@ app.UseAsgardExceptionHandler();
 - `BaseController.cs` - 基础控制器实现
 - `Response.cs` - 统一响应工厂
 - `AsgardExceptionHandlerExtensions.cs` - 异常处理扩展
+
+结构规范请参考 `$asgard-plugin-structure`。
 
 代码范本请参考 `templates/` 目录，可直接替换占位符使用。

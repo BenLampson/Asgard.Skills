@@ -1,3 +1,4 @@
+# 项目根目录 plugin.yaml 示例
 {PluginName}:
   enabled: {Enabled}
   {PropertyName}: {PropertyValue}

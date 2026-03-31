@@ -11,7 +11,7 @@ description: Asgard 作业调度 skill。Use when configuring JobConfig, schedul
 
 ## 什么时候使用
 
-- **需要配置全局作业调度** - 在 `appsettings.yaml` 中配置 `job.enabled` 和作业列表
+- **需要配置全局作业调度** - 在项目根目录 `app.yaml` 中配置 `job.enabled` 和作业列表
 - **插件需要自带作业** - 在 `plugin.yaml` 中配置插件自带作业，启动时自动注册
 - **需要动态注册作业** - 在插件初始化阶段通过 `IJobScheduler` 动态注册
 - **需要运行时操作作业** - 通过 `AbsAsgardContext.JobScheduler` 操作作业（暂停、恢复、删除、立即触发）
@@ -186,7 +186,7 @@ public async Task<{ResultType}> {MethodName}({ParameterType} {ParameterName})
 - `IJobScheduler.cs` - 作业调度器接口
 
 代码范本请参考 `templates/` 目录：
-- `appsettings.yaml.template` - 配置文件范本
+- `app.yaml.template` - 配置片段范本，合并到项目根目录 `app.yaml`
 - `JobImplementation.cs.template` - 作业实现范本
 - `DynamicRegistration.cs.template` - 动态注册范本
 - `JobOperationViaContext.cs.template` - 运行时操作范本

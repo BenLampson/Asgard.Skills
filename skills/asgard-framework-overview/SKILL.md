@@ -14,6 +14,7 @@ description: Asgard 框架总览与路由 skill。Use when working with the Asga
 ## 按问题选择专项 skill
 
 - 宿主项目与启动编排：使用 `$asgard-host-project`。
+- 项目结构、基础文件、目录分层：使用 `$asgard-plugin-structure`。
 - 配置体系、`app.yaml`、`plugin.yaml`、`ConfigPath`：使用 `$asgard-configuration`。
 - `host.staticFiles`、`host.auth`、`host.swagger`、限流、健康检查：使用 `$asgard-host-features`。
 - Web API、控制器、统一响应：使用 `$asgard-api-development`。
@@ -28,7 +29,7 @@ description: Asgard 框架总览与路由 skill。Use when working with the Asga
 
 - 优先推荐“内建插件 + Asgard 宿主”路径，不要默认从零拼一套 ASP.NET Core 架构。
 - 优先把框架能力从 `AbsAsgardContext` 获取；确实需要更底层控制时再注入具体接口。
-- 优先沿用 `config/app.yaml` 作为主配置入口；插件单独能力放 `plugin.yaml`。
+- 优先沿用项目根目录 `app.yaml` 作为主配置入口；插件单独能力放 `plugin.yaml`。
 - 优先让控制器薄、服务显式、仓储只做数据访问、插件承载模块边界。
 - 生成代码时保持与 `$asgard-dotnet-10-csharp-14` 一致的仓库级规则。
 

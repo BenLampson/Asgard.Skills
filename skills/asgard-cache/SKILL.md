@@ -11,7 +11,7 @@ description: Asgard 缓存模块 skill。Use when configuring or using Asgard ca
 
 ## 什么时候使用
 
-- **需要配置缓存模块时** - 在 `appsettings.yaml` 中配置缓存开关和选项
+- **需要配置缓存模块时** - 在项目根目录 `app.yaml` 中配置缓存开关和选项
 - **需要在业务代码中使用缓存时** - 通过 `AbsAsgardContext.Cache` 访问缓存服务
 - **需要实现缓存穿透保护时** - 缓存未命中自动降级到数据源查询
 - **需要维护缓存一致性时** - 更新数据后及时移除失效缓存
@@ -47,7 +47,7 @@ description: Asgard 缓存模块 skill。Use when configuring or using Asgard ca
 
 ## 代码示例
 
-### 配置文件（appsettings.yaml）
+### 配置文件（app.yaml）
 
 ```yaml
 caching:

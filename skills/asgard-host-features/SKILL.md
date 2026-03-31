@@ -18,7 +18,7 @@ description: Asgard 宿主特性配置与用法 skill。Use when configuring or 
 
 ## 配置结构
 
-所有功能都在 `config/app.yaml` 的 `host.*` 节点下统一配置：
+所有功能都在项目根目录 `app.yaml` 的 `host.*` 节点下统一配置：
 
 ```yaml
 host:

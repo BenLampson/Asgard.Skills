@@ -1,4 +1,4 @@
 interface:
   display_name: "Asgard Plugin Development"
-  short_description: "编写 Asgard 内建插件、plugin.yaml 与约定式服务注册"
-  default_prompt: "Use $asgard-plugin-development to create or refactor an Asgard built-in plugin with PluginBase, plugin.yaml, and convention-based registration."
+  short_description: "编写 Asgard 内建插件入口、PluginBase 与插件级启动装配"
+  default_prompt: "Use $asgard-plugin-development to implement an Asgard built-in plugin entrypoint with PluginBase, PluginWebAppDefaults, AddPluginConventions, and plugin.yaml."

@@ -1,4 +1,4 @@
-namespace {Namespace}.Services;
+namespace {Namespace}.Services.Services;
 
 public class {ServiceName}Service : I{ServiceName}Service
 {

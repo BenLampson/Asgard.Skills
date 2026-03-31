@@ -5,8 +5,8 @@
 /// <param name="size">每页大小</param>
 /// <returns>分页数据列表</returns>
 [HttpGet]
-[ProducesResponseType(typeof(PageResponse<{ItemType}>), StatusCodes.Status200OK)]
-public async Task<ActionResult<PageResponse<{ItemType}>>> {ActionName}(
+[ProducesResponseType(typeof(PageResponse<{VoType}>), StatusCodes.Status200OK)]
+public async Task<ActionResult<PageResponse<{VoType}>>> {ActionName}(
     [FromQuery] int page = 1,
     [FromQuery] int size = 20)
 {

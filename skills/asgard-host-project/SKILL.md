@@ -9,6 +9,11 @@ description: Asgard ASP.NET Host 项目编写 skill。Use when creating, refacto
 
 编写 Asgard 宿主项目时，负责选择正确入口、组织 Program.cs 结构、使用钩子扩展宿主行为。本 skill 定义了不同场景下的启动路径选择和钩子约定。
 
+结构与规则边界：
+
+- 宿主或插件项目的目录结构见 `$asgard-plugin-structure`
+- 代码实现必须遵守 `$asgard-dotnet-10-csharp-14`
+
 ## 什么时候使用
 
 - **创建新的 Asgard 宿主项目** - 选择正确入口和启动路径
@@ -46,7 +51,7 @@ description: Asgard ASP.NET Host 项目编写 skill。Use when creating, refacto
 ```csharp
 using Asgard.PluginSdk;
 
-await PluginWebAppDefaults.RunAsync<{PluginName}>();
+await PluginWebAppDefaults.RunAsync<{PluginName}>("app.yaml");
 ```
 
 ### 完整启动（带钩子）
@@ -54,7 +59,7 @@ await PluginWebAppDefaults.RunAsync<{PluginName}>();
 ```csharp
 using Asgard.Yggdrasil.AspNetCore;
 
-var builder = YggdrasilHost.CreateBuilder("config/app.yaml")
+var builder = YggdrasilHost.CreateBuilder("app.yaml")
     .BeforeConfigurationLoad(hostBuilder =>
     {
         // 在配置加载之前做一些事情
@@ -109,7 +114,7 @@ await app.RunAsync();
 ```csharp
 using Asgard.PluginSdk;
 
-await PluginWebAppDefaults.RunAsync<MyPlugin>();
+await PluginWebAppDefaults.RunAsync<MyPlugin>("app.yaml");
 ```
 
 ### 完整控制
@@ -117,7 +122,7 @@ await PluginWebAppDefaults.RunAsync<MyPlugin>();
 ```csharp
 using Asgard.Yggdrasil.AspNetCore;
 
-var builder = YggdrasilHost.CreateBuilder("config/app.yaml")
+var builder = YggdrasilHost.CreateBuilder("app.yaml")
     .UseBuiltInPlugin<MyPlugin>()
     .ConfigureMiddleware(app =>
     {
@@ -134,7 +139,7 @@ await app.RunAsync();
 ```csharp
 using Asgard.Yggdrasil.AspNetCore;
 
-var builder = YggdrasilHost.CreateBuilder("config/app.yaml")
+var builder = YggdrasilHost.CreateBuilder("app.yaml")
     .BeforeServiceRegistration(services =>
     {
         // 添加你的额外服务
@@ -153,7 +158,7 @@ await app.RunAsync();
 
 ## 推荐做法
 
-- 主配置文件固定放在 `config/app.yaml`，不要随意改变路径
+- 主配置文件固定放在项目根目录 `app.yaml`
 - 按照钩子执行顺序理解，不要在错误阶段做错误的事情
 - 对于单个插件项目，优先使用 `PluginWebAppDefaults.RunAsync<TPlugin>()` 最短路径
 - 需要内建多个插件时，使用 `UseEntryAssemblyPlugins()` 一次性注册所有

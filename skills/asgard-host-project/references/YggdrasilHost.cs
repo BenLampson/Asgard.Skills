@@ -20,13 +20,13 @@ namespace Asgard.Yggdrasil.AspNetCore;
 /// <example>
 /// <b>最简启动：</b>
 /// <code>
-/// await YggdrasilHost.CreateBuilder("config/app.yaml").Build().RunAsync();
+/// await YggdrasilHost.CreateBuilder("app.yaml").Build().RunAsync();
 /// </code>
 /// </example>
 /// <example>
 /// <b>带模块配置启动：</b>
 /// <code>
-/// await YggdrasilHost.CreateBuilder("config/app.yaml")
+/// await YggdrasilHost.CreateBuilder("app.yaml")
 ///     .ConfigureModules(options => 
 ///     {
 ///         options.EnableCaching = true;
@@ -39,7 +39,7 @@ namespace Asgard.Yggdrasil.AspNetCore;
 /// <example>
 /// <b>带钩子启动：</b>
 /// <code>
-/// await YggdrasilHost.CreateBuilder("config/app.yaml")
+/// await YggdrasilHost.CreateBuilder("app.yaml")
 ///     .BeforeModuleRegistration(services => 
 ///     {
 ///         services.AddScoped&lt;IMyService, MyService&gt;();
@@ -75,7 +75,7 @@ public static class YggdrasilHost
     /// </remarks>
     /// <example>
     /// <code>
-    /// var builder = YggdrasilHost.CreateBuilder("config/app.yaml");
+/// var builder = YggdrasilHost.CreateBuilder("app.yaml");
     /// var app = builder.Build();
     /// await app.RunAsync();
     /// </code>

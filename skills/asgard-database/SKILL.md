@@ -9,6 +9,14 @@ description: Asgard 数据库模块 skill。Use when configuring database.enable
 
 本模块负责配置数据库连接，基于 FreeSQL ORM 框架提供数据访问能力。
 
+结构与规则边界：
+
+- 实体默认位于 `Models/Entities`
+- 仓储接口默认位于 `Domains/IRepositories`
+- 仓储实现默认位于 `Domains/Repositories`
+- 项目结构见 `$asgard-plugin-structure`
+- 编码硬规则见 `$asgard-dotnet-10-csharp-14`
+
 什么时候使用本 skill：
 - 启用数据库功能配置
 - 新增数据库支持的业务模块
@@ -17,7 +25,7 @@ description: Asgard 数据库模块 skill。Use when configuring database.enable
 
 ## 配置方式
 
-在 `config/app.yaml`（宿主）或 `plugin.yaml`（插件）中配置：
+在项目根目录 `app.yaml`（宿主）或 `plugin.yaml`（插件）中配置：
 
 ```yaml
 database:
@@ -54,17 +62,18 @@ _ = builder.Services.AddDatabase(dbConfig);
 
 | 层级 | 职责 | 做法 |
 |------|------|------|
-| **仓储层** | 数据访问、CRUD、查询 | 继承 `AbsAsgardRepositoryBase<TEntity, TKey>`，加 `[Repository]` 特性 |
+| **实体层** | 原始数据库对象 | 放在 `Models/Entities` |
+| **仓储层** | 数据访问、CRUD、查询 | 默认放在 `Domains/IRepositories` 与 `Domains/Repositories`，实现类继承 `AbsAsgardRepositoryBase<TEntity, TKey>`，加 `[Repository]` 特性 |
 | **业务服务层** | 跨仓储编排、事务、业务逻辑 | 注入多个仓储，处理业务流程 |
 | **控制器层** | API 入口 | 只调用业务服务，不直接访问仓储 |
 
 **仓储定义示例：**
 
 ```csharp
-namespace {Namespace}.Repositories;
+namespace {Namespace}.Domains.Repositories;
 
 [Repository]
-public class {EntityName}Repository : AbsAsgardRepositoryBase<{EntityName}, {KeyType}>
+public class {EntityName}Repository : AbsAsgardRepositoryBase<{EntityName}, {KeyType}>, I{EntityName}Repository
 {
     public {EntityName}Repository(IFreeSql fsql, IMultiLevelCache cache, ILogger<{EntityName}Repository> logger)
         : base(fsql, cache, logger)
@@ -101,3 +110,4 @@ public class {EntityName}Repository : AbsAsgardRepositoryBase<{EntityName}, {Key
 - ❌ 不要在业务代码里到处 `if (provider == ...)` 判断，让提供者来自配置
 - ❌ 不要为同一模块建立多套不一致的数据访问入口
 - ❌ 不要把连接字符串硬编码在代码里，通过配置覆盖
+- ❌ 不要自行定义另一套实体或仓储目录结构

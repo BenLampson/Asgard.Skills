@@ -9,6 +9,11 @@ description: Asgard 插件生命周期 skill。Use when explaining or implementi
 
 定义 Asgard 插件生命周期各阶段的职责、顺序、可用能力和禁忌。帮助理解宿主构建钩子顺序、插件状态转换、各阶段能做什么不能做什么。
 
+结构与规则边界：
+
+- 文件放置与项目结构见 `$asgard-plugin-structure`
+- 代码实现必须继续遵守 `$asgard-dotnet-10-csharp-14`
+
 ## 什么时候使用
 
 - **理解启动顺序** - 确定代码应该放在哪个阶段

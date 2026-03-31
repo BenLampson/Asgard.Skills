@@ -1,6 +1,6 @@
 ---
 name: asgard-configuration
-description: Asgard 配置系统 skill。Use when defining or explaining config/app.yaml, plugin.yaml, ConfigPath mappings, YAML loading, host and module configuration, configuration precedence, or strongly typed configuration objects in the Asgard framework.
+description: Asgard 配置系统 skill。Use when defining or explaining app.yaml, plugin.yaml, ConfigPath mappings, YAML loading, host and module configuration, configuration precedence, or strongly typed configuration objects in the Asgard framework.
 ---
 
 # Asgard Configuration
@@ -9,10 +9,17 @@ description: Asgard 配置系统 skill。Use when defining or explaining config/
 
 Asgard 使用强类型配置系统，从 YAML 文件、环境变量、命令行参数多个来源合并配置。本 skill 定义了配置类编写、路径绑定、校验、插件配置等约定。
 
+结构与规则边界：
+
+- `app.yaml` 与 `plugin.yaml` 固定位于项目根目录
+- 配置类默认位于 `Config/PluginConfigs` 或 `Config/{ThirdPartyName}`
+- 项目结构见 `$asgard-plugin-structure`
+- 编码硬规则见 `$asgard-dotnet-10-csharp-14`
+
 ## 什么时候使用
 
 - **需要定义新的系统配置类时** - 创建强类型配置类并绑定到 YAML 路径
-- **需要添加宿主配置项时** - 在 `config/app.yaml` 中按照约定添加配置
+- **需要添加宿主配置项时** - 在项目根目录 `app.yaml` 中按照约定添加配置
 - **需要为插件添加独立配置时** - 在插件目录创建 `plugin.yaml`
 - **需要理解配置覆盖优先级时** - 确认多来源配置的覆盖顺序
 
@@ -57,7 +64,7 @@ Asgard 使用强类型配置系统，从 YAML 文件、环境变量、命令行�
 ### 强类型配置类
 
 ```csharp
-namespace {Namespace}.Config;
+namespace {Namespace}.Config.PluginConfigs;
 
 /// <summary>
 /// {ConfigSummary}
@@ -101,7 +108,7 @@ public class {ConfigName} : ISystemConfig
 
 ### 插件配置加载
 
-插件目录中的 `plugin.yaml`：
+项目根目录中的 `plugin.yaml`：
 
 ```yaml
 {PluginName}:
@@ -112,20 +119,20 @@ public class {ConfigName} : ISystemConfig
 插件启动时加载配置：
 
 ```csharp
-/// <summary>
-/// 插件启动配置
-/// </summary>
-/// <param name="context">服务配置上下文</param>
-public override void ConfigureServices(IPluginServiceConfigurationContext context)
+protected override Task OnConfigureServicesAsync(
+    IPluginServiceConfigurationContext context,
+    CancellationToken cancellationToken)
 {
     var config = context.AddPluginConventions<{PluginName}, {ConfigName}>(this);
     {AdditionalRegistration}
+    return Task.CompletedTask;
 }
 ```
 
 ## 推荐做法
 
-- 优先使用 `config/app.yaml` 作为宿主主配置文件
+- 优先使用项目根目录 `app.yaml` 作为宿主主配置文件
+- `app.yaml` 与 `plugin.yaml` 固定位于项目根目录，不要再套 `config/`
 - 每个配置类通过 `ConfigPath` 绑定到明确路径，不要散布魔法字符串
 - 插件独立配置放 `plugin.yaml`，不要混进宿主 `app.yaml`
 - 为可选模块保留默认值与安全降级
@@ -151,5 +158,7 @@ public override void ConfigureServices(IPluginServiceConfigurationContext contex
 - `AsgardConfigurationBuilder.cs` - 配置构建器
 - `YamlConfigLoader.cs` - YAML 配置加载器
 - `PluginConventions.cs` - 插件配置加载约定
+
+结构规范请参考 `$asgard-plugin-structure`。
 
 代码范本请参考 `templates/` 目录，可直接替换占位符使用。

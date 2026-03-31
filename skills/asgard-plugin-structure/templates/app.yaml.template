@@ -1,0 +1,14 @@
+# 系统级配置文件，固定放在项目根目录。
+
+host:
+  swagger:
+    enabled: true
+
+database:
+  enabled: false
+
+caching:
+  enabled: false
+
+job:
+  enabled: false

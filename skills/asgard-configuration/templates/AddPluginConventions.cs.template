@@ -1,9 +1,11 @@
 /// <summary>
-/// 插件启动配置
+/// 插件服务配置
 /// </summary>
-/// <param name="context">服务配置上下文</param>
-public override void ConfigureServices(IPluginServiceConfigurationContext context)
+protected override Task OnConfigureServicesAsync(
+    IPluginServiceConfigurationContext context,
+    CancellationToken cancellationToken)
 {
     var config = context.AddPluginConventions<{PluginName}, {ConfigName}>(this);
     {AdditionalRegistration}
+    return Task.CompletedTask;
 }

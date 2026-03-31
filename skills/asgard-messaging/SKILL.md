@@ -11,7 +11,7 @@ description: Asgard 消息队列模块 skill。Use when configuring or using mes
 
 ## 什么时候使用
 
-- **需要启用消息队列** - 在配置文件中配置 `messaging.enabled` 和选择提供者
+- **需要启用消息队列** - 在项目根目录 `app.yaml` 中配置 `messaging.enabled` 和选择提供者
 - **需要发布消息** - 通过 `AbsAsgardContext.MessageQueue` 发布消息到指定主题
 - **需要订阅消息** - 实现消费者处理传入消息
 - **需要动态操作消息队列** - 在运行时通过接口发布/取消订阅
@@ -200,6 +200,6 @@ private async Task ProcessMessageAsync({MessageType} message)
 - `IMessageQueue.cs` - 消息队列核心接口
 
 代码范本请参考 `templates/` 目录：
-- `appsettings.yaml.template` - 配置文件范本
+- `app.yaml.template` - 配置片段范本，合并到项目根目录 `app.yaml`
 - `PublishMessage.cs.template` - 发布消息范本
 - `SubscribeMessage.cs.template` - 订阅消息范本

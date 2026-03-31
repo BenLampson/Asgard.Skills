@@ -9,6 +9,15 @@ description: Asgard 仓储与服务注册 skill。Use when implementing reposito
 
 本模块用于标记、扫描并自动注册仓储类与业务服务类，遵循约定大于配置原则。
 
+结构与规则边界：
+
+- 仓储接口默认放在 `Domains/IRepositories`
+- 仓储实现默认放在 `Domains/Repositories`
+- 服务接口默认放在 `Services/IServices`
+- 服务实现默认放在 `Services/Services`
+- 项目结构见 `$asgard-plugin-structure`
+- 编码硬规则见 `$asgard-dotnet-10-csharp-14`
+
 什么时候使用本 skill：
 - 实现新的数据库仓储类时
 - 在独立模块中批量注册多个服务时
@@ -28,10 +37,10 @@ description: Asgard 仓储与服务注册 skill。Use when implementing reposito
 **代码示例 - 定义仓储：**
 
 ```csharp
-namespace {Namespace}.Repositories;
+namespace {Namespace}.Domains.Repositories;
 
 [Repository]
-public class {EntityName}Repository : AbsAsgardRepositoryBase<{EntityName}, {KeyType}>
+public class {EntityName}Repository : AbsAsgardRepositoryBase<{EntityName}, {KeyType}>, I{EntityName}Repository
 {
     public {EntityName}Repository(IFreeSql fsql, IMultiLevelCache cache, ILogger<{EntityName}Repository> logger)
         : base(fsql, cache, logger)
@@ -65,9 +74,8 @@ var config = context.AddPluginConventions<{PluginName}Plugin, {PluginConfig}Conf
 **代码示例 - 定义服务：**
 
 ```csharp
-namespace {Namespace}.Services;
+namespace {Namespace}.Services.Services;
 
-[Service]
 public interface I{ServiceName}Service
 {
 }
@@ -90,6 +98,7 @@ public class {ServiceName}Service : I{ServiceName}Service
 - **业务服务层**：做跨仓储编排、事务、缓存调用
 - **控制器**：只调用业务服务，不直接访问仓储
 - **扫描范围**：只扫描当前模块程序集，不扫描整个解决方案
+- **目录归属**：仓储与服务默认按结构 skill 的目录归位
 
 ## 代码模板
 
@@ -114,3 +123,4 @@ AI 生成代码时，建议套用这些模板保持风格一致。
 - ❌ 不要把控制器直接当仓储用，不要让控制器写 SQL
 - ❌ 不要扫描范围过大（比如扫描 `Asgard.Common`），导致无关类型被注入
 - ❌ 不要让仓储包含业务逻辑，不要让服务包含 SQL 查询
+- ❌ 不要自行定义另一套仓储/服务目录规则

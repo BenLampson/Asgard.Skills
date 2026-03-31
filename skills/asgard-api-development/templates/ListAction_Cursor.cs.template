@@ -5,8 +5,8 @@
 /// <param name="size">每页大小</param>
 /// <returns>游标分页数据列表</returns>
 [HttpGet]
-[ProducesResponseType(typeof(CursorResponse<{ItemType}>), StatusCodes.Status200OK)]
-public async Task<ActionResult<CursorResponse<{ItemType}>>> {ActionName}(
+[ProducesResponseType(typeof(CursorResponse<{VoType}>), StatusCodes.Status200OK)]
+public async Task<ActionResult<CursorResponse<{VoType}>>> {ActionName}(
     [FromQuery] string? cursor = null,
     [FromQuery] int size = 20)
 {

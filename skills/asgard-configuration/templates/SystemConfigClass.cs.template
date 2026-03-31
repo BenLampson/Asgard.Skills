@@ -1,4 +1,4 @@
-namespace {Namespace}.Config;
+namespace {Namespace}.Config.PluginConfigs;
 
 /// <summary>
 /// {ConfigSummary}

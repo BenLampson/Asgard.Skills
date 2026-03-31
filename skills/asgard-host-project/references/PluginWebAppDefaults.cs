@@ -37,7 +37,7 @@ public static class PluginWebAppDefaults
     /// <remarks>
     /// 此重载适用于希望通过单一入口完成 Yggdrasil 宿主创建、内建插件注册和推荐中间件配置的插件项目。
     /// </remarks>
-    public static Task RunAsync<TPlugin>(string configPath = "config/app.yaml", Action<IApplicationBuilder>? configure = null)
+public static Task RunAsync<TPlugin>(string configPath = "app.yaml", Action<IApplicationBuilder>? configure = null)
         where TPlugin : class, IPlugin
     {
         var builder = YggdrasilHost.CreateBuilder(configPath)
@@ -61,7 +61,7 @@ public static class PluginWebAppDefaults
     /// <remarks>
     /// 当插件注册在其他位置处理，而这里只需要套用标准宿主与中间件接线时，使用此重载。
     /// </remarks>
-    public static Task RunAsync(string configPath = "config/app.yaml", Action<IApplicationBuilder>? configure = null)
+public static Task RunAsync(string configPath = "app.yaml", Action<IApplicationBuilder>? configure = null)
     {
         var builder = YggdrasilHost.CreateBuilder(configPath)
             .ConfigureMiddleware(app =>
