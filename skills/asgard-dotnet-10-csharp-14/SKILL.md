@@ -1,19 +1,20 @@
 ---
 name: asgard-dotnet-10-csharp-14
-description: Asgard .NET 10 / C# 14 coding conventions skill. Use when writing C# 14 code for Asgard framework, following modern .NET conventions including primary constructors, extension blocks, file-scoped namespaces, Minimal APIs, dependency injection patterns, resilience, security, and testing.
+description: Asgard .NET 10 / C# 14 coding conventions skill. Use when writing C# 14 code for Asgard framework, following modern .NET conventions including primary constructors, extension blocks, file-scoped namespaces, dependency injection patterns, resilience, security, and testing. Asgard uses traditional Controllers, not Minimal API.
 ---
 
 # Asgard .NET 10 / C# 14 Coding Conventions
 
 ## 作用
 
-本 skill 定义了 Asgard 框架下编写 .NET 10 / C# 14 代码时必须遵循的编码规范和最佳实践。包括语言特性使用、Minimal API、基础设施模式、安全、测试、反模式避免、推荐类库等内容。
+本 skill 定义了 Asgard 框架下编写 .NET 10 / C# 14 代码时必须遵循的编码规范和最佳实践。包括语言特性使用、基础设施模式、安全、测试、反模式避免、推荐类库等内容。
+
+**重要**: Asgard 使用传统 `Controller` 开发 Web API，不使用 Minimal API。请参考 `$asgard-api-development` skill。
 
 ## 什么时候使用
 
 - **编写任何新代码时** - 确保遵循 C# 14 语法和 Asgard 约定
 - **重构现有代码** - 将旧语法升级为新标准
-- **处理 Minimal API** - 使用端点分组、过滤器、Typed Results
 - **添加依赖注入** - 遵循生命周期约定
 - **编写安全相关代码** - 遵循认证授权最佳实践
 - **编写集成测试** - 使用 WebApplicationFactory 正确模式
@@ -83,63 +84,6 @@ public static extension {ExtensionName} on {TargetType}<{GenericParameter}>
         return condition ? query.Where(predicate) : query;
     }
 }
-```
-
-## Minimal API 最佳实践
-
-### 核心约定
-
-| 概念 | 优先选择 | 避免 |
-|------|----------|------|
-| Results | `TypedResults` | `Results` |
-| 组织方式 | 按特性分组 + 扩展方法 | 所有端点放在 Program.cs |
-| 验证 | 端点过滤器 + FluentValidation | 每个端点手动验证 |
-| 弹性 | `AddStandardResilienceHandler()` | 手动 Polly 配置 |
-| 文档 | `WithOpenApi()`, `WithTags()`, `Produces()` | 缺失文档 |
-
-### 代码示例：路由分组
-
-```csharp
-namespace {Namespace};
-
-/// <summary>
-/// {FeatureName} endpoints mapping
-/// </summary>
-public static class {FeatureName}Endpoints
-{
-    /// <summary>
-    /// Map all {FeatureName} endpoints
-    /// </summary>
-    /// <param name="routes">Endpoint route builder</param>
-    public static void Map{FeatureName}(this IEndpointRouteBuilder routes)
-    {
-        var group = routes.MapGroup("/api/{RoutePrefix}")
-            .WithTags("{FeatureName}")
-            {AddMetadata};
-
-        group.MapGet("/", GetAll{EntityName});
-        group.MapGet("/{id}", Get{EntityName}ById);
-        group.MapPost("/", Create{EntityName});
-        group.MapPut("/{id}", Update{EntityName});
-        group.MapDelete("/{id}", Delete{EntityName});
-    }
-
-    /// <summary>
-    /// Get all {EntityName}
-    /// </summary>
-    private static async Task<IResult> GetAll{EntityName}(
-        {DependencyInjection})
-    {
-        var result = await service.GetAllAsync();
-        return TypedResults.Ok(result);
-    }
-}
-```
-
-在 `Program.cs` 中调用：
-
-```csharp
-app.Map{FeatureName}();
 ```
 
 ## 依赖注入与基础设施
@@ -234,7 +178,6 @@ app.Map{FeatureName}();
 
 所有详细内容都在 `references/` 目录：
 - `csharp-14.md` - C# 14 语言特性
-- `minimal-apis.md` - Minimal API 最佳实践
 - `infrastructure.md` - 依赖注入、配置、缓存、弹性
 - `security.md` - 安全最佳实践清单
 - `testing.md` - 集成测试示例
@@ -245,6 +188,5 @@ app.Map{FeatureName}();
 
 代码范本请参考 `templates/` 目录：
 - `PrimaryConstructor.cs.template` - 主构造函数模板
-- `EndpointRouteGroup.cs.template` - 端点路由分组模板
 - `ExtensionBlock.cs.template` - 扩展块模板
 - `MediatRCommand.cs.template` - MediatR 命令模板

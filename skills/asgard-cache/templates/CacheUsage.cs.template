@@ -5,7 +5,7 @@
 /// <returns>查询结果</returns>
 public async Task<{ResultType}?> {MethodName}({ParameterType} {ParameterName})
 {
-    var cacheKey = $" {ModuleName}:{EntityName}:{ParameterName}";
+    var cacheKey = $"{ModuleName}:{EntityName}:{ParameterName}";
     
     // 先尝试从缓存获取
     if (AsgardContext.Cache != null)
