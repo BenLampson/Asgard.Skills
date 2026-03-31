@@ -1,0 +1,10 @@
+// 在 Controller 中返回成功响应
+public async Task<ActionResult<Response<{DataType}>>> Get{EntityName}ById(int id)
+{
+    var result = await _{serviceName}.GetByIdAsync(id);
+    if (result == null)
+    {
+        return NotFound<{DataType}>("{EntityName} not found");
+    }
+    return Success(result);
+}

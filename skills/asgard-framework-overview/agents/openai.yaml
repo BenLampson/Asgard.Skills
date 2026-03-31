@@ -1,0 +1,4 @@
+interface:
+  display_name: "Asgard Framework Overview"
+  short_description: "为 Asgard 框架任务选择正确入口、模块边界与后续专项 skill"
+  default_prompt: "Use $asgard-framework-overview to route an Asgard framework task before coding."

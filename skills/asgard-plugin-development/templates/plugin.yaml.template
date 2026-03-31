@@ -1,0 +1,4 @@
+{PluginName}:
+  enabled: {Enabled}
+  {ConfigurationSection}:
+    {ConfigurationKeys}

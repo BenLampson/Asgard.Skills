@@ -1,0 +1,4 @@
+interface:
+  display_name: "Asgard Context Usage"
+  short_description: "正确使用 AbsAsgardContext、能力判空、获取方式与生命周期"
+  default_prompt: "Use $asgard-context-usage to work with AbsAsgardContext in an Asgard service, controller, or plugin."

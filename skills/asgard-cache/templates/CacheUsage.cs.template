@@ -1,0 +1,30 @@
+/// <summary>
+/// {MethodSummary}
+/// </summary>
+/// <param name="{ParameterName}">{ParameterSummary}</param>
+/// <returns>查询结果</returns>
+public async Task<{ResultType}?> {MethodName}({ParameterType} {ParameterName})
+{
+    var cacheKey = $" {ModuleName}:{EntityName}:{ParameterName}";
+    
+    // 先尝试从缓存获取
+    if (AsgardContext.Cache != null)
+    {
+        var cached = await AsgardContext.Cache.GetAsync<{ResultType}>(cacheKey);
+        if (cached != null)
+        {
+            return cached;
+        }
+    }
+
+    // 缓存未命中或缓存未启用，降级到直接查询
+    var result = await _{repositoryName}.{QueryMethod}({ParameterName});
+    
+    // 写入缓存
+    if (result != null && AsgardContext.Cache != null)
+    {
+        await AsgardContext.Cache.SetAsync(cacheKey, result);
+    }
+
+    return result;
+}

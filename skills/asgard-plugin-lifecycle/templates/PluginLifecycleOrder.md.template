@@ -1,0 +1,73 @@
+# Asgard 宿主构建阶段顺序
+
+```
+宿主构建入口
+    ↓
+BeforeConfigurationLoad → 用户钩子
+    ↓
+加载配置文件 + 环境变量 + 命令行
+    ↓
+AfterConfigurationLoad → 用户钩子
+    ↓
+加载并验证模块配置（database, caching, messaging, job 等）
+    ↓
+BeforeServiceRegistration → 用户钩子
+    ↓
+框架注册基础设施服务
+    ↓
+AfterServiceRegistration → 用户钩子
+    ↓
+构建 ASP.NET Core 主机
+    ↓
+框架初始化插件，调用 InitializeAsync（此时 ServiceProvider 可用）
+    ↓
+框架调用 ConfigureMiddlewareAsync，插件注册中间件
+    ↓
+AfterHostBuild → 用户钩子
+    ↓
+返回构建完成的 app
+    ↓
+app.RunAsync() → 启动
+```
+
+# 插件阶段调用顺序
+
+```
+ConfigureServicesAsync
+    ↓
+    （此时：框架还没构建 ServiceProvider，不能调用 GetService / GetAsgardContext）
+    ↓
+  -> 只做服务注册，不解析服务
+    ↓
+InitializeAsync（进入此方法前：框架已设置 ServiceProvider）
+    ↓
+  -> 可以安全调用 GetService / GetAsgardContext / CreateLogger
+    ↓
+  -> 读取配置、分配资源、初始化
+    ↓
+ConfigureMiddlewareAsync（此时：ServiceProvider 已构建）
+    ↓
+  -> 注册中间件、映射端点
+    ↓
+StartAsync
+    ↓
+  -> 自动加载 plugin.yaml 中定义的作业
+    ↓
+  -> 插件启动后台任务、建立连接
+    ↓
+  -> 进入 Running 状态
+    ↓
+停止信号
+    ↓
+StopAsync
+    ↓
+  -> 停止接收新请求、停止后台任务
+    ↓
+  -> 进入 Stopped 状态
+    ↓
+DisposeAsync
+    ↓
+  -> 释放资源
+    ↓
+  -> 进入 Unloaded 状态
+```

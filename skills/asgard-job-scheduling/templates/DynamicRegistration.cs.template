@@ -1,0 +1,19 @@
+/// <summary>
+/// 初始化完成后动态注册作业
+/// </summary>
+/// <param name="cancellationToken">取消令牌</param>
+public override async Task InitializeAsync(CancellationToken cancellationToken)
+{
+    await base.InitializeAsync(cancellationToken);
+
+    if (AsgardContext.JobScheduler != null)
+    {
+        await AsgardContext.JobScheduler.ScheduleJobAsync<{JobName}>(
+            new JobKey("{JobKey}"),
+            trigger =>
+            {
+                trigger.WithCronSchedule("{CronExpression}");
+            },
+            cancellationToken);
+    }
+}

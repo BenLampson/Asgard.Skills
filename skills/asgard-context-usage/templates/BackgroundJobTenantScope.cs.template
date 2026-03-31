@@ -1,0 +1,19 @@
+/// <summary>
+/// 后台作业执行
+/// </summary>
+/// <param name="cancellationToken">取消令牌</param>
+public async Task ExecuteAsync(CancellationToken cancellationToken)
+{
+    // 需要在后台任务中创建租户作用域时，使用 TenantScopeFactory
+    if (AsgardContext.TenantScopeFactory != null)
+    {
+        await using var scope = await AsgardContext.TenantScopeFactory.CreateScopeAsync({TenantId}, cancellationToken);
+        // 在作用域内执行业务逻辑，可以正确获取租户上下文
+        await {BusinessLogic}(scope.ServiceProvider, cancellationToken);
+    }
+    else
+    {
+        // 租户作用域工厂未注册，降级处理
+        await {FallbackLogic}(cancellationToken);
+    }
+}

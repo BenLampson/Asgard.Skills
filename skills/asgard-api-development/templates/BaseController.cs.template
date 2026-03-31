@@ -1,0 +1,25 @@
+namespace {Namespace}.Controllers;
+
+/// <summary>
+/// {ControllerSummary}
+/// </summary>
+public class {ControllerName} : BaseController
+{
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="asgardContext">Asgard 上下文</param>
+    /// <param name="{ServiceName}">{ServiceSummary}</param>
+    public {ControllerName}(
+        AbsAsgardContext asgardContext,
+        I{ServiceName} {serviceName})
+        : base(asgardContext)
+    {
+        _{serviceName} = {serviceName};
+    }
+
+    /// <summary>
+    /// {ServiceSummary}
+    /// </summary>
+    private readonly I{ServiceName} _{serviceName};
+}

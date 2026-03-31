@@ -1,0 +1,14 @@
+namespace {Namespace};
+
+/// <summary>
+/// {ServiceSummary}
+/// </summary>
+public class {ServiceName}(
+    IOptions<{SettingsName}> settings,
+    ILogger<{ServiceName}> logger,
+    AbsAsgardContext asgardContext)
+{
+    private readonly {SettingsType} _settings = settings.Value;
+    private readonly ILogger<{ServiceName}> _logger = logger;
+    protected readonly AbsAsgardContext AsgardContext = asgardContext;
+}

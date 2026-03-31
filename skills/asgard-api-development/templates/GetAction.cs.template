@@ -1,0 +1,20 @@
+/// <summary>
+/// {ActionSummary}
+/// </summary>
+/// <param name="{ParameterName}">{ParameterSummary}</param>
+/// <returns>操作结果</returns>
+[HttpGet("{Route}")]
+[ProducesResponseType(typeof(Response<{ResultType}>), StatusCodes.Status200OK)]
+[ProducesResponseType(typeof(Response<object>), StatusCodes.Status400BadRequest)]
+[ProducesResponseType(typeof(Response<object>), StatusCodes.Status404NotFound)]
+public async Task<ActionResult<Response<{ResultType}>>> {ActionName}(
+    [FromRoute] {ParameterType} {ParameterName})
+{
+    var result = await _{serviceName}.{MethodName}({ParameterName});
+    if (result == null)
+    {
+        return NotFound<{ResultType}>({NotFoundMessage});
+    }
+
+    return Success(result);
+}

@@ -1,0 +1,32 @@
+namespace {Namespace}.Jobs;
+
+/// <summary>
+/// {JobSummary}
+/// </summary>
+public class {JobName} : IJob
+{
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="asgardContext">Asgard 上下文</param>
+    public {JobName}(AbsAsgardContext asgardContext)
+    {
+        AsgardContext = asgardContext;
+    }
+
+    /// <summary>
+    /// Asgard 上下文
+    /// </summary>
+    protected AbsAsgardContext AsgardContext { get; }
+
+    /// <summary>
+    /// 执行作业
+    /// </summary>
+    /// <param name="context">作业执行上下文</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>表示异步操作的任务</returns>
+    public async Task Execute(IJobExecutionContext context, CancellationToken cancellationToken)
+    {
+        {ExecuteBody}
+    }
+}

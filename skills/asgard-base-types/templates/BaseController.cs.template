@@ -1,0 +1,9 @@
+namespace {Namespace}.Controllers;
+
+public class {ControllerName}Controller : BaseController
+{
+    public {ControllerName}Controller(AbsAsgardContext asgardContext)
+        : base(asgardContext)
+    {
+    }
+}

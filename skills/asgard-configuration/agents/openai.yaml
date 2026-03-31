@@ -1,0 +1,4 @@
+interface:
+  display_name: "Asgard Configuration"
+  short_description: "处理 app.yaml、plugin.yaml、ConfigPath 与 Asgard 配置加载"
+  default_prompt: "Use $asgard-configuration to design or update Asgard configuration files and typed config classes."

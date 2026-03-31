@@ -1,0 +1,40 @@
+namespace {Namespace}.Config;
+
+/// <summary>
+/// {ConfigSummary}
+/// </summary>
+public class {ConfigName} : ISystemConfig
+{
+    /// <summary>
+    /// 是否启用此模块
+    /// </summary>
+    [ConfigPath("{ModuleName}.enabled", DefaultValue = false)]
+    public bool Enabled { get; set; } = false;
+
+    /// <summary>
+    /// {PropertySummary}
+    /// </summary>
+    [ConfigPath("{ModuleName}.{PropertyPath}", DefaultValue = {DefaultValue})]
+    public {PropertyType} {PropertyName} { get; set; } = {DefaultInitializer};
+
+    /// <summary>
+    /// 嵌套配置选项
+    /// </summary>
+    [ConfigPath("{ModuleName}.{NestedSection}")]
+    public {NestedConfigType} {NestedConfigName} { get; set; } = new();
+
+    /// <summary>
+    /// 验证配置有效性
+    /// </summary>
+    /// <exception cref="InvalidOperationException">当配置无效时抛出</exception>
+    public void Validate()
+    {
+        if (!Enabled)
+        {
+            return;
+        }
+
+        // 模块启用时需要验证必填配置
+        {ValidationCode}
+    }
+}

@@ -1,0 +1,15 @@
+/// <summary>
+/// {ActionSummary}
+/// </summary>
+/// <param name="page">页码</param>
+/// <param name="size">每页大小</param>
+/// <returns>分页数据列表</returns>
+[HttpGet]
+[ProducesResponseType(typeof(PageResponse<{ItemType}>), StatusCodes.Status200OK)]
+public async Task<ActionResult<PageResponse<{ItemType}>>> {ActionName}(
+    [FromQuery] int page = 1,
+    [FromQuery] int size = 20)
+{
+    var (items, totalCount) = await _{serviceName}.{MethodName}(page, size);
+    return SuccessPage(items, totalCount, page, size);
+}

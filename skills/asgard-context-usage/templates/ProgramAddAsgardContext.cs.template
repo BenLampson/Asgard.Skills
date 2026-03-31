@@ -1,0 +1,5 @@
+// 注册顺序：先注册其他模块，最后注册 Asgard Context
+builder.Services.AddMultiLevelCache(builder.Configuration);
+builder.Services.AddMessageQueue(builder.Configuration);
+builder.Services.AddJobScheduler(builder.Configuration);
+builder.Services.AddAsgardContext(); // 最后注入，确保所有服务都已注册

@@ -1,0 +1,29 @@
+namespace {Namespace};
+
+public static extension {ExtensionName} on {TargetType}<{GenericParameter}>
+{
+    /// <summary>
+    /// {MethodSummary}
+    /// </summary>
+    public async Task<List<TResult>> {MethodName}<TResult>(
+        this {TargetType}<{GenericParameter}> query,
+        int page,
+        int pageSize)
+    {
+        return await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+    }
+
+    /// <summary>
+    /// Conditional where clause
+    /// </summary>
+    public static IQueryable<T> WhereIf<T>(
+        this IQueryable<T> query,
+        bool condition,
+        Expression<Func<T, bool>> predicate)
+    {
+        return condition ? query.Where(predicate) : query;
+    }
+}

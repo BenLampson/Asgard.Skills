@@ -1,0 +1,22 @@
+namespace {Namespace}.Features.{FeatureName};
+
+/// <summary>
+/// {CommandSummary}
+/// </summary>
+/// <param name="{ParameterName}">{ParameterSummary}</param>
+public record {CommandName}({ParameterType} {ParameterName}) : IRequest<{ResultType}>;
+
+/// <summary>
+/// Handler for {CommandName}
+/// </summary>
+public class {CommandName}Handler({Dependencies})
+    : IRequestHandler<{CommandName}, {ResultType}>
+{
+    public async Task<{ResultType}> Handle(
+        {CommandName} request,
+        CancellationToken cancellationToken)
+    {
+        // Handler logic here
+        {HandlerBody}
+    }
+}

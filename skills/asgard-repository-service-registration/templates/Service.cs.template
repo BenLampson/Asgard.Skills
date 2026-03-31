@@ -1,0 +1,11 @@
+namespace {Namespace}.Services;
+
+public class {ServiceName}Service : I{ServiceName}Service
+{
+    private readonly I{RepositoryName}Repository _{repositoryNameCamel};
+
+    public {ServiceName}Service(I{RepositoryName}Repository {repositoryNameCamel})
+    {
+        _{repositoryNameCamel} = {repositoryNameCamel};
+    }
+}

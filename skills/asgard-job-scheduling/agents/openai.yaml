@@ -1,0 +1,4 @@
+interface:
+  display_name: "Asgard Job Scheduling"
+  short_description: "配置 Job 模块、触发器与插件自动作业注册的使用方式"
+  default_prompt: "Use $asgard-job-scheduling to configure or implement scheduled jobs in Asgard."

@@ -1,0 +1,3 @@
+using Asgard.PluginSdk;
+
+await PluginWebAppDefaults.RunAsync<{PluginName}>();

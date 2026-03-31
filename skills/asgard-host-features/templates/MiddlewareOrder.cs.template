@@ -1,0 +1,50 @@
+// 推荐的中间件注册顺序
+// 严格遵守此顺序，否则认证、授权、租户会出现问题
+
+app.UseAsgardExceptionHandler();
+app.UseHttpsRedirection();
+
+// 静态文件
+if (hostConfig.StaticFiles.Enabled)
+{
+    app.UseStaticFiles();
+}
+
+// CORS
+if (hostConfig.Cors?.Enabled == true)
+{
+    app.UseCors();
+}
+
+// 限流
+if (hostConfig.RateLimiting?.Enabled == true)
+{
+    app.UseRateLimiter();
+}
+
+// 认证和授权（授权必须在认证之后）
+if (hostConfig.Auth?.Enabled == true)
+{
+    app.UseAuthentication();
+    app.UseAuthorization();
+}
+
+// 租户中间件必须放在认证之后，业务之前
+if (hostConfig.Tenant?.Enabled == true)
+{
+    app.UseAsgardTenant();
+}
+
+// 输出缓存
+app.UseOutputCache();
+
+// 端点映射
+if (hostConfig.Swagger?.Enabled == true)
+{
+    app.MapOpenApi();
+}
+if (hostConfig.HealthCheck?.Enabled == true)
+{
+    app.MapHealthChecks(hostConfig.HealthCheck.Endpoint);
+}
+app.MapControllers();

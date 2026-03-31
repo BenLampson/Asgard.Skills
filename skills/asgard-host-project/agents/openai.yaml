@@ -1,0 +1,4 @@
+interface:
+  display_name: "Asgard Host Project"
+  short_description: "编写 Asgard ASP.NET Host 项目的启动、钩子与宿主编排"
+  default_prompt: "Use $asgard-host-project to create or adjust an Asgard ASP.NET host project."

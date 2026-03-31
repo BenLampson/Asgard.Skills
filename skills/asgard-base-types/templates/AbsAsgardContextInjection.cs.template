@@ -1,0 +1,23 @@
+namespace {Namespace}.Services;
+
+public class {ServiceName}Service : I{ServiceName}Service
+{
+    private readonly AbsAsgardContext _context;
+
+    public {ServiceName}Service(AbsAsgardContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<{ResultType}> DoSomethingAsync()
+    {
+        // 使用上下文能力，检查 null 因为模块可能未启用
+        var cache = _context.Cache;
+        if (cache != null)
+        {
+            // 缓存操作
+        }
+
+        return default;
+    }
+}

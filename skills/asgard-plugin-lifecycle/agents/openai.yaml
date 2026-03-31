@@ -1,0 +1,4 @@
+interface:
+  display_name: "Asgard Plugin Lifecycle"
+  short_description: "说明 Asgard 宿主钩子、插件阶段、状态流转与可用时机"
+  default_prompt: "Use $asgard-plugin-lifecycle to reason about Asgard host and plugin lifecycle timing."

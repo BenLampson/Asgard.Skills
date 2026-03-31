@@ -1,0 +1,4 @@
+interface:
+  display_name: "Asgard Database"
+  short_description: "配置 Database 模块、仓储入口与 Asgard 的数据访问结构"
+  default_prompt: "Use $asgard-database to configure or implement database access in Asgard."

@@ -1,0 +1,24 @@
+using Asgard.Yggdrasil.AspNetCore;
+
+var builder = YggdrasilHost.CreateBuilder("config/app.yaml")
+    .BeforeConfigurationLoad(hostBuilder =>
+    {
+        // 在配置加载之前做一些事情
+        {BeforeConfigurationLoad}
+    })
+    .BeforeServiceRegistration(services =>
+    {
+        // 在框架服务注册之前添加额外服务
+        {BeforeServiceRegistration}
+    })
+    .UseBuiltInPlugin<{PluginName}>()
+    .ConfigureMiddleware(app =>
+    {
+        _ = app.UseAsgardExceptionHandler()
+            .UseHttpsRedirection();
+        {ExtraMiddleware}
+    });
+
+var app = builder.Build();
+{AfterBuild}
+await app.RunAsync();

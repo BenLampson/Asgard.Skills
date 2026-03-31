@@ -1,0 +1,35 @@
+messaging:
+  enabled: {Enabled}
+  provider: {Provider} # RabbitMQ or Kafka
+  rabbitmq:
+    enabled: {RabbitMQEnabled}
+    hostName: "{HostName}"
+    port: {Port}
+    userName: "{UserName}"
+    password: "{Password}"
+    virtualHost: "{VirtualHost}"
+    requestedHeartbeat: {RequestedHeartbeat}
+    requestedConnectionTimeout: {RequestedConnectionTimeout}
+    retryCount: {RetryCount}
+    retryIntervalMilliseconds: {RetryIntervalMilliseconds}
+  kafka:
+    enabled: {KafkaEnabled}
+    bootstrapServers: "{BootstrapServers}"
+    groupId: "{GroupId}"
+    acks: {Acks} # 0, 1, or -1
+    retries: {Retries}
+    numPartitions: {NumPartitions}
+    replicationFactor: {ReplicationFactor}
+    sessionTimeoutMs: {SessionTimeoutMs}
+    maxPollIntervalMs: {MaxPollIntervalMs}
+    maxPollRecords: {MaxPollRecords}
+  tracing:
+    enabled: {TracingEnabled}
+  retry:
+    maxRetryCount: {MaxRetryCount}
+    initialDelayMilliseconds: {InitialDelayMilliseconds}
+  delayedMessage:
+    enabled: {DelayedMessageEnabled}
+    exchangeName: "{DelayedExchangeName}"
+  enableDeadLetterQueue: {EnableDeadLetterQueue}
+  deadLetterQueueSuffix: "{DeadLetterQueueSuffix}"

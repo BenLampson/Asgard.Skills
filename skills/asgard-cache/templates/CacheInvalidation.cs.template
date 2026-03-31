@@ -1,0 +1,18 @@
+/// <summary>
+/// {MethodSummary}
+/// </summary>
+/// <param name="{ParameterName}">{ParameterSummary}</param>
+/// <returns>操作是否成功</returns>
+public async Task<bool> {MethodName}({ParameterType} {ParameterName})
+{
+    var result = await _{repositoryName}.{UpdateMethod}({ParameterName});
+    
+    // 更新后失效缓存
+    if (result && AsgardContext.Cache != null)
+    {
+        var cacheKey = $" {ModuleName}:{EntityName}:{ParameterName}";
+        await AsgardContext.Cache.RemoveAsync(cacheKey);
+    }
+
+    return result;
+}

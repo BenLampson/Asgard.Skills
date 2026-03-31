@@ -1,0 +1,4 @@
+interface:
+  display_name: "Asgard Messaging"
+  short_description: "配置 RabbitMQ/Kafka、重试追踪并在 Asgard 中发布订阅消息"
+  default_prompt: "Use $asgard-messaging to configure or implement messaging in an Asgard module."

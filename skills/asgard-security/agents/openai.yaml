@@ -1,0 +1,4 @@
+interface:
+  display_name: "Asgard Security"
+  short_description: "处理加密、密码哈希、密钥生成与 Asgard 安全能力接入"
+  default_prompt: "Use $asgard-security to implement encryption, password hashing, or key generation in Asgard."

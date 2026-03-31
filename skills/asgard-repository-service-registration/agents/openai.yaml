@@ -1,0 +1,4 @@
+interface:
+  display_name: "Asgard Repository Registration"
+  short_description: "处理仓储扫描、服务注册、PluginConventions 与 DI 约定"
+  default_prompt: "Use $asgard-repository-service-registration to register repositories and services in Asgard."

@@ -1,0 +1,45 @@
+/// <summary>
+/// 初始化消息订阅
+/// </summary>
+/// <param name="cancellationToken">取消令牌</param>
+/// <returns>订阅标识</returns>
+public override async Task InitializeAsync(CancellationToken cancellationToken)
+{
+    await base.InitializeAsync(cancellationToken);
+
+    if (AsgardContext.MessageQueue != null)
+    {
+        _ = await AsgardContext.MessageQueue.SubscribeAsync<{MessageType}>(
+            "{Topic}",
+            async (message, context) =>
+            {
+                await ProcessMessageAsync(message.Value);
+                await context.AcknowledgeAsync();
+            },
+            new SubscribeOptions
+            {
+                AutoAck = false,
+                QueueName = "{QueueName}"
+            },
+            cancellationToken);
+    }
+}
+
+/// <summary>
+/// 处理接收的消息
+/// </summary>
+/// <param name="message">消息实例</param>
+/// <returns>异步任务</returns>
+private async Task ProcessMessageAsync({MessageType} message)
+{
+    try
+    {
+        {ProcessingLogic}
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "处理消息 {Topic} 发生异常", "{Topic}");
+        // 重试由框架处理，这里只记录日志
+        throw;
+    }
+}

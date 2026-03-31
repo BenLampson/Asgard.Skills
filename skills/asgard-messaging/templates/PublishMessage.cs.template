@@ -1,0 +1,27 @@
+/// <summary>
+/// {MethodSummary}
+/// </summary>
+/// <param name="{ParameterName}">{ParameterSummary}</param>
+/// <returns>异步任务</returns>
+public async Task {MethodName}({ParameterType} {ParameterName})
+{
+    if (AsgardContext.MessageQueue == null)
+    {
+        // 消息队列未启用，降级处理
+        {FallbackCode}
+        return;
+    }
+
+    await AsgardContext.MessageQueue.PublishAsync(
+        "{Topic}",
+        {Message},
+        new PublishOptions
+        {
+            Key = {Key},
+            Headers = new Dictionary<string, string>
+            {
+                ["{HeaderKey}"] = "{HeaderValue}"
+            }
+        },
+        cancellationToken);
+}

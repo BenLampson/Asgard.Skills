@@ -1,0 +1,3 @@
+{PluginName}:
+  enabled: {Enabled}
+  {PropertyName}: {PropertyValue}

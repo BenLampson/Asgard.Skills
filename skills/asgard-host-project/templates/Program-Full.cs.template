@@ -1,0 +1,12 @@
+using Asgard.Yggdrasil.AspNetCore;
+
+var builder = YggdrasilHost.CreateBuilder("config/app.yaml")
+    .UseBuiltInPlugin<{PluginName}>()
+    .ConfigureMiddleware(app =>
+    {
+        _ = app.UseAsgardExceptionHandler()
+            .UseHttpsRedirection();
+    });
+
+var app = builder.Build();
+await app.RunAsync();

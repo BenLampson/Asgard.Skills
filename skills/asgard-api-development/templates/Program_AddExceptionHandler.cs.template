@@ -1,0 +1,2 @@
+// 在 Program.cs 中间件管道最开头添加
+app.UseAsgardExceptionHandler();

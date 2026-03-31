@@ -1,0 +1,2 @@
+// 插件中使用约定式注册，自动扫描并加载配置
+var config = context.AddPluginConventions<{PluginName}Plugin, {PluginConfig}Config>();

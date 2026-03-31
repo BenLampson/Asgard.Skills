@@ -1,0 +1,16 @@
+job:
+  enabled: {Enabled}
+  scheduler:
+    threadPoolSize: {ThreadPoolSize}
+    maxBatchSize: {MaxBatchSize}
+    enableCluster: {EnableCluster}
+    instanceId: "{InstanceId}"
+  jobs:
+    - name: "{JobName}"
+      group: "{JobGroup}"
+      jobType: "{JobFullTypeName}, {AssemblyName}"
+      description: "{JobDescription}"
+      triggers:
+        - type: cron
+          cron: "{CronExpression}"
+          startNow: {StartNow}

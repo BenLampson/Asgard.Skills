@@ -1,0 +1,41 @@
+host:
+  application:
+    name: {application_name}
+    version: {version}
+    environment: {environment}
+  kestrel:
+    endpoints:
+      http:
+        url: http://*:{port}
+  # 静态文件
+  staticFiles:
+    enabled: {staticfiles_enabled}
+    # webRootPath: wwwroot
+    # requestPath: /static
+  # CORS 跨域
+  cors:
+    enabled: {cors_enabled}
+    defaultPolicy:
+      allowAnyOrigin: true
+      allowAnyMethod: true
+      allowAnyHeader: true
+  # JWT 认证
+  auth:
+    enabled: {auth_enabled}
+    issuer: {issuer}
+    audience: {audience}
+    key: {jwt_key}
+  # Swagger 文档
+  swagger:
+    enabled: {swagger_enabled}
+    title: {swagger_title}
+    version: {swagger_version}
+  # 限流
+  rateLimiting:
+    enabled: {rateLimiting_enabled}
+    permitLimit: {permit_limit}
+    window: {window_seconds}
+  # 健康检查
+  healthCheck:
+    enabled: {healthCheck_enabled}
+    endpoint: {health_check_endpoint}

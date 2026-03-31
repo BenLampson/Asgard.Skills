@@ -1,0 +1,4 @@
+interface:
+  display_name: "Asgard Cache"
+  short_description: "配置多级缓存、Redis/内存缓存并通过 Context 正确使用"
+  default_prompt: "Use $asgard-cache to configure or implement caching in an Asgard module."

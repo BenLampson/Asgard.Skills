@@ -1,0 +1,4 @@
+interface:
+  display_name: "Asgard API Development"
+  short_description: "按 BaseController 与统一 Response 规范编写 Asgard Web API"
+  default_prompt: "Use $asgard-api-development to implement or refactor an Asgard Web API controller."

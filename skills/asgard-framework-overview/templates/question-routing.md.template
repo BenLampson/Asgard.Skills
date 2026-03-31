@@ -1,0 +1,37 @@
+# 问题路由指南
+
+用户问题：`{UserQuestion}`
+
+## 第一步：判断问题范围
+
+根据问题内容判断属于哪个模块：
+
+- [ ] **宿主项目创建/启动** → 使用 `$asgard-host-project`
+- [ ] **配置相关（app.yaml/plugin.yaml/ConfigPath）** → 使用 `$asgard-configuration`
+- [ ] **宿主功能（静态文件/认证/Swagger/限流/健康检查）** → 使用 `$asgard-host-features`
+- [ ] **Web API/控制器/统一响应** → 使用 `$asgard-api-development`
+- [ ] **插件开发/插件约定** → 使用 `$asgard-plugin-development`
+- [ ] **插件生命周期/阶段/状态机** → 使用 `$asgard-plugin-lifecycle`
+- [ ] **AbsAsgardContext 使用** → 使用 `$asgard-context-usage`
+- [ ] **基类/响应模型/继承语义** → 使用 `$asgard-base-types`
+- [ ] **仓储扫描/服务注册** → 使用 `$asgard-repository-service-registration`
+- [ ] **数据库/EF Core/仓储模式** → 使用 `$asgard-database`
+- [ ] **缓存/多级缓存** → 使用 `$asgard-cache`
+- [ ] **消息队列/发布订阅** → 使用 `$asgard-messaging`
+- [ ] **作业调度/定时任务** → 使用 `$asgard-job-scheduling`
+- [ ] **认证授权/安全** → 使用 `$asgard-security`
+- [ ] **编码规范/.NET 10/C# 14** → 使用 `$asgard-dotnet-10-csharp-14`
+
+## 第二步：确认全局共识
+
+| 共识项 | 是否遵循 |
+|--------|----------|
+| 优先推荐"内建插件 + Asgard 宿主"路径 | [ ] |
+| 优先从 `AbsAsgardContext` 获取框架能力 | [ ] |
+| 主配置放 `config/app.yaml`，插件配置放 `plugin.yaml` | [ ] |
+| 控制器薄、服务显式、仓储只做数据访问 | [ ] |
+| 遵循 `$asgard-dotnet-10-csharp-14` 编码规范 | [ ] |
+
+## 第三步：转入专项 skill
+
+转到对应的专项 skill 处理具体问题。

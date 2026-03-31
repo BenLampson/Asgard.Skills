@@ -1,0 +1,8 @@
+database:
+  # 是否启用数据库模块
+  enabled: {enabled}
+  # 数据库提供者
+  # 支持: sqlserver, postgresql, mysql, sqlite, oracle, dm, kingbase
+  provider: {provider}
+  # 连接字符串
+  connectionString: {connection_string}

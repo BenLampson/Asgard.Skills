@@ -1,0 +1,17 @@
+namespace {Namespace};
+
+public class {PluginName}Plugin : PluginBase
+{
+    public override string Id => "{plugin_id}";
+    public override string Name => "{plugin_name}";
+    public override Version Version => new({major}, {minor}, {patch});
+
+    public override string Description => "{description}";
+
+    protected override Task OnInitializeAsync(CancellationToken cancellationToken)
+    {
+        var logger = CreateLogger();
+        logger.LogInformation("Plugin {PluginId} initialized", Id);
+        return Task.CompletedTask;
+    }
+}

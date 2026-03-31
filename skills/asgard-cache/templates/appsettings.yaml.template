@@ -1,0 +1,18 @@
+caching:
+  enabled: true
+  memory:
+    enabled: true
+    defaultExpirationMinutes: {DefaultExpirationMinutes}
+    sizeLimit: {SizeLimit}
+    compactOnMemoryPressure: 0.9
+  redis:
+    enabled: {EnableRedis}
+    connectionString: "{ConnectionString}"
+    instanceName: "{InstanceName}"
+    defaultExpirationMinutes: {DefaultExpirationMinutesRedis}
+    database: {Database}
+    connectTimeout: 5000
+    syncTimeout: 5000
+    asyncTimeout: 5000
+    retryCount: 3
+    retryIntervalMilliseconds: 1000

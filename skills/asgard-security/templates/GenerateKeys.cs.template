@@ -1,0 +1,42 @@
+/// <summary>
+/// 生成新的 AES 密钥和 IV
+/// </summary>
+/// <returns>密钥和 IV（Base64 编码）</returns>
+public (string Key, string Iv) GenerateAesKey()
+{
+    if (AsgardContext.KeyGenerator == null)
+    {
+        throw new InvalidOperationException("密钥生成服务未启用");
+    }
+
+    return AsgardContext.KeyGenerator.CreateAesKeyAndIv();
+}
+
+/// <summary>
+/// 生成新的 HMACSHA256 密钥
+/// </summary>
+/// <returns>Base64 编码的密钥</returns>
+public string GenerateHmacKey()
+{
+    if (AsgardContext.KeyGenerator == null)
+    {
+        throw new InvalidOperationException("密钥生成服务未启用");
+    }
+
+    return AsgardContext.KeyGenerator.CreateHmacSha256Key();
+}
+
+/// <summary>
+/// 生成指定长度的随机密钥
+/// </summary>
+/// <param name="keySizeInBytes">密钥长度（字节数）</param>
+/// <returns>Base64 编码的密钥</returns>
+public string GenerateRandomKey(int keySizeInBytes)
+{
+    if (AsgardContext.KeyGenerator == null)
+    {
+        throw new InvalidOperationException("密钥生成服务未启用");
+    }
+
+    return AsgardContext.KeyGenerator.CreateRandomKey(keySizeInBytes);
+}

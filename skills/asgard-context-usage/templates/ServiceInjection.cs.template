@@ -1,0 +1,19 @@
+/// <summary>
+/// {ServiceSummary}
+/// </summary>
+public class {ServiceName}
+{
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="asgardContext">Asgard 上下文</param>
+    public {ServiceName}(AbsAsgardContext asgardContext)
+    {
+        AsgardContext = asgardContext;
+    }
+
+    /// <summary>
+    /// Asgard 上下文
+    /// </summary>
+    protected AbsAsgardContext AsgardContext { get; }
+}

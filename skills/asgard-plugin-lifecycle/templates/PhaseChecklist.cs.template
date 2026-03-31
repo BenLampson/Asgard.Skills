@@ -1,0 +1,68 @@
+/// <summary>
+/// {Summary}
+/// </summary>
+public class {PluginName} : PluginBase
+{
+    /// ConfigureServicesAsync 阶段
+    /// 只做服务注册，不解析服务
+    protected override Task OnConfigureServicesAsync(
+        IPluginServiceConfigurationContext context,
+        CancellationToken cancellationToken)
+    {
+        // ✅ 正确：这里只注册服务
+        context.Services.AddRepositories(typeof({PluginName}).Assembly);
+        context.Services.AddScoped<IMyService, MyService>();
+
+        // ❌ 错误：不要在这里解析服务
+        // var service = context.Services.BuildServiceProvider().GetService<IMyService>();
+
+        return Task.CompletedTask;
+    }
+
+    /// InitializeAsync 阶段
+    /// ServiceProvider 已可用，可以解析服务
+    protected override Task OnInitializeAsync(CancellationToken cancellationToken)
+    {
+        // ✅ 正确：这里可以解析服务
+        var myService = GetService<IMyService>();
+        var asgardContext = GetAsgardContext();
+        var logger = CreateLogger();
+
+        // 做初始化工作...
+
+        return Task.CompletedTask;
+    }
+
+    /// ConfigureMiddlewareAsync 阶段
+    /// 注册中间件和端点
+    protected override Task OnConfigureMiddlewareAsync(
+        IPluginMiddlewareConfigurationContext context,
+        CancellationToken cancellationToken)
+    {
+        // ✅ 正确：这里可以注册中间件
+        context.App.UseMyMiddleware();
+
+        // 映射端点...
+
+        return Task.CompletedTask;
+    }
+
+    /// StartAsync 阶段
+    /// 启动后台任务
+    protected override Task OnStartAsync(CancellationToken cancellationToken)
+    {
+        // ✅ 正确：这里启动后台任务
+        // 框架已经自动加载 plugin.yaml 中的作业
+
+        return Task.CompletedTask;
+    }
+
+    /// StopAsync 阶段
+    /// 停止后台任务
+    protected override Task OnStopAsync(CancellationToken cancellationToken)
+    {
+        // ✅ 正确：这里停止后台任务
+
+        return Task.CompletedTask;
+    }
+}

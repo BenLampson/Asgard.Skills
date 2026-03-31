@@ -1,0 +1,4 @@
+interface:
+  display_name: "Asgard Host Features"
+  short_description: "配置 Asgard 宿主的静态文件、认证、Swagger、限流与健康检查"
+  default_prompt: "Use $asgard-host-features to configure Asgard host web features and middleware order."

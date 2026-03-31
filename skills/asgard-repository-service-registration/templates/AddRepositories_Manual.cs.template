@@ -1,0 +1,2 @@
+// 在模块启动时手动注册仓储
+_ = services.AddRepositories(typeof({EntryType}).Assembly);

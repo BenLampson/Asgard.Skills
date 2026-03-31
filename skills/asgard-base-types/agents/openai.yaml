@@ -1,0 +1,4 @@
+interface:
+  display_name: "Asgard Base Types"
+  short_description: "理解 Asgard 基类、核心字段、响应模型与正确继承时机"
+  default_prompt: "Use $asgard-base-types to explain or choose the right Asgard base abstraction."
