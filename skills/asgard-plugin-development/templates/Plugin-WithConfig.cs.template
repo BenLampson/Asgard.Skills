@@ -1,0 +1,59 @@
+namespace {PluginNamespace}.Bootstrap;
+
+/// <summary>
+/// {PluginSummary}
+/// </summary>
+public sealed class {PluginClassName} : PluginBase
+{
+    /// <summary>
+    /// 插件唯一标识。
+    /// </summary>
+    public override string Id => "{PluginId}";
+
+    /// <summary>
+    /// 插件显示名称。
+    /// </summary>
+    public override string Name => "{PluginDisplayName}";
+
+    /// <summary>
+    /// 插件版本号。
+    /// </summary>
+    public override Version Version => new({PluginVersionMajor}, {PluginVersionMinor}, {PluginVersionPatch});
+
+    /// <summary>
+    /// 插件描述。
+    /// </summary>
+    public override string Description => "{PluginDescription}";
+
+    /// <summary>
+    /// 注册插件配置与服务。
+    /// </summary>
+    protected override Task OnConfigureServicesAsync(
+        IPluginServiceConfigurationContext context,
+        CancellationToken cancellationToken)
+    {
+        var pluginConfig = context.AddPluginConventions<{PluginClassName}, {PluginConfigClassName}>(this);
+
+        _ = pluginConfig;
+        _ = context.Services.Add{FeatureName}Module();
+
+        context.Logger.LogInformation(
+            "插件 {PluginDisplayName} 已完成配置绑定与服务注册。",
+            Name);
+
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// 执行插件初始化。
+    /// </summary>
+    protected override Task OnInitializeAsync(CancellationToken cancellationToken)
+    {
+        var logger = CreateLogger();
+        var asgardContext = GetAsgardContext();
+
+        _ = asgardContext;
+        logger.LogInformation("插件 {PluginDisplayName} 初始化完成。", Name);
+        return Task.CompletedTask;
+    }
+}

@@ -1,9 +1,0 @@
-jobs:
-  - name: "{JobName}"
-    group: "{GroupName}"
-    jobType: "{JobFullTypeName}, {AssemblyName}"
-    description: "{JobDescription}"
-    triggers:
-      - type: cron
-        cron: "{CronExpression}"
-        startNow: {StartNow}

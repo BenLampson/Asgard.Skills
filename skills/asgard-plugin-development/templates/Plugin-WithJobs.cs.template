@@ -1,0 +1,68 @@
+namespace {PluginNamespace}.Bootstrap;
+
+/// <summary>
+/// {PluginSummary}
+/// </summary>
+public sealed class {PluginClassName} : PluginBase
+{
+    /// <summary>
+    /// 插件唯一标识。
+    /// </summary>
+    public override string Id => "{PluginId}";
+
+    /// <summary>
+    /// 插件显示名称。
+    /// </summary>
+    public override string Name => "{PluginDisplayName}";
+
+    /// <summary>
+    /// 插件版本号。
+    /// </summary>
+    public override Version Version => new({PluginVersionMajor}, {PluginVersionMinor}, {PluginVersionPatch});
+
+    /// <summary>
+    /// 插件描述。
+    /// </summary>
+    public override string Description => "{PluginDescription}";
+
+    /// <summary>
+    /// 注册插件配置与服务。
+    /// </summary>
+    protected override Task OnConfigureServicesAsync(
+        IPluginServiceConfigurationContext context,
+        CancellationToken cancellationToken)
+    {
+        _ = context.AddPluginConventions<{PluginClassName}, {PluginConfigClassName}>(this);
+        _ = context.Services.Add{FeatureName}Module();
+
+        context.Logger.LogInformation(
+            "插件 {PluginDisplayName} 已完成作业相关服务装配。",
+            Name);
+
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// 执行插件启动。
+    /// </summary>
+    protected override Task OnStartAsync(CancellationToken cancellationToken)
+    {
+        var logger = CreateLogger();
+
+        logger.LogInformation(
+            "插件 {PluginDisplayName} 启动完成，plugin.yaml 中定义的作业将由框架自动加载。",
+            Name);
+
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// 停止插件运行。
+    /// </summary>
+    protected override Task OnStopAsync(CancellationToken cancellationToken)
+    {
+        var logger = CreateLogger();
+        logger.LogInformation("插件 {PluginDisplayName} 已停止。", Name);
+        return Task.CompletedTask;
+    }
+}

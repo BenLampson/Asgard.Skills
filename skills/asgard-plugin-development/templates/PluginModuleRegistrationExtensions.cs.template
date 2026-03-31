@@ -1,0 +1,17 @@
+namespace {PluginNamespace}.Bootstrap;
+
+/// <summary>
+/// {FeatureName} 模块注册扩展。
+/// </summary>
+public static class {FeatureName}ModuleRegistrationExtensions
+{
+    /// <summary>
+    /// 注册插件所需的业务模块。
+    /// </summary>
+    public static IServiceCollection Add{FeatureName}Module(this IServiceCollection services)
+    {
+        _ = services.AddScoped<I{FeatureName}Service, {FeatureName}Service>();
+        _ = services.AddScoped<I{FeatureName}Repository, {FeatureName}Repository>();
+        return services;
+    }
+}

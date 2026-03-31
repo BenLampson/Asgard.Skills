@@ -1,0 +1,73 @@
+namespace {PluginNamespace}.Bootstrap;
+
+/// <summary>
+/// {PluginSummary}
+/// </summary>
+public sealed class {PluginClassName} : PluginBase
+{
+    /// <summary>
+    /// 插件唯一标识。
+    /// </summary>
+    public override string Id => "{PluginId}";
+
+    /// <summary>
+    /// 插件显示名称。
+    /// </summary>
+    public override string Name => "{PluginDisplayName}";
+
+    /// <summary>
+    /// 插件版本号。
+    /// </summary>
+    public override Version Version => new({PluginVersionMajor}, {PluginVersionMinor}, {PluginVersionPatch});
+
+    /// <summary>
+    /// 插件描述。
+    /// </summary>
+    public override string Description => "{PluginDescription}";
+
+    /// <summary>
+    /// 插件依赖的其他插件。
+    /// </summary>
+    public override IReadOnlyList<string> Dependencies => [];
+
+    /// <summary>
+    /// 注册插件服务。
+    /// </summary>
+    protected override Task OnConfigureServicesAsync(
+        IPluginServiceConfigurationContext context,
+        CancellationToken cancellationToken)
+    {
+        context.Logger.LogInformation("开始注册插件 {PluginDisplayName} 的服务。", Name);
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// 执行插件初始化。
+    /// </summary>
+    protected override Task OnInitializeAsync(CancellationToken cancellationToken)
+    {
+        var logger = CreateLogger();
+        logger.LogInformation("插件 {PluginDisplayName} 初始化完成。", Name);
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// 执行插件启动。
+    /// </summary>
+    protected override Task OnStartAsync(CancellationToken cancellationToken)
+    {
+        var logger = CreateLogger();
+        logger.LogInformation("插件 {PluginDisplayName} 启动完成。", Name);
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// 执行插件停止。
+    /// </summary>
+    protected override Task OnStopAsync(CancellationToken cancellationToken)
+    {
+        var logger = CreateLogger();
+        logger.LogInformation("插件 {PluginDisplayName} 已停止。", Name);
+        return Task.CompletedTask;
+    }
+}

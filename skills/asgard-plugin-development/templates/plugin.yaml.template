@@ -1,4 +1,17 @@
-{PluginName}:
-  enabled: {Enabled}
-  {ConfigurationSection}:
-    {ConfigurationKeys}
+{PluginConfigRootKey}:
+  enabled: {PluginEnabled}
+  {ConfigurationSectionName}:
+    {ConfigurationEntries}
+
+# 如需自动加载作业，可按需补充 jobs 段：
+# jobs:
+#   - name: "{JobName}"
+#     group: "{JobGroup}"
+#     jobType: "{JobClassFullName}, {AssemblyName}"
+#     description: "{JobDescription}"
+#     enabled: {JobEnabled}
+#     triggers:
+#       - type: "cron"
+#         cron: "{CronExpression}"
+#         description: "{JobTriggerDescription}"
+#         startNow: {JobStartNow}

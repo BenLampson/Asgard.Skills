@@ -1,194 +1,177 @@
 ---
 name: asgard-plugin-development
-description: Asgard 插件开发 skill。Use when implementing, registering, refactoring, or explaining Asgard plugins, including PluginBase, IPlugin, built-in plugins, external plugins, plugin.yaml, plugin conventions, and plugin-level service registration.
+description: Asgard 内建插件开发 skill。Use when creating, refactoring, explaining, or scaffolding built-in Asgard plugins with PluginBase, PluginWebAppDefaults.RunAsync<TPlugin>(), plugin.yaml, convention-based registration, and plugin-level service composition.
 ---
 
-# Asgard Plugin Development
+# Asgard Built-in Plugin Development
 
 ## 作用
 
-定义 Asgard 插件开发的约定和最佳实践。插件是 Asgard 的核心扩展机制，通过插件可以独立部署业务功能，不需要重新编译宿主。本 skill 帮助你选择正确插件形态、实现插件、注册服务、处理生命周期。
+这个 skill 只负责 **Asgard 内建插件** 的编写、重构、解释和骨架生成。
+
+- `asgard-plugin-development` 负责回答“插件应该怎么写、怎么组织、先落哪些文件”
+- `asgard-plugin-lifecycle` 负责回答“每个生命周期阶段能做什么、不能做什么”
+
+当问题聚焦在阶段顺序、`ServiceProvider` 何时可用、`GetService()` 为什么报错时，优先联动 `$asgard-plugin-lifecycle`。
 
 ## 什么时候使用
 
-- **创建新插件** - 从零开始编写新插件
-- **重构现有插件** - 整理插件代码结构
-- **理解插件约定** - 理解各阶段职责和可用能力
-- **添加插件配置** - 在 `plugin.yaml` 中定义配置
-- **添加自动加载作业** - 自动从配置注册定时任务
+仅在以下场景触发：
 
-## 插件形态选择
+- 创建新的 Asgard 内建插件
+- 重构现有内建插件结构
+- 生成或整理 `PluginBase` 插件骨架
+- 编写或调整 `plugin.yaml`
+- 组织插件级服务注册、配置绑定、模块装配
+- 解释内建插件推荐目录和代码分层
 
-| 形态 | 使用场景 | 推荐入口 |
-|------|----------|----------|
-| **内建插件** | 和宿主一起编译，快速开发 | `PluginWebAppDefaults.RunAsync<TPlugin>()` / `UseBuiltInPlugin<TPlugin>()` |
-| **外部插件** | 独立部署，热插拔，不需要重新编译宿主 | 文件系统扫描，插件放在 `plugins/` 目录 |
+以下场景不要用本 skill 作为主 skill：
 
-**推荐**：开发阶段优先使用内建插件，需要独立部署时再改为外部插件。
+- 外部插件、热插拔目录扫描、`plugins/` 文件系统加载
+- 宿主完整构建器与全局中间件编排
+- 只讨论生命周期阶段边界
 
-## 开发约定
+## 默认路线
 
-| 阶段 | 方法 | 可做什么 | 不可做什么 |
-|------|------|----------|------------|
-| `ConfigureServicesAsync` | 注册服务、仓储、配置绑定 | 不能获取 `ServiceProvider`（还没构建） |
-| `InitializeAsync` | 读取配置、分配资源 | 可以用 `GetService<T>()`、`GetAsgardContext()` |
-| `ConfigureMiddlewareAsync` | 注册中间件、端点映射 | 可以获取 `ServiceProvider` |
-| `StartAsync` | 启动后台任务、建立连接 | - |
-| `StopAsync` | 停止接收请求、停止后台任务 | - |
+默认采用最短闭环：
 
-## 核心继承选择
+1. 用 `Program.cs` 通过 `PluginWebAppDefaults.RunAsync<TPlugin>()` 启动
+2. 插件入口类继承 `PluginBase`
+3. 通过 `context.AddPluginConventions<TPlugin, TConfig>()` 注册约定配置
+4. 将业务服务装配下沉到模块扩展类
+5. 将插件配置和作业统一放进 `plugin.yaml`
 
-- 优先继承 `PluginBase`，不要从零实现 `IPlugin`
-- `PluginBase` 已经提供：状态管理、生命周期守卫、便捷方法（`GetService`、`GetAsgardContext`、`CreateLogger`）、自动加载作业
+除非用户明确要求，否则不要在首版引入外部插件、复杂宿主构建器、扫描加载路径。
 
-## 必须实现的抽象属性
+## 开发流程
 
-| 属性 | 说明 | 示例 |
-|------|------|------|
-| `Id` | 插件唯一标识 | `public override string Id => "my-plugin";` |
-| `Name` | 插件显示名称 | `public override string Name => "我的插件";` |
-| `Version` | 插件版本 | `public override Version Version => new(1, 0, 0);` |
-| `Description` | 插件描述（可选）| `public override string Description => "这是我的插件";` |
-| `Dependencies` | 依赖的其他插件 ID 列表（可选）| `public override IReadOnlyList<string> Dependencies => ["another-plugin"];` |
+### 1. 先定职责边界
 
-## 便捷方法（继承 `PluginBase` 后可用）
+- 明确插件只负责一个业务主题
+- 明确插件入口类只承担“声明 + 装配 + 生命周期协调”
+- 如果业务模块已经很多，提前规划 `Bootstrap/` 之外的功能目录
 
-| 方法 | 说明 |
-|------|------|
-| `GetService<T>()` | 获取必需服务（框架检查阶段，不安全调用会报错） |
-| `GetOptionalService<T>()` | 获取可选服务，不存在返回 null |
-| `CreateLogger()` | 创建当前插件类型的日志器 |
-| `GetAsgardContext()` | 获取 Asgard 上下文（包含缓存、消息、作业等公共能力） |
+### 2. 建立最小项目骨架
 
-## 代码示例
+先落最小必需文件：
 
-### 基础插件实现
+- `Program.cs`
+- `Bootstrap/{PluginClassName}.cs`
+- `Bootstrap/{FeatureName}ModuleRegistrationExtensions.cs`
+- `Bootstrap/Configuration/{PluginConfigClassName}.cs`（需要配置时）
+- `plugin.yaml`
 
-```csharp
-namespace {Namespace};
+目录结构参考 `references/plugin-project-structure.md`。
 
-/// <summary>
-/// {PluginSummary}
-/// </summary>
-public class {PluginName} : PluginBase
-{
-    /// <inheritdoc />
-    public override string Id => "{PluginId}";
+### 3. 实现 `PluginBase`
 
-    /// <inheritdoc />
-    public override string Name => "{PluginName}";
+优先继承 `PluginBase`，不要从零实现 `IPlugin`。
 
-    /// <inheritdoc />
-    public override Version Version => new({Version});
+必须先补齐这些成员：
 
-    /// <inheritdoc />
-    public override string Description => "{PluginDescription}";
+- `Id`
+- `Name`
+- `Version`
+- `Description`
+- `Dependencies`（无依赖时保持空集合）
 
-    /// <inheritdoc />
-    public override IReadOnlyList<string> Dependencies => [
-        {Dependencies}
-    ];
+基础实现模板见：
 
-    /// <inheritdoc />
-    protected override Task OnConfigureServicesAsync(
-        IPluginServiceConfigurationContext context,
-        CancellationToken cancellationToken)
-    {
-        var config = context.AddPluginConventions<{PluginName}, {ConfigName}>(this);
-        {AdditionalRegistration}
-        return Task.CompletedTask;
-    }
+- `templates/Plugin-Minimal.cs.template`
+- `templates/Plugin-WithConfig.cs.template`
+- `templates/Plugin-WithJobs.cs.template`
 
-    /// <inheritdoc />
-    protected override Task OnInitializeAsync(CancellationToken cancellationToken)
-    {
-        var asgardContext = GetAsgardContext();
-        var logger = CreateLogger();
-        logger.LogInformation("插件 {PluginName} 初始化完成", Name);
-        {InitializationLogic}
-        return Task.CompletedTask;
-    }
+### 4. 注册配置与服务
 
-    /// <inheritdoc />
-    protected override Task OnStartAsync(CancellationToken cancellationToken)
-    {
-        var logger = CreateLogger();
-        logger.LogInformation("插件 {PluginName} 启动完成", Name);
-        {StartLogic}
-        return Task.CompletedTask;
-    }
+推荐顺序：
 
-    /// <inheritdoc />
-    protected override Task OnStopAsync(CancellationToken cancellationToken)
-    {
-        var logger = CreateLogger();
-        logger.LogInformation("插件 {PluginName} 停止完成", Name);
-        {StopLogic}
-        return Task.CompletedTask;
-    }
-}
-```
+1. 在 `OnConfigureServicesAsync` 里做约定注册
+2. 在模块扩展类里注册业务服务、仓储和能力组件
+3. 在 `plugin.yaml` 中定义插件配置
+4. 需要自动作业时，把作业定义写进 `plugin.yaml`
 
-### 最简入口（Program.cs）
+不要把大量业务注册直接堆进插件入口类。
 
-```csharp
-using Asgard.PluginSdk;
+### 5. 把逻辑放到正确阶段
 
-await PluginWebAppDefaults.RunAsync<{PluginName}>();
-```
+本 skill 只给出最低限度阶段规则：
 
-### 配置文件（plugin.yaml）
+- `OnConfigureServicesAsync`：只注册，不解析
+- `OnInitializeAsync`：读取配置、拿服务、做轻量初始化
+- `OnConfigureMiddlewareAsync`：注册中间件和端点
+- `OnStartAsync`：启动后台任务、补启动期准备
+- `OnStopAsync`：停止任务、清理资源
 
-```yaml
-{PluginName}:
-  enabled: {Enabled}
-  {ConfigurationSection}:
-    {ConfigurationKeys}
-```
+如果需要完整阶段说明，读取 `$asgard-plugin-lifecycle`。
 
-### 带自动加载作业（plugin.yaml）
+### 6. 补全 `plugin.yaml`
 
-```yaml
-jobs:
-  - name: "{JobName}"
-    group: "{GroupName}"
-    jobType: "{JobFullTypeName}, {AssemblyName}"
-    description: "{JobDescription}"
-    triggers:
-      - type: cron
-        cron: "{CronExpression}"
-        startNow: {StartNow}
-```
+`plugin.yaml` 只承载：
 
-## 推荐做法
+- 插件启停配置
+- 插件业务配置
+- 插件作业配置
 
-- 优先选择 `PluginBase` 继承，不要从零手写 `IPlugin`
-- 总是使用 `context.AddPluginConventions<TPlugin, TConfig>` 来自动注册仓储、服务、加载配置
-- 依赖通过 `Dependencies` 属性声明，框架会保证加载顺序
-- 配置放 `plugin.yaml`，不要混进宿主 `app.yaml`
-- 作业定义在 `plugin.yaml`，启动时框架自动注册
-- 在正确阶段做正确的事情，`ConfigureServicesAsync` 不要访问 `ServiceProvider`
+不要把宿主级配置、跨插件总线配置、与当前插件无关的全局配置混进去。
 
-## 不要这样做
+### 7. 需要时再扩展
 
-❌ 不要在 `ConfigureServicesAsync` 阶段读取 `ServiceProvider`，此时主机还没构建
+最小闭环跑通之后，再考虑：
 
-❌ 不要为简单场景过早设计复杂的外部插件，先做内建插件验证再拆分
+- 更细的业务模块拆分
+- 更多配置对象
+- 更多中间件或 API
+- 更多自动作业
 
-❌ 不要忽略 `AddPluginConventions` 约定后再手写重复扫描注册逻辑
+不要在第一步把所有扩展点一次铺满。
 
-❌ 不要忘记实现 `Id`、`Name`、`Version` 三个必填抽象属性
+## 强约束
 
-❌ 不要在错误阶段调用 `GetService`，`PluginBase` 会检查阶段并抛出明确错误
+- 优先走内建插件路线，不默认展开外部插件方案
+- 优先继承 `PluginBase`，不要手写整套生命周期
+- `OnConfigureServicesAsync` 只注册服务，不构建或解析 `ServiceProvider`
+- `GetService<T>()`、`GetOptionalService<T>()`、`CreateLogger()`、`GetAsgardContext()` 只放在 `OnInitializeAsync` 之后
+- 优先使用 `context.AddPluginConventions<TPlugin, TConfig>()`
+- `Program.cs` 保持一行或极薄入口
+- `Bootstrap/` 只放插件入口、配置装配、模块注册相关代码
+- `plugin.yaml` 只放插件配置与作业
 
-## 参考资料
+## 反模式
 
-完整源码拷贝请参考 `references/` 目录：
-- `IPlugin.cs` - 插件接口定义
-- `PluginBase.cs` - 插件基类默认实现
+以下情况通常意味着插件已经开始变乱：
 
-代码范本请参考 `templates/` 目录：
-- `BasicPluginImplementation.cs.template` - 基础插件实现范本
-- `plugin.yaml.template` - 插件配置范本
-- `PluginWithJobs.yaml.template` - 带自动加载作业的配置范本
-- `Program-Minimal.cs.template` - 最简入口范本
+- 在 `OnConfigureServicesAsync` 中 `BuildServiceProvider()`
+- 插件入口类同时承担配置绑定、服务注册、业务编排、数据初始化、端点映射
+- 把大量业务实现塞进 `Bootstrap/`
+- `Program.cs` 写成完整宿主脚本，失去插件项目的极薄入口优势
+- `plugin.yaml` 混入宿主配置或其他插件配置
+- 尚未跑通最小闭环，就先设计复杂多层抽象
+
+## 按需读取的资源
+
+优先保持 `SKILL.md` 精简，细节按需读取：
+
+- 项目骨架：`references/plugin-project-structure.md`
+- 推荐步骤：`references/plugin-development-workflow.md`
+- 编写规则与反模式：`references/plugin-authoring-rules.md`
+- 接口事实：`references/IPlugin.cs`
+- 基类事实：`references/PluginBase.cs`
+- 最小模板：`templates/Program-Minimal.cs.template`
+- 插件模板：`templates/Plugin-Minimal.cs.template`
+- 配置模板：`templates/Plugin-WithConfig.cs.template`
+- 作业模板：`templates/Plugin-WithJobs.cs.template`
+- 装配模板：`templates/PluginModuleRegistrationExtensions.cs.template`
+- 配置文件模板：`templates/plugin.yaml.template`
+- 学习示例：`examples/minimal-built-in-plugin.md`
+- 进阶示例：`examples/plugin-with-config-and-services.md`
+- 重构示例：`examples/plugin-refactor-from-messy-to-clean.md`
+
+## 输出要求
+
+当使用本 skill 生成结果时，默认输出应满足：
+
+- 优先给出最小可运行骨架
+- 代码组织先清晰，再追求功能铺满
+- 注释解释意图、边界和阶段约束
+- 明确哪些代码在插件入口，哪些代码应该下沉到模块或业务目录
+- 如果用户的问题实质是生命周期边界，显式提示继续读取 `$asgard-plugin-lifecycle`
