@@ -101,7 +101,7 @@ description: Asgard 插件项目结构 skill。Use when scaffolding a new Asgard
 │   └── {FeatureName}Extensions.cs
 ├── Middlewares/
 │   └── {FeatureName}Middleware.cs
-└── yyy/
+└── {CustomModuleName}/
     └── {CustomFiles}
 ```
 
@@ -137,8 +137,8 @@ description: Asgard 插件项目结构 skill。Use when scaffolding a new Asgard
   放扩展方法和扩展装配
 - `Middlewares/`
   放自定义中间件
-- `yyy/`
-  放不适合归到上述目录但仍属于插件内部的自定义内容
+- `{CustomModuleName}/`
+  这是“其他自定义目录”的占位写法，不是必须创建名为 `yyy` 的真实目录
 
 `app.yaml` 与 `plugin.yaml` 始终位于项目根目录。`Config/` 不承担 YAML 根文件职责。
 
@@ -157,6 +157,8 @@ Controller → 转 VO 【给前端展示】
    ↓
 前端页面
 ```
+
+实际代码访问时，`Service` 仍然必须通过 `Repository` 访问 `Entity` 与数据库。上面的输出链路强调的是模型转换职责，不表示可以跳过仓储层。
 
 进入链路按反方向理解：
 

@@ -41,7 +41,7 @@
 │   └── {FeatureName}Extensions.cs
 ├── Middlewares/
 │   └── {FeatureName}Middleware.cs
-└── yyy/
+└── {CustomModuleName}/
     └── {CustomFiles}
 ```
 
@@ -79,8 +79,8 @@
   放扩展方法
 - `Middlewares/`
   放中间件
-- `yyy/`
-  放不属于以上目录的自定义代码
+- `{CustomModuleName}/`
+  表示其他自定义目录的占位符，不要求真实目录名必须叫 `yyy`
 
 ## 固定边界
 

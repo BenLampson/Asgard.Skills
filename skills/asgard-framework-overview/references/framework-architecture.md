@@ -119,9 +119,10 @@ src/
 │   ├── Asgard.Users/
 │   ├── Asgard.Orders/
 │   └── ...
-└── config/                    # 配置文件
-    └── app.yaml
+└── app.yaml                   # 宿主主配置
 ```
+
+插件工程内部的标准目录、`GlobalUsings.cs`、`plugin.yaml`、`Config/`、`Models/`、`Domains/`、`Services/` 等结构，请统一参考 `$asgard-plugin-structure`。
 
 ## 参考资料
 

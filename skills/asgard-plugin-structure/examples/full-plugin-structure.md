@@ -44,9 +44,8 @@ UserCenterPlugin/
 │   └── ServiceCollectionExtensions.cs
 ├── Middlewares/
 │   └── TenantMiddleware.cs
-└── yyy/
-    └── Integrations/
-        └── UserSyncClient.cs
+└── Integrations/
+    └── UserSyncClient.cs
 ```
 
 ## 固定流转
@@ -58,7 +57,7 @@ UserCenterPlugin/
 ## 关键点
 
 - `UserController` 只暴露 API，不直接接触数据库
-- `UserService` 处理业务并组织 DTO
+- `UserService` 处理业务并组织 DTO，但访问数据库时仍然通过 `IUserRepository` / `UserRepository`
 - `UserMapper` 统一做模型映射，优先 attribute
 - `IUserRepository` 与 `UserRepository` 分别位于 `Domains/IRepositories` 与 `Domains/Repositories`
 - `IUserService` 与 `UserService` 分别位于 `Services/IServices` 与 `Services/Services`

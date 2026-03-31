@@ -71,14 +71,22 @@ var config = context.AddPluginConventions<{PluginName}Plugin, {PluginConfig}Conf
 | 模块批量扫描 | 使用 `[Service]` 特性 + `services.AddServices(assembly)` |
 | 插件模块 | 交给 `AddPluginConventions` 自动处理 |
 
-**代码示例 - 定义服务：**
+**代码示例 - 服务接口与实现必须分文件：**
+
+接口文件：`Services/IServices/I{ServiceName}Service.cs`
 
 ```csharp
-namespace {Namespace}.Services.Services;
+namespace {Namespace}.Services.IServices;
 
 public interface I{ServiceName}Service
 {
 }
+```
+
+实现文件：`Services/Services/{ServiceName}Service.cs`
+
+```csharp
+namespace {Namespace}.Services.Services;
 
 [Service]
 public class {ServiceName}Service : I{ServiceName}Service

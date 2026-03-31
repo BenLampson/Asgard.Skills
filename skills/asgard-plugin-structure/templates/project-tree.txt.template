@@ -36,5 +36,5 @@
 │   └── {FeatureName}Extensions.cs
 ├── Middlewares/
 │   └── {FeatureName}Middleware.cs
-└── yyy/
+└── {CustomModuleName}/
     └── {CustomFiles}
