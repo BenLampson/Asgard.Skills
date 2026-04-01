@@ -31,7 +31,7 @@
          ↓
 ┌─────────────────────────────────────────────────────────────────────┐
 │                     Controllers / APIs                             │
-│              BaseController → Response<T> → HTTP Response          │
+│      BaseController → DTO 转 VO → Response<T> → HTTP Response     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -94,7 +94,7 @@ HTTP Request → Controller → Service → Repository → Database
   ↓
 AbsAsgardContext.Cache → 缓存读取/写入
   ↓
-Response → JSON → Client
+Controller(DTO → VO → Response) → JSON → Client
 ```
 
 ## 生命周期阶段

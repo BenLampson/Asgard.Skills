@@ -11,5 +11,6 @@ public async Task<ActionResult<PageResponse<{VoType}>>> {ActionName}(
     [FromQuery] int size = 20)
 {
     var (items, totalCount) = await _{serviceName}.{MethodName}(page, size);
-    return SuccessPage(items, totalCount, page, size);
+    var vos = items.Select(_{mapperName}.Map<{VoType}>).ToList();
+    return SuccessPage(vos, totalCount, page, size);
 }

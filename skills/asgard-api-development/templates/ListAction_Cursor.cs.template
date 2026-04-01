@@ -11,5 +11,6 @@ public async Task<ActionResult<CursorResponse<{VoType}>>> {ActionName}(
     [FromQuery] int size = 20)
 {
     var (items, hasMore, nextCursor, lastId) = await _{serviceName}.{MethodName}(cursor, size);
-    return SuccessCursor(items, hasMore, nextCursor, lastId);
+    var vos = items.Select(_{mapperName}.Map<{VoType}>).ToList();
+    return SuccessCursor(vos, hasMore, nextCursor, lastId);
 }
