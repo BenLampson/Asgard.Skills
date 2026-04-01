@@ -1,3 +1,9 @@
 using Asgard.PluginSdk;
 
-await PluginWebAppDefaults.RunAsync<{PluginName}>();
+await PluginWebAppDefaults.RunAsync<{PluginName}>(
+    "app.yaml",
+    app =>
+    {
+        _ = app.UseAuthentication();
+        _ = app.UseAuthorization();
+    });

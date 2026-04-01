@@ -51,6 +51,7 @@ description: Asgard 内建插件开发 skill。Use when implementing built-in pl
 
 1. 先按 `$asgard-plugin-structure` 搭项目骨架
 2. 在 `Program.cs` 使用 `PluginWebAppDefaults.RunAsync<TPlugin>()`
+   如果插件自己注册了认证/授权服务，则同时在回调中补上 `UseAuthentication()` 与 `UseAuthorization()`
 3. 插件入口类继承 `PluginBase`
 4. 在 `OnConfigureServicesAsync` 中使用 `context.AddPluginConventions<TPlugin, TConfig>()`
 5. 把插件级配置放在项目根目录的 `plugin.yaml`

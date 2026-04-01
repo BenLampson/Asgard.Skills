@@ -10,6 +10,7 @@ description: Asgard 框架总览与路由 skill。Use when working with the Asga
 - 先读取 `../../doc/01-框架概览.md`、`../../doc/02-快速开始.md`、`../../doc/09-源码参考索引.md`。
 - 先判断用户问题属于哪个模块，再决定是否继续读取专项 skill 或源码。
 - 先记住推荐入口：`YggdrasilHost.CreateBuilder(...)`、`PluginWebAppDefaults.RunAsync<TPlugin>()`、`UseBuiltInPlugin<TPlugin>()`、`BaseController`、`AbsAsgardContext`。
+- 如果认证与授权由插件自己注册，不要只依赖 `host.auth` 决定中间件接线，需在入口显式补上 `UseAuthentication()` 与 `UseAuthorization()`。
 
 ## 按问题选择专项 skill
 

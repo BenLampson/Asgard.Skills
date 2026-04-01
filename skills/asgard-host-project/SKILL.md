@@ -26,7 +26,7 @@ description: Asgard ASP.NET Host 项目编写 skill。Use when creating, refacto
 
 | 场景 | 推荐入口 | 说明 |
 |------|----------|------|
-| 快速验证单个插件 | `PluginWebAppDefaults.RunAsync<TPlugin>()` | 最短路径，一行代码启动 |
+| 快速验证单个插件 | `PluginWebAppDefaults.RunAsync<TPlugin>()` | 最短路径，适合无额外安全中间件需求的场景 |
 | 完整宿主 + 多个内建插件 | `YggdrasilHost.CreateBuilder()` | 完整构建器，支持钩子扩展 |
 | 需要自定义配置钩子 | `YggdrasilHost.CreateBuilder()` | 通过钩子在各个阶段注入自定义逻辑 |
 | 需要掌控中间件顺序 | `YggdrasilHost.CreateBuilder()` | 通过 `ConfigureMiddleware` 完全控制 |
@@ -52,6 +52,20 @@ description: Asgard ASP.NET Host 项目编写 skill。Use when creating, refacto
 using Asgard.PluginSdk;
 
 await PluginWebAppDefaults.RunAsync<{PluginName}>("app.yaml");
+```
+
+如果插件项目自己注册了认证/授权服务，而不是依赖 `host.auth`：
+
+```csharp
+using Asgard.PluginSdk;
+
+await PluginWebAppDefaults.RunAsync<{PluginName}>(
+    "app.yaml",
+    app =>
+    {
+        _ = app.UseAuthentication();
+        _ = app.UseAuthorization();
+    });
 ```
 
 ### 完整启动（带钩子）
@@ -117,6 +131,20 @@ using Asgard.PluginSdk;
 await PluginWebAppDefaults.RunAsync<MyPlugin>("app.yaml");
 ```
 
+如果插件内部自己调用了 `AddAuthentication()` / `AddAuthorization()`，则最简入口也要补充安全中间件：
+
+```csharp
+using Asgard.PluginSdk;
+
+await PluginWebAppDefaults.RunAsync<MyPlugin>(
+    "app.yaml",
+    app =>
+    {
+        _ = app.UseAuthentication();
+        _ = app.UseAuthorization();
+    });
+```
+
 ### 完整控制
 
 ```csharp
@@ -161,6 +189,7 @@ await app.RunAsync();
 - 主配置文件固定放在项目根目录 `app.yaml`
 - 按照钩子执行顺序理解，不要在错误阶段做错误的事情
 - 对于单个插件项目，优先使用 `PluginWebAppDefaults.RunAsync<TPlugin>()` 最短路径
+- 当认证/授权由插件自身注册时，在 `RunAsync(..., configure)` 中显式补齐 `UseAuthentication()` 与 `UseAuthorization()`
 - 需要内建多个插件时，使用 `UseEntryAssemblyPlugins()` 一次性注册所有
 - 需要添加自定义中间件时，通过 `ConfigureMiddleware` 回调添加
 

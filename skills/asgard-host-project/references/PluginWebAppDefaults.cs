@@ -16,7 +16,9 @@ public static class PluginWebAppDefaults
     /// <returns>可继续链式调用的同一个 <see cref="IApplicationBuilder"/> 实例。</returns>
     /// <remarks>
     /// 当前默认管道会启用 Asgard 异常处理器和 HTTPS 重定向。
-    /// 静态文件、CORS、认证、授权以及身份上下文等由宿主管理的能力，仍由 Yggdrasil 自身负责接线。
+    /// 如果插件或应用自行注册了认证/授权服务，而不是依赖宿主 <c>host.auth</c>，
+    /// 则仍需要在 <c>RunAsync(..., configure)</c> 或 <c>ConfigureMiddleware</c> 中显式补齐
+    /// <c>UseAuthentication()</c> 与 <c>UseAuthorization()</c>。
     /// </remarks>
     /// <exception cref="ArgumentNullException">当 <paramref name="app"/> 为 <see langword="null" /> 时抛出。</exception>
     public static IApplicationBuilder UseRecommendedPluginDefaults(this IApplicationBuilder app)
