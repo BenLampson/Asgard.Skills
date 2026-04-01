@@ -53,6 +53,7 @@ description: Asgard Web API 开发 skill。Use when creating or updating control
 - 不允许 Controller 直接返回未包装的 VO、DTO、字符串、布尔值、数字、匿名对象或集合
 - 不允许在 Controller 中再自定义另一套通用响应壳模型
 - Swagger / OpenAPI 的 `ProducesResponseType` 也必须与统一响应模型保持一致
+- 对于返回实体详情或单一资源的 Action，如果成功返回类型是 `Response<TVo>`，则 `404 NotFound` 的 `ProducesResponseType` 也应优先标注为 `Response<TVo>`，保持 Swagger 文档与统一响应壳的泛型语义一致
 
 ## 响应方法对照表
 
@@ -110,7 +111,7 @@ public class {ControllerName} : BaseController
 [HttpGet("{Route}")]
 [ProducesResponseType(typeof(Response<{VoType}>), StatusCodes.Status200OK)]
 [ProducesResponseType(typeof(Response<object>), StatusCodes.Status400BadRequest)]
-[ProducesResponseType(typeof(Response<object>), StatusCodes.Status404NotFound)]
+[ProducesResponseType(typeof(Response<{VoType}>), StatusCodes.Status404NotFound)]
 public async Task<ActionResult<Response<{VoType}>>> {ActionName}(
     [FromRoute] {ParameterType} {ParameterName})
 {
@@ -179,6 +180,7 @@ app.UseAsgardExceptionHandler();
 
 - 每个控制器只负责一个业务领域
 - 为每个 Action 添加 `[ProducesResponseType]` 注释，便于 Swagger 生成文档
+- 详情类 / 单资源接口优先让 `200` 与 `404` 共享同一个 `Response<TVo>` 标注，减少 Swagger 类型语义漂移
 - 通过 `AsgardContext` 获取当前用户、租户等上下文信息
 - 保持 Action 简洁，只做参数编排和结果返回
 - 控制器文件放在 `Controllers/`，不要另起结构
