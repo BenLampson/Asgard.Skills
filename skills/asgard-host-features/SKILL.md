@@ -2,7 +2,7 @@
 name: asgard-host-features
 description: Asgard 宿主特性配置与用法 skill。Use when configuring or explaining host.staticFiles, host.cors, host.auth, host.swagger, host.rateLimiting, host.healthCheck, middleware order, tenant middleware placement, or host-managed web features in Asgard.
 ---
-```
+
 # Asgard 宿主 Web 功能配置
 
 ## 作用
@@ -81,13 +81,33 @@ cors:
 ```yaml
 auth:
   enabled: true
-  issuer: "https://your-issuer.com/"
-  audience: "your-audience"
-  key: "your-secret-signing-key"
-  tokenLifetimeMinutes: 1440
+  jwt:
+    issuerTemplate: "https://idp.example.com/realms/{tenantId}"
+    audience: "your-audience"
+    requireHttpsMetadata: true
+    discoveryCacheMinutes: 60
+    jwksCacheMinutes: 60
 ```
 
-**多租户支持**：Asgard 从 JWT `issuer` 声明解析租户标识。
+**关键行为：**
+
+- 宿主内置认证当前是 Bearer JWT 模式
+- 认证实现基于 OIDC discovery + JWKS 自发现
+- `host.auth.enabled` 只控制宿主默认 JWT 注册与 `UseAuthentication()` 接线
+- 即使关闭宿主内置 JWT，`UseAuthorization()`、`AsgardAuth`、租户和身份上下文链路仍可能由外部认证方案继续工作
+- 宿主会在 `OnTokenValidated` 时检查当前身份是否已有 `tenant_id`
+- 如果 token 中没有 `tenant_id`，但 `issuer` 能匹配 `issuerTemplate`，宿主会自动补上 `tenant_id` claim
+
+### 认证、身份上下文与租户的关系
+
+需要把这几个概念分清：
+
+- `UseAuthentication()` 负责把来访请求解析成 `ClaimsPrincipal`
+- `UseAsgardTenant()` 负责根据当前身份建立租户上下文
+- `IAsgardIdentityContext` / `AbsAsgardContext.IdentityContext` 负责向业务代码暴露当前身份快照
+- `UseAuthorization()` 和 `AsgardAuth` 负责基于这些信息做鉴权
+
+也就是说，业务代码真正应该读取的是 `AsgardContext.IdentityContext?.UserInfo`，而不是自己重新拼装 claim。
 
 ### Swagger/OpenAPI（host.swagger）
 
@@ -128,58 +148,52 @@ healthCheck:
 
 ```csharp
 // 推荐的中间件注册顺序
-app.UseAsgardExceptionHandler();
-app.UseHttpsRedirection();
+app.UseAsgardStaticFiles();
+app.UseRouting();
 
-// 静态文件
-if (hostConfig.StaticFiles.Enabled)
-{
-    app.UseStaticFiles();
-}
-
-// CORS
 if (hostConfig.Cors?.Enabled == true)
 {
     app.UseCors();
 }
 
-// 限流
 if (hostConfig.RateLimiting?.Enabled == true)
 {
     app.UseRateLimiter();
 }
 
-// 认证和授权（授权必须在认证之后）
 if (hostConfig.Auth?.Enabled == true)
 {
     app.UseAuthentication();
-    app.UseAuthorization();
 }
 
-// 租户中间件必须放在认证之后，业务之前
-if (hostConfig.Tenant?.Enabled == true)
-{
-    app.UseAsgardTenant();
-}
+app.UseAsgardTenant();
 
-// 输出缓存
-app.UseOutputCache();
+// 插件或外部中间件扩展点
+configureMiddleware?.Invoke(app);
 
-// 端点映射
+// 插件中间件之后统一进入授权
+app.UseAuthorization();
+
 if (hostConfig.Swagger?.Enabled == true)
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
+
 if (hostConfig.HealthCheck?.Enabled == true)
 {
     app.MapHealthChecks(hostConfig.HealthCheck.Endpoint);
 }
+
 app.MapControllers();
 ```
 
 **关键位置：**
-- `UseAuthorization()` 必须放在 `UseAuthentication()` 之后
-- `UseAsgardTenant()` 必须放在 `UseAuthentication()` 之后
+- `UseRouting()` 必须在认证链路之前，确保终结点信息可被认证授权系统识别
+- `UseAuthentication()` 在启用宿主内置 JWT 时接入
+- `UseAsgardTenant()` 必须位于认证之后，这样才能基于身份建立租户上下文
+- `UseAuthorization()` 需要在插件或外部中间件之后统一执行，避免扩展链路还没补充身份信息就提前鉴权
+- 不要再用旧版“认证和授权一起包进同一个 if，然后再执行租户中间件”的写法
 
 ## 代码模板
 
@@ -199,5 +213,6 @@ app.MapControllers();
 - ❌ 不要把认证、限流、健康检查这些宿主级功能写成每个插件各自一套
 - ❌ 不要打乱中间件顺序，尤其不要把 `UseAuthorization()` 放在 `UseAuthentication()` 之前
 - ❌ 不要把租户中间件放在认证之前
+- ❌ 不要假设关闭 `host.auth.enabled` 就等于整个授权链路失效，它只表示宿主不再代你注册默认 JWT Bearer
+- ❌ 不要忘记 `tenant_id` 可能由宿主在 token 校验后自动补充，不要自己再写一份互相冲突的补 claim 逻辑
 - ❌ Swagger 启用后，不要忘了给 API 添加 XML 注释说明
-```

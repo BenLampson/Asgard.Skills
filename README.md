@@ -13,10 +13,12 @@ Asgard 框架的 AI 技能仓库。
 
 ## 技能结构
 
-每个技能包含：
+每个技能通常包含：
 
 - `SKILL.md` - 技能描述和使用说明
 - `agents/` - AI 代理配置文件
+- `references/` - 从主仓库同步的关键源码参考
+- `templates/` - 推荐代码模板或落地片段
 - 其他相关资源文件
 
 ## 使用方式
@@ -29,6 +31,12 @@ Asgard 框架的 AI 技能仓库。
 - 分层职责固定为：`Controller -> Service -> Repository -> Entity`
 - 输出职责固定为：`Service` 产出 DTO，`Controller` 把 DTO 转成 VO 后，再统一包装成 `Response<T>`、`Response<object>`、`PageResponse<T>` 或 `CursorResponse<T>`
 - 不允许 Controller 直接返回未包装的 DTO / VO / 集合 / 基元 / 匿名对象
+
+当前还需要重点遵守的一条身份硬规则是：
+
+- Asgard 的统一用户信息模型必须建立在 `AbsAsgardUserInfo` 之上
+- IDP、认证测试、授权链路都必须复用同一套标准 claims 契约
+- 不允许在不同项目、不同插件、不同测试里各自发明“用户信息 JSON”或随意命名 claims
 
 ## 仓库边界
 

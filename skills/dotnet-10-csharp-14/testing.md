@@ -1,4 +1,4 @@
-# Testing Minimal APIs
+# Testing Web APIs
 
 ## WebApplicationFactory Setup
 
@@ -122,10 +122,22 @@ public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions
         if (string.IsNullOrEmpty(userId))
             return Task.FromResult(AuthenticateResult.NoResult());
 
-        var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, userId) };
+        var tenantId = Request.Headers["X-Test-TenantId"].FirstOrDefault();
+        var roles = Request.Headers["X-Test-Roles"].FirstOrDefault()?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? [];
+        var permissions = Request.Headers["X-Test-Permissions"].FirstOrDefault()?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? [];
 
-        var roles = Request.Headers["X-Test-Roles"].FirstOrDefault()?.Split(',') ?? [];
-        claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r.Trim())));
+        var userInfo = new DefaultAsgardUserInfo
+        {
+            Sub = userId,
+            UserId = userId,
+            TenantId = tenantId,
+            Roles = [.. roles],
+            Permissions = [.. permissions],
+            Scope = ["api"]
+        };
+
+        var claims = userInfo.ToClaims().ToList();
+        claims.Add(new Claim("name", Request.Headers["X-Test-Name"].FirstOrDefault() ?? userId));
 
         var identity = new ClaimsIdentity(claims, "Test");
         var principal = new ClaimsPrincipal(identity);
@@ -135,6 +147,8 @@ public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions
     }
 }
 ```
+
+在 Asgard 项目中，认证测试优先复用 `DefaultAsgardUserInfo` + `ToClaims()` 来构造标准 claims，避免测试环境和生产环境的身份结构漂移。
 
 ## Testing Database Operations
 

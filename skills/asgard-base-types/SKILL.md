@@ -1,6 +1,6 @@
 ---
 name: asgard-base-types
-description: Asgard 基类与基础模型 skill。Use when another AI needs the meaning, key fields, inheritance points, and correct usage timing of BaseController, Response models, PluginBase, AbsAsgardContext, HostConfig, PluginConfig, or other framework base abstractions.
+description: Asgard 基类与基础模型 skill。Use when another AI needs the meaning, key fields, inheritance points, and correct usage timing of BaseController, Response models, PluginBase, AbsAsgardContext, AbsAsgardUserInfo, HostConfig, PluginConfig, or other framework base abstractions.
 ---
 
 # Asgard 核心基类与基础模型
@@ -23,6 +23,7 @@ description: Asgard 基类与基础模型 skill。Use when another AI needs the 
 | `BaseController` | Web API 控制器基类 | 所有控制器继承它 |
 | `PluginBase` | 插件基类 | 所有插件继承它 |
 | `AbsAsgardContext` | 框架统一上下文 | 注入它获取缓存、消息、作业等能力 |
+| `AbsAsgardUserInfo` | 框架统一用户信息基类 | IDP、身份上下文、授权链路都围绕它建模 |
 | `Response<T>` | 统一 API 响应模型 | 所有非分页 API 默认返回此类型 |
 | `PageResponse<T>` | 页码分页响应 | 所有页码分页查询必须返回 |
 | `CursorResponse<T>` | 游标分页响应 | 所有游标分页/无限滚动查询必须返回 |
@@ -208,6 +209,32 @@ public class {ServiceName}Service : I{ServiceName}Service
 - 可选模块：未启用返回 `null`，调用方检查并优雅降级
 - 避免循环依赖：模块间通过 Context 间接引用，不直接注入
 
+## AbsAsgardUserInfo（统一用户信息基类）
+
+**作用：** 定义 Asgard 身份链路中的统一用户模型，负责在标准 claims 与运行时用户对象之间做双向转换。
+
+**标准字段：**
+
+| 字段 | 说明 |
+|------|------|
+| `Sub` | 用户主体标识，映射 `sub` |
+| `UserId` | 业务用户标识，映射 `user_id` |
+| `TenantId` | 租户标识，映射 `tenant_id` |
+| `Roles` | 角色列表，映射 `roles` |
+| `Permissions` | 权限列表，映射 `permissions` |
+| `Scope` | 作用域列表，映射 `scope` |
+| `UserMetadatas` | 用户元数据，映射 `userMetadatas` |
+| `TenantMetadata` | 租户元数据，映射 `tenantMetadata` |
+
+**关键规则：**
+
+- 需要扩展用户字段时，继承 `AbsAsgardUserInfo`
+- 需要支持自定义字段双向转换时，重写 `InitFromClaims()` 和 `ToClaims()`
+- 不要自己额外发明另一套“用户信息上下文模型”
+- 运行时读取当前用户时，优先通过 `IAsgardIdentityContext.UserInfo` 获取
+
+更完整的 IDP、claim 契约、测试写法请转到 `$asgard-identity-userinfo`。
+
 ## 代码模板
 
 完整模板见 `templates/` 目录：
@@ -223,6 +250,7 @@ public class {ServiceName}Service : I{ServiceName}Service
 - `ResponseStaticFactory.cs` - 响应工厂方法
 - `PluginBase.cs` - 插件基类
 - `AbsAsgardContext.cs` - 框架上下文抽象
+- `AbsAsgardUserInfo.cs` - 统一用户信息基类
 
 ## 不要这样做
 
@@ -233,3 +261,4 @@ public class {ServiceName}Service : I{ServiceName}Service
 - ❌ 不要把 Controller 对外统一响应的规则错误地下沉到 Service / Repository 层
 - ❌ 不要让 Controller 直接返回裸 `VO`、`DTO`、集合或基元值
 - ❌ 不要忘了检查 `AbsAsgardContext` 的属性是否为 `null`（因为模块可能未启用）
+- ❌ 不要绕开 `AbsAsgardUserInfo` 再单独造一套用户信息模型

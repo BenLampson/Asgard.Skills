@@ -49,6 +49,13 @@ description: AsgardContext 使用 skill。Use when a task needs AsgardContext, A
 | **调用方式** | 使用 `?.` 调用，必须做空检查 |
 | **降级策略** | 能力为 `null` 时，降级到直接查询/处理 |
 | **注册顺序** | 先注册其他模块，**最后**调用 `AddAsgardContext()` |
+| **身份模型** | `IdentityContext.UserInfo` 的统一模型是 `AbsAsgardUserInfo`，需要字段语义与 claim 契约时转到 `$asgard-identity-userinfo` |
+
+## `IdentityContext` 特别说明
+
+- `IdentityContext` 负责暴露当前请求的身份快照，而不是让业务层自己到处解析 `ClaimsPrincipal`
+- `IdentityContext.UserInfo` 的标准模型是 `AbsAsgardUserInfo`
+- 如果你需要定义 IDP 输出、用户字段扩展、claim 命名、测试登录态，请不要在本 skill 里自行发挥，直接切到 `$asgard-identity-userinfo`
 
 ## 代码示例
 

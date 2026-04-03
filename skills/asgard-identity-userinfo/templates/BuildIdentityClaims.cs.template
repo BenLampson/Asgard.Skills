@@ -1,0 +1,28 @@
+/// <summary>
+/// 构建 Asgard 标准身份 Claims。
+/// </summary>
+/// <returns>Claims 集合。</returns>
+private static IReadOnlyList<Claim> BuildClaims()
+{
+    var userInfo = new DefaultAsgardUserInfo
+    {
+        Sub = "{sub}",
+        UserId = "{userId}",
+        TenantId = "{tenantId}",
+        Roles = ["{role1}", "{role2}"],
+        Permissions = ["{permission1}", "{permission2}"],
+        Scope = ["api"],
+        UserMetadatas = new Dictionary<string, string>
+        {
+            ["department"] = "{department}"
+        },
+        TenantMetadata = new Dictionary<string, string>
+        {
+            ["region"] = "{region}"
+        }
+    };
+
+    var claims = userInfo.ToClaims().ToList();
+    claims.Add(new Claim("name", "{displayName}"));
+    return claims;
+}

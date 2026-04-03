@@ -38,6 +38,7 @@ description: Asgard Web API 开发 skill。Use when creating or updating control
 | **职责分离** | 控制器只做输入输出编排，业务逻辑放服务，数据访问放仓储 |
 | **模型位置** | 输入 DTO 默认位于 `Models/DTO`，输出 VO 默认位于 `Models/VO` |
 | **异常处理** | 启用 `UseAsgardExceptionHandler()` 全局处理，不要每个 Action 都写 try/catch |
+| **身份读取** | 当前用户、租户、角色、权限统一从 `AsgardContext.IdentityContext` 读取，不要在 Controller 里手写 claim 解析 |
 
 ## 强制要求
 
@@ -97,6 +98,85 @@ public class {ControllerName} : BaseController
     /// {ServiceSummary}
     /// </summary>
     private readonly I{ServiceName} _{serviceName};
+}
+```
+
+### 在 Controller 中获取当前用户信息
+
+继承 `BaseController` 之后，框架不会自动给你一个单独的 `CurrentUserId` 属性，但基类已经提供了 `AsgardContext`，所以正确入口是：
+
+```csharp
+/// <summary>
+/// 当前用户 ID。
+/// </summary>
+protected string? CurrentUserId => AsgardContext.IdentityContext?.UserInfo?.UserId;
+
+/// <summary>
+/// 当前用户主体标识。
+/// </summary>
+protected string CurrentSub => AsgardContext.IdentityContext?.UserInfo?.Sub ?? string.Empty;
+
+/// <summary>
+/// 当前租户 ID。
+/// </summary>
+protected string? CurrentTenantId => AsgardContext.IdentityContext?.UserInfo?.TenantId;
+```
+
+如果你的控制器需要频繁使用这些值，推荐在控制器内部定义成受保护属性，而不是每个 Action 都现写一遍长链式访问。
+
+如果你的项目存在后台任务、匿名接口或系统初始化流程，请额外定义一套明确的审计回退策略，例如统一回退到固定系统标识，而不是在不同模块里各自兜底。
+
+### 在新增/修改接口中写入审计字段
+
+对于常见的增删改查，`CreateBy`、`UpdateBy`、租户归属等字段不要手填常量，也不要漏写，应该从身份上下文读取：
+
+```csharp
+/// <summary>
+/// 创建数据。
+/// </summary>
+[HttpPost]
+[Authorize]
+[ProducesResponseType(typeof(Response<object>), StatusCodes.Status200OK)]
+[ProducesResponseType(typeof(Response<object>), StatusCodes.Status401Unauthorized)]
+public async Task<ActionResult<Response<object>>> CreateAsync([FromBody] Create{EntityName}Request request)
+{
+    var userId = AsgardContext.IdentityContext?.UserInfo?.UserId;
+    if (string.IsNullOrWhiteSpace(userId))
+    {
+        return Fail(StatusCodes.Status401Unauthorized, "当前登录信息无效，无法确定用户标识。");
+    }
+
+    await _{serviceName}.CreateAsync(new Create{EntityName}Input
+    {
+        Name = request.Name,
+        CreateBy = userId,
+        UpdateBy = userId,
+        TenantId = AsgardContext.IdentityContext?.UserInfo?.TenantId
+    });
+
+    return Success("创建成功");
+}
+```
+
+### 更推荐的做法：在 Service 层统一取身份
+
+如果审计字段在多个接口里都要用，推荐在 Service 层通过 `AbsAsgardContext` 统一读取，而不是散落在每个 Controller Action 中：
+
+```csharp
+public class {EntityName}Service(AbsAsgardContext asgardContext)
+{
+    private readonly AbsAsgardContext _asgardContext = asgardContext;
+
+    private string GetRequiredUserId()
+    {
+        var userId = _asgardContext.IdentityContext?.UserInfo?.UserId;
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            throw new UnauthorizedAccessException("当前登录信息无效，无法确定用户标识。");
+        }
+
+        return userId;
+    }
 }
 ```
 
@@ -182,6 +262,8 @@ app.UseAsgardExceptionHandler();
 - 为每个 Action 添加 `[ProducesResponseType]` 注释，便于 Swagger 生成文档
 - 详情类 / 单资源接口优先让 `200` 与 `404` 共享同一个 `Response<TVo>` 标注，减少 Swagger 类型语义漂移
 - 通过 `AsgardContext` 获取当前用户、租户等上下文信息
+- 增删改查涉及审计字段时，显式写入当前 `UserId`、必要时补充 `TenantId`
+- 如果多个接口都依赖当前用户信息，优先在 Service 层统一封装获取逻辑
 - 保持 Action 简洁，只做参数编排和结果返回
 - 控制器文件放在 `Controllers/`，不要另起结构
 - 需要文档时，在项目根目录 `app.yaml` 中开启 `host.swagger.enabled: true`
@@ -203,6 +285,10 @@ app.UseAsgardExceptionHandler();
 ❌ 不要在每个 Action 里重复编写大而全的 try/catch，交给全局异常处理
 
 ❌ 不要忘记注入 `AbsAsgardContext` 并传给基类构造函数
+
+❌ 不要在 CRUD 代码里漏掉 `CreateBy`、`UpdateBy` 等审计字段，只因为“不知道当前用户从哪里拿”
+
+❌ 不要在 Controller / Service 里到处直接手写 `HttpContext.User.FindFirst(...)`，统一走 `AsgardContext.IdentityContext`
 
 ## 参考资料
 

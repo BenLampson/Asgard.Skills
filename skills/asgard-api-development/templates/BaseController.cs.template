@@ -22,4 +22,14 @@ public class {ControllerName} : BaseController
     /// {ServiceSummary}
     /// </summary>
     private readonly I{ServiceName} _{serviceName};
+
+    /// <summary>
+    /// 当前用户 ID。
+    /// </summary>
+    protected string? CurrentUserId => AsgardContext.IdentityContext?.UserInfo?.UserId;
+
+    /// <summary>
+    /// 当前租户 ID。
+    /// </summary>
+    protected string? CurrentTenantId => AsgardContext.IdentityContext?.UserInfo?.TenantId;
 }

@@ -1,0 +1,60 @@
+namespace {Namespace}.Identity;
+
+/// <summary>
+/// 项目自定义用户信息模型。
+/// </summary>
+public class {UserInfoClassName} : AbsAsgardUserInfo
+{
+    /// <summary>
+    /// 用户显示名。
+    /// </summary>
+    public string? Name { get; set; }
+
+    /// <summary>
+    /// 头像地址。
+    /// </summary>
+    public string? AvatarUrl { get; set; }
+
+    /// <summary>
+    /// 从 Claims 初始化用户信息。
+    /// </summary>
+    /// <param name="claims">Claims 集合。</param>
+    public override void InitFromClaims(IEnumerable<Claim> claims)
+    {
+        base.InitFromClaims(claims);
+
+        foreach (var claim in claims)
+        {
+            switch (claim.Type)
+            {
+                case "name":
+                    Name = claim.Value;
+                    break;
+                case "avatar_url":
+                    AvatarUrl = claim.Value;
+                    break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// 转换为 Claims。
+    /// </summary>
+    /// <returns>Claims 集合。</returns>
+    public override IEnumerable<Claim> ToClaims()
+    {
+        var claims = base.ToClaims().ToList();
+
+        if (!string.IsNullOrWhiteSpace(Name))
+        {
+            claims.Add(new Claim("name", Name));
+        }
+
+        if (!string.IsNullOrWhiteSpace(AvatarUrl))
+        {
+            claims.Add(new Claim("avatar_url", AvatarUrl));
+        }
+
+        return claims;
+    }
+}
