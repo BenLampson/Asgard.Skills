@@ -72,6 +72,36 @@ Asgard 授权表达式、元数据匹配会直接读取 `AbsAsgardUserInfo` 中�
 
 这意味着 IDP 如果随意改字段名、改编码格式、改大小写，授权判断就会直接失效。
 
+### `roles` / `permissions` 为空的语义
+
+需要单独强调这个常见误区：
+
+- `roles: []`、`permissions: []` 在协议层是合法的，不属于违规 claim
+- 但这会导致大部分基于角色/权限的 `AsgardAuth` 表达式恒失败
+- 此时通常只能依赖 `scope`、`userMetadata`、`tenantMetadata` 或 DSL 其他条件放行
+
+建议：
+
+- 不要把“空数组合法”误解成“可用于常规受保护接口”
+- 若系统存在默认受保护接口，请为用户发放最小可用角色或权限集
+
+### 最小可用 claims 集（建议模板）
+
+以下模板可作为“可通过基础授权链路”的最小起点，按业务再增量扩展：
+
+```json
+{
+  "sub": "user-sub-001",
+  "user_id": "user-001",
+  "tenant_id": "11111111-2222-3333-4444-555555555555",
+  "roles": ["user"],
+  "permissions": ["profile.read"],
+  "scope": ["api"],
+  "userMetadatas": {},
+  "tenantMetadata": {}
+}
+```
+
 ## IDP 开发规范
 
 ### 应该怎么做
@@ -251,6 +281,15 @@ new Claim(ClaimTypes.Role, "Admin")
 - `AsgardIdentitySnapshot.cs` - 当前身份快照模型
 - `DefaultAsgardUserInfo.cs` - 默认用户信息实现
 - `DefaultAsgardIdentityContextResolver.cs` - 默认 claims 解析器
+
+## 源码锚点
+
+以下锚点用于快速核对“claim 语义 -> 身份快照 -> 授权执行”的链路：
+
+- `Common/Asgard.Abstractions.AspNetCore/Authorization/AsgardAuthAttributes.cs` - 角色/权限/元数据授权特性
+- `Common/Asgard.AspNetCore.Core/ServiceCollectionExtensions.cs` - `AddAsgardAspNetCore()` 注册授权处理器与策略
+- `Host/Asgard.Yggdrasil.AspNetCore/YggdrasilHostBuilder.Configurator.cs` - 默认 `UseAuthorization()` 接线
+- `Common/Asgard.Abstractions.AspNetCore/Host/AuthOptions.cs` - 宿主认证开关边界语义
 
 代码范本请参考 `templates/`：
 

@@ -3,8 +3,12 @@ namespace {Namespace}.Domains.Repositories;
 [Repository]
 public class {EntityName}Repository : AbsAsgardRepositoryBase<{EntityName}, {KeyType}>, I{EntityName}Repository
 {
-    public {EntityName}Repository(IFreeSql fsql, IMultiLevelCache cache, ILogger<{EntityName}Repository> logger)
-        : base(fsql, cache, logger)
+    public {EntityName}Repository(
+        IFreeSql fsql,
+        IMultiLevelCache cache,
+        ILogger<{EntityName}Repository> logger,
+        IAsgardIdentityContext identityContext)
+        : base(fsql, cache, logger, identityContext)
     {
     }
 }

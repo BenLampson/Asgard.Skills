@@ -44,6 +44,20 @@ description: Asgard ASP.NET Host 项目编写 skill。Use when creating, refacto
 | `ConfigureMiddleware` | 中间件管道构建 | 配置中间件顺序 |
 | `AfterHostBuild` | 宿主构建完成之后 | 最后调整，注册启动任务 |
 
+## 什么时候需要手写 `UseAuthentication()` / `UseAuthorization()`
+
+| 场景 | 是否通常需要手写 | 原因与建议 |
+|------|------------------|------------|
+| 使用 Yggdrasil 默认链路（`YggdrasilHost.CreateBuilder(...)`） | 否 | 默认管道已按顺序托底：按需 `UseAuthentication()`（受 `host.auth.enabled` 控制）+ 统一 `UseAuthorization()` |
+| 使用 `PluginWebAppDefaults.RunAsync<TPlugin>()` 且走宿主默认认证配置 | 否 | 与宿主默认链路一致，通常不需要重复补线 |
+| 完全自定义宿主管道或旁路宿主（不走默认配置链路） | 是 | 需要你自己显式保证认证与授权中间件接入和顺序 |
+| 宿主关闭默认 JWT（`host.auth.enabled: false`）但由插件/外部方案提供认证主体 | 视实现而定 | 若外部方案已接入认证中间件可不重复；若未接入，则需显式补 `UseAuthentication()`，`UseAuthorization()` 仍必须存在 |
+
+判定原则：
+
+- 不要把“示例里出现了中间件”理解成“所有项目都必须手写一遍”
+- 只有在你脱离默认链路、或默认链路无法覆盖你的认证实现时，才需要显式补线
+
 ## 推荐代码结构
 
 ### 最简启动（单个内建插件）
@@ -209,6 +223,16 @@ await app.RunAsync();
 - `YggdrasilHost.cs` - 静态入口
 - `YggdrasilHostBuilder.cs` - 构建器核心
 - `PluginWebAppDefaults.cs` - 默认快捷入口
+
+## 源码锚点
+
+以下锚点用于快速核对“默认链路是否已托底”：
+
+- `Host/Asgard.Yggdrasil.AspNetCore/YggdrasilHostBuilder.Configurator.cs` - 默认中间件顺序与统一 `UseAuthorization()`
+- `Host/Asgard.Yggdrasil.AspNetCore/YggdrasilHostBuilder.Services.cs` - `host.auth.enabled` 与默认 JWT 注册
+- `Common/Asgard.AspNetCore.Core/ServiceCollectionExtensions.cs` - `AddAsgardAspNetCore()` 授权策略注册
+- `Common/Asgard.Abstractions.AspNetCore/Authorization/AsgardAuthAttributes.cs` - `AsgardAuth` 特性绑定策略
+- `Common/Asgard.Abstractions.AspNetCore/Host/AuthOptions.cs` - `host.auth.enabled` 注释与语义
 
 代码范本请参考 `templates/` 目录：
 - `Program-Minimal.cs.template` - 最简入口

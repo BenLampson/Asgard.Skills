@@ -50,6 +50,7 @@ description: AsgardContext 使用 skill。Use when a task needs AsgardContext, A
 | **降级策略** | 能力为 `null` 时，降级到直接查询/处理 |
 | **注册顺序** | 先注册其他模块，**最后**调用 `AddAsgardContext()` |
 | **身份模型** | `IdentityContext.UserInfo` 的统一模型是 `AbsAsgardUserInfo`，需要字段语义与 claim 契约时转到 `$asgard-identity-userinfo` |
+| **租户注入** | `TenantScopeFactory` 创建的作用域会把租户写入身份上下文，随后 FreeSql 仓储和全局过滤会自动读取 |
 
 ## `IdentityContext` 特别说明
 
@@ -130,9 +131,9 @@ public async Task ExecuteAsync(CancellationToken cancellationToken)
     // 需要在后台任务中创建租户作用域时，使用 TenantScopeFactory
     if (AsgardContext.TenantScopeFactory != null)
     {
-        await using var scope = await AsgardContext.TenantScopeFactory.CreateScopeAsync({TenantId}, cancellationToken);
-        // 在作用域内执行业务逻辑，可以正确获取租户上下文
-        await {BusinessLogic}(scope.ServiceProvider, cancellationToken);
+        using var scope = AsgardContext.TenantScopeFactory.CreateScope({TenantId});
+        // 在作用域内执行业务逻辑时，FreeSql 全局过滤和 Asgard 仓储会自动读取当前租户
+        await {BusinessLogic}(cancellationToken);
     }
     else
     {
@@ -158,6 +159,7 @@ builder.Services.AddAsgardContext(); // 最后注入，确保所有服务都已�
 - 访问任何能力**先判空**，支持模块动态启用禁用
 - 判空后**一定要降级**，不要因为模块未启用就直接抛出异常
 - 需要后台租户作用域时，优先使用 `TenantScopeFactory`
+- 需要后台租户数据库访问时，先进入 `TenantScopeFactory.CreateScope(tenantId)`，再调用仓储或 `IFreeSql`
 - 在其他模块都注册完成后，再调用 `AddAsgardContext()`
 
 ## 不要这样做
@@ -171,6 +173,8 @@ builder.Services.AddAsgardContext(); // 最后注入，确保所有服务都已�
 ❌ 不要先注册 `AddAsgardContext()` 再注册其他模块，这样无法注入已注册的服务
 
 ❌ 不要跳过空检查直接使用 `!` 强制非空，模块未启用时会抛出空引用异常
+
+❌ 不要在后台任务里手动拼接默认租户过滤，如果已经进入 `TenantScopeFactory` 作用域，框架会自动把租户传给 FreeSql
 
 ## 参考资料
 

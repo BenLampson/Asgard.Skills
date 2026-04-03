@@ -7,9 +7,9 @@ public async Task ExecuteAsync(CancellationToken cancellationToken)
     // 需要在后台任务中创建租户作用域时，使用 TenantScopeFactory
     if (AsgardContext.TenantScopeFactory != null)
     {
-        await using var scope = await AsgardContext.TenantScopeFactory.CreateScopeAsync({TenantId}, cancellationToken);
-        // 在作用域内执行业务逻辑，可以正确获取租户上下文
-        await {BusinessLogic}(scope.ServiceProvider, cancellationToken);
+        using var scope = AsgardContext.TenantScopeFactory.CreateScope({TenantId});
+        // 在作用域内执行业务逻辑时，FreeSql 全局过滤和 Asgard 仓储会自动读取当前租户
+        await {BusinessLogic}(cancellationToken);
     }
     else
     {

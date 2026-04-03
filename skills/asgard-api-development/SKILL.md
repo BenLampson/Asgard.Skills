@@ -40,6 +40,15 @@ description: Asgard Web API 开发 skill。Use when creating or updating control
 | **异常处理** | 启用 `UseAsgardExceptionHandler()` 全局处理，不要每个 Action 都写 try/catch |
 | **身份读取** | 当前用户、租户、角色、权限统一从 `AsgardContext.IdentityContext` 读取，不要在 Controller 里手写 claim 解析 |
 
+## 框架授权 vs 业务租户边界
+
+必须明确区分两层责任，避免“有 `[Authorize]` 就万事大吉”的误解：
+
+- `AsgardAuth` / `[Authorize]` 负责声明式权限判断（你有没有访问某类能力的资格）
+- 业务代码仍需自行校验资源归属边界（例如 path/query/body 中的 `tenantId` 是否与当前身份一致）
+
+换句话说，框架不会自动替你完成“请求参数租户 与 当前身份租户”的一致性校验。多租户接口必须显式做这一步。
+
 ## 强制要求
 
 以下要求属于 Asgard Web API 的硬约束，不允许为了“方便”而放宽：
@@ -155,6 +164,58 @@ public async Task<ActionResult<Response<object>>> CreateAsync([FromBody] Create{
     });
 
     return Success("创建成功");
+}
+```
+
+### 多租户接口安全示例（标准写法）
+
+以下写法用于“租户用户只能访问自己租户”的默认规则：
+
+```csharp
+[HttpGet("{tenantId}/orders")]
+[AsgardAuthAnyPermission("orders.read")]
+public async Task<ActionResult<Response<List<OrderVo>>>> GetOrdersAsync([FromRoute] string tenantId)
+{
+    var effectiveTenantId = AsgardContext.IdentityContext?.UserInfo?.TenantId;
+    if (string.IsNullOrWhiteSpace(effectiveTenantId))
+    {
+        return Fail<List<OrderVo>>(StatusCodes.Status401Unauthorized, "当前身份缺少租户信息。");
+    }
+
+    if (!string.Equals(tenantId, effectiveTenantId, StringComparison.OrdinalIgnoreCase))
+    {
+        return Fail<List<OrderVo>>(StatusCodes.Status403Forbidden, "禁止跨租户访问。");
+    }
+
+    var items = await _orderService.GetByTenantAsync(effectiveTenantId);
+    return Success(items);
+}
+```
+
+### 多租户接口安全示例（平台管理员例外）
+
+如果业务允许“平台管理员跨租户”，必须把例外条件写成显式权限分支：
+
+```csharp
+[HttpGet("{tenantId}/orders")]
+[AsgardAuthAnyPermission("orders.read", "platform.orders.read")]
+public async Task<ActionResult<Response<List<OrderVo>>>> GetOrdersAsync([FromRoute] string tenantId)
+{
+    var userInfo = AsgardContext.IdentityContext?.UserInfo;
+    if (string.IsNullOrWhiteSpace(userInfo?.TenantId))
+    {
+        return Fail<List<OrderVo>>(StatusCodes.Status401Unauthorized, "当前身份缺少租户信息。");
+    }
+
+    var canCrossTenant = userInfo.Permissions.Contains("platform.orders.read", StringComparer.OrdinalIgnoreCase);
+    if (!canCrossTenant &&
+        !string.Equals(tenantId, userInfo.TenantId, StringComparison.OrdinalIgnoreCase))
+    {
+        return Fail<List<OrderVo>>(StatusCodes.Status403Forbidden, "禁止跨租户访问。");
+    }
+
+    var items = await _orderService.GetByTenantAsync(tenantId);
+    return Success(items);
 }
 ```
 
@@ -296,6 +357,15 @@ app.UseAsgardExceptionHandler();
 - `BaseController.cs` - 基础控制器实现
 - `Response.cs` - 统一响应工厂
 - `AsgardExceptionHandlerExtensions.cs` - 异常处理扩展
+
+## 源码锚点
+
+以下锚点用于核对“鉴权能力边界”与“框架职责边界”：
+
+- `Common/Asgard.Abstractions.AspNetCore/Authorization/AsgardAuthAttributes.cs` - `AsgardAuth*` 特性与策略绑定
+- `Common/Asgard.AspNetCore.Core/ServiceCollectionExtensions.cs` - `AddAsgardAspNetCore()` 注册授权能力
+- `Host/Asgard.Yggdrasil.AspNetCore/YggdrasilHostBuilder.Configurator.cs` - 默认授权中间件接线
+- `Common/Asgard.Abstractions.AspNetCore/Host/AuthOptions.cs` - `host.auth.enabled` 边界语义
 
 结构规范请参考 `$asgard-plugin-structure`。
 

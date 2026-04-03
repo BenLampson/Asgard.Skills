@@ -98,6 +98,27 @@ auth:
 - 宿主会在 `OnTokenValidated` 时检查当前身份是否已有 `tenant_id`
 - 如果 token 中没有 `tenant_id`，但 `issuer` 能匹配 `issuerTemplate`，宿主会自动补上 `tenant_id` claim
 
+### 框架托底事实
+
+为了避免把“模板示例”误读成“必须手写全套安全注册”，这里明确框架默认托底行为：
+
+- `AddAsgardAspNetCore()` 会自动注册 `AsgardAuth` policy（`AsgardAuthConstants.PolicyName`）
+- Yggdrasil 默认管道会统一执行 `UseAuthorization()`
+- 因此，使用 `AsgardAuth*` 特性时，通常不需要再额外手写 `AddAuthorization()` 才能生效
+
+### `host.auth.enabled` 语义对照
+
+| 配置值 | 语义 | 影响范围 |
+|--------|------|----------|
+| `true` | 宿主注册默认 JWT Bearer，并接入 `UseAuthentication()` | 启用宿主内置认证主体构建 |
+| `false` | 仅关闭宿主默认 JWT 与对应 `UseAuthentication()` 接线 | 不关闭授权系统、不移除 `AsgardAuth` policy、不停用 `UseAuthorization()` |
+
+补充说明：
+
+- `false` 不是“禁用所有认证授权能力”，而是“宿主不再代管默认 JWT”
+- 认证主体可以改由插件、网关、反向代理、外部中间件等方案提供
+- 只要请求上最终存在可用身份主体，`AsgardAuth` 仍会参与授权计算
+
 ### 认证、身份上下文与租户的关系
 
 需要把这几个概念分清：
@@ -206,6 +227,16 @@ app.MapControllers();
 需要查看配置定义或验证规则时读 `references/`：
 - `HostConfig.cs` - 宿主根配置类
 - `StaticFileHostOptions.cs` - 静态文件配置选项
+
+## 源码锚点
+
+以下锚点用于减少二次解读偏差（按“事实 -> 代码”快速回查）：
+
+- `Common/Asgard.AspNetCore.Core/ServiceCollectionExtensions.cs` - `AddAsgardAspNetCore()` 注册 `AsgardAuth` policy
+- `Host/Asgard.Yggdrasil.AspNetCore/YggdrasilHostBuilder.Services.cs` - `host.auth.enabled` 与默认 JWT 注册逻辑
+- `Host/Asgard.Yggdrasil.AspNetCore/YggdrasilHostBuilder.Configurator.cs` - 中间件顺序与统一 `UseAuthorization()`
+- `Common/Asgard.Abstractions.AspNetCore/Authorization/AsgardAuthAttributes.cs` - `AsgardAuth*` 特性统一使用 `AsgardAuth` policy
+- `Common/Asgard.Abstractions.AspNetCore/Host/AuthOptions.cs` - `host.auth.enabled` 配置语义
 
 ## 不要这样做
 

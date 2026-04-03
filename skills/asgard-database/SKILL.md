@@ -9,6 +9,11 @@ description: Asgard 数据库模块 skill。Use when configuring database.enable
 
 本模块负责配置数据库连接，基于 FreeSQL ORM 框架提供数据访问能力。
 
+当前仓库的数据库访问有两条必须统一遵守的约定：
+
+- 仓储实现统一继承 `AbsAsgardRepositoryBase<TEntity, TKey>`，不要再自建另一套 FreeSql 仓储基类
+- FreeSql 的租户隔离统一通过框架内置 `GlobalFilter` + 身份上下文完成，租户实体不要在每个查询里重复手写 `TenantId` 条件
+
 结构与规则边界：
 
 - 实体默认位于 `Models/Entities`
@@ -41,9 +46,20 @@ database:
 **配置注册示例：**
 
 ```csharp
+// 宿主如果需要请求态租户过滤，先注册 Asgard ASP.NET Core 身份/租户能力
+_ = builder.Services.AddAsgardAspNetCore();
+
 // 从配置绑定并注册数据库服务
 var dbConfig = builder.Configuration.Get<DatabaseConfig>();
 _ = builder.Services.AddDatabase(dbConfig);
+```
+
+如果是 HTTP 宿主，还需要在认证后启用：
+
+```csharp
+app.UseAuthentication();
+app.UseAsgardTenant();
+app.UseAuthorization();
 ```
 
 ## 支持的数据库
@@ -63,7 +79,7 @@ _ = builder.Services.AddDatabase(dbConfig);
 | 层级 | 职责 | 做法 |
 |------|------|------|
 | **实体层** | 原始数据库对象 | 放在 `Models/Entities` |
-| **仓储层** | 数据访问、CRUD、查询 | 默认放在 `Domains/IRepositories` 与 `Domains/Repositories`，实现类继承 `AbsAsgardRepositoryBase<TEntity, TKey>`，加 `[Repository]` 特性 |
+| **仓储层** | 数据访问、CRUD、查询 | 默认放在 `Domains/IRepositories` 与 `Domains/Repositories`，实现类继承 `AbsAsgardRepositoryBase<TEntity, TKey>`，加 `[Repository]` 特性，并注入 `IAsgardIdentityContext` 以启用租户写入回填 |
 | **业务服务层** | 跨仓储编排、事务、业务逻辑 | 注入多个仓储，处理业务流程 |
 | **控制器层** | API 入口 | 只调用业务服务，不直接访问仓储 |
 
@@ -75,12 +91,30 @@ namespace {Namespace}.Domains.Repositories;
 [Repository]
 public class {EntityName}Repository : AbsAsgardRepositoryBase<{EntityName}, {KeyType}>, I{EntityName}Repository
 {
-    public {EntityName}Repository(IFreeSql fsql, IMultiLevelCache cache, ILogger<{EntityName}Repository> logger)
-        : base(fsql, cache, logger)
+    public {EntityName}Repository(
+        IFreeSql fsql,
+        IMultiLevelCache cache,
+        ILogger<{EntityName}Repository> logger,
+        IAsgardIdentityContext identityContext)
+        : base(fsql, cache, logger, identityContext)
     {
     }
 }
 ```
+
+### 多租户约定
+
+- 查询、更新、删除：只要实体继承 `AbsAsgardTenantEntity`，FreeSql 会通过框架注册的 `GlobalFilter` 自动带当前租户条件
+- 新增、更新：如果租户实体的 `TenantId` 为空，`AbsAsgardRepositoryBase` 会从 `IAsgardIdentityContext` 自动回填当前租户
+- HTTP 请求：租户值来自 `UseAsgardTenant()` 写入的请求身份上下文
+- 后台任务：租户值来自 `ITenantScopeFactory.CreateScope(tenantId)` 创建的作用域
+- 平台级流程：当前租户为空时，不会附加租户过滤，也不会强行写入 `TenantId`
+
+推荐做法：
+
+- 租户实体统一继承 `AbsAsgardTenantEntity`
+- 仓储统一使用框架仓储基类，不要在每个方法里重复 `Where(x => x.TenantId == ...)`
+- 只有在明确需要跨租户或禁用过滤时，才在非常局部的位置做特殊处理，并补注释说明原因
 
 ## 注册方式
 
@@ -102,6 +136,7 @@ public class {EntityName}Repository : AbsAsgardRepositoryBase<{EntityName}, {Key
 需要查看接口定义时读 `references/`：
 - `DatabaseConfig.cs` - 数据库配置类定义
 - `DatabaseServiceCollectionExtensions.cs` - `AddDatabase` 扩展方法
+- `RepositoryInheritance.cs.template` - 标准仓储继承方式
 
 ## 不要这样做
 
@@ -111,3 +146,5 @@ public class {EntityName}Repository : AbsAsgardRepositoryBase<{EntityName}, {Key
 - ❌ 不要为同一模块建立多套不一致的数据访问入口
 - ❌ 不要把连接字符串硬编码在代码里，通过配置覆盖
 - ❌ 不要自行定义另一套实体或仓储目录结构
+- ❌ 不要为租户实体重复手写 `TenantId` 过滤作为默认路径，这会和框架全局过滤割裂
+- ❌ 不要省略仓储构造函数里的 `IAsgardIdentityContext`，否则租户实体写入时无法自动回填 `TenantId`
