@@ -144,7 +144,7 @@ Asgard 授权表达式、元数据匹配会直接读取 `AbsAsgardUserInfo` 中�
 - 不要把租户信息只放在自定义 claim 里，却不写 `tenant_id`
 - 不要在不同 IDP、不同插件里各自发明 `userInfo` JSON 结构
 - 不要在业务层重复解析 `ClaimsPrincipal`，导致每个项目都写一份“用户信息还原器”
-- 不要输出 `azp`、`appid`、`app_id`、`tokenType`、`cty`、`typ` 之类旧字段，框架不再兼容
+- 不要输出任何非官方 claim 名，框架只认标准字段
 
 ## 关于 OIDC `userinfo` 的边界
 
