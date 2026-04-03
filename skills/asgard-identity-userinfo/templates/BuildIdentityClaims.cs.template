@@ -23,6 +23,7 @@ private static IReadOnlyList<Claim> BuildClaims()
     };
 
     var claims = userInfo.ToClaims().ToList();
+    claims.Add(new Claim(AsgardClaimTypes.TokenType, nameof(TokenType.UserLogin)));
     claims.Add(new Claim("name", "{displayName}"));
     return claims;
 }

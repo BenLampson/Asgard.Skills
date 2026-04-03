@@ -1,0 +1,18 @@
+/// <summary>
+/// 构建 Asgard 标准后端服务 Claims。
+/// </summary>
+/// <returns>Claims 集合。</returns>
+private static IReadOnlyList<Claim> BuildBackendServiceClaims()
+{
+    var userInfo = new DefaultAsgardUserInfo
+    {
+        Sub = "{serviceSub}",
+        ClientId = "{clientId}",
+        TenantId = "{tenantId}",
+        Scope = ["{scope1}", "{scope2}"]
+    };
+
+    var claims = userInfo.ToClaims().ToList();
+    claims.Add(new Claim(AsgardClaimTypes.TokenType, nameof(TokenType.BackendService)));
+    return claims;
+}

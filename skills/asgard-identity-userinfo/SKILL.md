@@ -60,8 +60,8 @@ description: Asgard 身份用户信息 skill。Use when a task needs AbsAsgardUs
 - 然后调用 `InitFromClaims(...)` 还原基础字段
 - 如果 `TenantId` 能解析成 `Guid`，用户类型会被判定为 `UserType.Tenant`
 - 如果 `TenantId` 为空或不是合法 `Guid`，默认会判定为 `UserType.Platform`
-- `token_type` 优先识别官方值 `UserLogin` / `BackendService`；历史别名只作为兼容输入，不应继续作为正式输出
-- `client_id` 是后端服务令牌的官方调用方标识；`azp` / `appid` / `app_id` 只作为兼容别名
+- `token_type` 只识别官方值 `UserLogin` / `BackendService`
+- `client_id` 是后端服务令牌唯一认可的调用方标识
 
 ### 后端服务令牌约定
 
@@ -134,7 +134,8 @@ Asgard 授权表达式、元数据匹配会直接读取 `AbsAsgardUserInfo` 中�
 1. 登录成功后，先构建一个继承自 `AbsAsgardUserInfo` 的对象，或者直接使用 `DefaultAsgardUserInfo`
 2. 把标准字段填满
 3. 通过 `ToClaims()` 生成标准 claims
-4. 如果有扩展字段，再追加自定义 claim，或者在子类重写 `ToClaims()` / `InitFromClaims()`
+4. 显式补上 `token_type`
+5. 如果有扩展字段，再追加自定义 claim，或者在子类重写 `ToClaims()` / `InitFromClaims()`
 
 ### 不应该怎么做
 
@@ -143,6 +144,7 @@ Asgard 授权表达式、元数据匹配会直接读取 `AbsAsgardUserInfo` 中�
 - 不要把租户信息只放在自定义 claim 里，却不写 `tenant_id`
 - 不要在不同 IDP、不同插件里各自发明 `userInfo` JSON 结构
 - 不要在业务层重复解析 `ClaimsPrincipal`，导致每个项目都写一份“用户信息还原器”
+- 不要输出 `azp`、`appid`、`app_id`、`tokenType`、`cty`、`typ` 之类旧字段，框架不再兼容
 
 ## 关于 OIDC `userinfo` 的边界
 
@@ -320,6 +322,7 @@ new Claim(ClaimTypes.Role, "Admin")
 
 - `CustomAsgardUserInfo.cs.template` - 自定义用户信息扩展模板
 - `BuildIdentityClaims.cs.template` - IDP / 测试构造标准 claims 模板
+- `BuildBackendServiceClaims.cs.template` - IDP / 测试构造后端服务 claims 模板
 
 ## 不要这样做
 

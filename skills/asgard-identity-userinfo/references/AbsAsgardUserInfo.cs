@@ -11,6 +11,8 @@ public abstract class AbsAsgardUserInfo
 
     public string? TenantId { get; set; }
 
+    public string? ClientId { get; set; }
+
     public List<string> Roles { get; set; } = new();
 
     public List<string> Permissions { get; set; } = new();
@@ -29,28 +31,31 @@ public abstract class AbsAsgardUserInfo
         {
             switch (claim.Type)
             {
-                case "sub":
+                case AsgardClaimTypes.Sub:
                     Sub = claim.Value;
                     break;
-                case "user_id":
+                case AsgardClaimTypes.UserId:
                     UserId = claim.Value;
                     break;
-                case "tenant_id":
+                case AsgardClaimTypes.TenantId:
                     TenantId = claim.Value;
                     break;
-                case "roles":
+                case AsgardClaimTypes.ClientId:
+                    ClientId = claim.Value;
+                    break;
+                case AsgardClaimTypes.Roles:
                     Roles = DeserializeList(claim.Value) ?? new();
                     break;
-                case "permissions":
+                case AsgardClaimTypes.Permissions:
                     Permissions = DeserializeList(claim.Value) ?? new();
                     break;
-                case "scope":
+                case AsgardClaimTypes.Scope:
                     Scope = DeserializeList(claim.Value) ?? new();
                     break;
-                case "userMetadatas":
+                case AsgardClaimTypes.UserMetadatas:
                     UserMetadatas = DeserializeDictionary(claim.Value) ?? new();
                     break;
-                case "tenantMetadata":
+                case AsgardClaimTypes.TenantMetadata:
                     TenantMetadata = DeserializeDictionary(claim.Value) ?? new();
                     break;
             }
@@ -61,23 +66,25 @@ public abstract class AbsAsgardUserInfo
     {
         var claims = new List<Claim>
         {
-            new("sub", Sub)
+            new(AsgardClaimTypes.Sub, Sub)
         };
 
         if (!string.IsNullOrEmpty(UserId))
-            claims.Add(new("user_id", UserId));
+            claims.Add(new(AsgardClaimTypes.UserId, UserId));
         if (!string.IsNullOrEmpty(TenantId))
-            claims.Add(new("tenant_id", TenantId));
+            claims.Add(new(AsgardClaimTypes.TenantId, TenantId));
+        if (!string.IsNullOrEmpty(ClientId))
+            claims.Add(new(AsgardClaimTypes.ClientId, ClientId));
         if (Roles.Count > 0)
-            claims.Add(new("roles", System.Text.Json.JsonSerializer.Serialize(Roles, JsonSerializerOptionsFactory.Default)));
+            claims.Add(new(AsgardClaimTypes.Roles, System.Text.Json.JsonSerializer.Serialize(Roles, JsonSerializerOptionsFactory.Default)));
         if (Permissions.Count > 0)
-            claims.Add(new("permissions", System.Text.Json.JsonSerializer.Serialize(Permissions, JsonSerializerOptionsFactory.Default)));
+            claims.Add(new(AsgardClaimTypes.Permissions, System.Text.Json.JsonSerializer.Serialize(Permissions, JsonSerializerOptionsFactory.Default)));
         if (Scope.Count > 0)
-            claims.Add(new("scope", System.Text.Json.JsonSerializer.Serialize(Scope, JsonSerializerOptionsFactory.Default)));
+            claims.Add(new(AsgardClaimTypes.Scope, System.Text.Json.JsonSerializer.Serialize(Scope, JsonSerializerOptionsFactory.Default)));
         if (UserMetadatas.Count > 0)
-            claims.Add(new("userMetadatas", System.Text.Json.JsonSerializer.Serialize(UserMetadatas, JsonSerializerOptionsFactory.Default)));
+            claims.Add(new(AsgardClaimTypes.UserMetadatas, System.Text.Json.JsonSerializer.Serialize(UserMetadatas, JsonSerializerOptionsFactory.Default)));
         if (TenantMetadata.Count > 0)
-            claims.Add(new("tenantMetadata", System.Text.Json.JsonSerializer.Serialize(TenantMetadata, JsonSerializerOptionsFactory.Default)));
+            claims.Add(new(AsgardClaimTypes.TenantMetadata, System.Text.Json.JsonSerializer.Serialize(TenantMetadata, JsonSerializerOptionsFactory.Default)));
 
         return claims;
     }
