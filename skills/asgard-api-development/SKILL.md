@@ -39,6 +39,7 @@ description: Asgard Web API 开发 skill。Use when creating or updating control
 | **模型位置** | 输入 DTO 默认位于 `Models/DTO`，输出 VO 默认位于 `Models/VO` |
 | **异常处理** | 启用 `UseAsgardExceptionHandler()` 全局处理，不要每个 Action 都写 try/catch |
 | **身份读取** | 当前用户、租户、角色、权限统一从 `AsgardContext.IdentityContext` 读取，不要在 Controller 里手写 claim 解析 |
+| **授权入口** | 需要按 `token_type`、角色、权限、scope、metadata 控制访问时，优先使用 `AsgardAuth*` 或 `AsgardAuthMatch(...)` |
 
 ## 框架授权 vs 业务租户边界
 
@@ -46,6 +47,14 @@ description: Asgard Web API 开发 skill。Use when creating or updating control
 
 - `AsgardAuth` / `[Authorize]` 负责声明式权限判断（你有没有访问某类能力的资格）
 - 业务代码仍需自行校验资源归属边界（例如 path/query/body 中的 `tenantId` 是否与当前身份一致）
+
+如果你需要区分 JWT 中的令牌类型，当前 `AsgardAuthMatch(...)` 已支持直接判断：
+
+```csharp
+[AsgardAuthMatch("token_type = 'BackendService'")]
+```
+
+不需要再把 `token_type` 手工复制到 `metadata.token_type` 才能参与授权。
 
 换句话说，框架不会自动替你完成“请求参数租户 与 当前身份租户”的一致性校验。多租户接口必须显式做这一步。
 
@@ -323,6 +332,7 @@ app.UseAsgardExceptionHandler();
 - 为每个 Action 添加 `[ProducesResponseType]` 注释，便于 Swagger 生成文档
 - 详情类 / 单资源接口优先让 `200` 与 `404` 共享同一个 `Response<TVo>` 标注，减少 Swagger 类型语义漂移
 - 通过 `AsgardContext` 获取当前用户、租户等上下文信息
+- 需要区分用户登录令牌与后端服务令牌时，优先用 `token_type = 'UserLogin'` / `token_type = 'BackendService'`
 - 增删改查涉及审计字段时，显式写入当前 `UserId`、必要时补充 `TenantId`
 - 如果多个接口都依赖当前用户信息，优先在 Service 层统一封装获取逻辑
 - 保持 Action 简洁，只做参数编排和结果返回
@@ -363,10 +373,12 @@ app.UseAsgardExceptionHandler();
 以下锚点用于核对“鉴权能力边界”与“框架职责边界”：
 
 - `Common/Asgard.Abstractions.AspNetCore/Authorization/AsgardAuthAttributes.cs` - `AsgardAuth*` 特性与策略绑定
+- `Common/Asgard.AspNetCore.Core/Authorization/AsgardAuthExpressionParser.Parser.cs` - `AsgardAuthMatch(...)` 支持的字段白名单
 - `Common/Asgard.AspNetCore.Core/ServiceCollectionExtensions.cs` - `AddAsgardAspNetCore()` 注册授权能力
 - `Host/Asgard.Yggdrasil.AspNetCore/YggdrasilHostBuilder.Configurator.cs` - 默认授权中间件接线
 - `Common/Asgard.Abstractions.AspNetCore/Host/AuthOptions.cs` - `host.auth.enabled` 边界语义
 
 结构规范请参考 `$asgard-plugin-structure`。
+授权表达式细节请参考 `$asgard-auth-authorization`。
 
 代码范本请参考 `templates/` 目录，可直接替换占位符使用。

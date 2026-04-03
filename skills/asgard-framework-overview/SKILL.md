@@ -27,6 +27,7 @@ description: Asgard 框架总览与路由 skill。Use when working with the Asga
 - 配置体系、`app.yaml`、`plugin.yaml`、`ConfigPath`：使用 `$asgard-configuration`。
 - `host.staticFiles`、`host.auth`、`host.swagger`、限流、健康检查：使用 `$asgard-host-features`。
 - Web API、控制器、统一响应：使用 `$asgard-api-development`。
+- `AsgardAuth`、授权 DSL、`token_type` / 角色 / 权限 / metadata 授权：使用 `$asgard-auth-authorization`。
 - 插件实现、插件约定、内建插件与外部插件：使用 `$asgard-plugin-development`。
 - 宿主钩子、插件阶段、状态机：使用 `$asgard-plugin-lifecycle`。
 - `AbsAsgardContext` 与公共能力获取：使用 `$asgard-context-usage`。
