@@ -31,7 +31,7 @@ description: Asgard 身份用户信息 skill。Use when a task needs AbsAsgardUs
 |------|------|
 | **统一基类** | 所有 Asgard 用户信息模型都必须以 `AbsAsgardUserInfo` 为基类，不要自己另起一套“用户上下文 DTO” |
 | **统一入口** | 运行时读取当前用户信息时，优先从 `IAsgardIdentityContext` / `AbsAsgardContext.IdentityContext` 获取 |
-| **统一 claim 名** | 框架内置识别的 claim 是 `sub`、`user_id`、`tenant_id`、`roles`、`permissions`、`scope`、`userMetadatas`、`tenantMetadata` |
+| **统一 claim 名** | 框架内置识别的 claim 是 `sub`、`user_id`、`tenant_id`、`client_id`、`token_type`、`roles`、`permissions`、`scope`、`userMetadatas`、`tenantMetadata` |
 | **集合编码** | `roles`、`permissions`、`scope` 必须是 JSON 数组字符串，不是逗号拼接字符串 |
 | **字典编码** | `userMetadatas`、`tenantMetadata` 必须是 JSON 对象字符串 |
 | **租户判定** | 默认解析器会把可解析的 `tenant_id` 视为租户用户；没有合法租户 ID 时会落到 `UserType.Platform` |
@@ -45,6 +45,7 @@ description: Asgard 身份用户信息 skill。Use when a task needs AbsAsgardUs
 | `Sub` | 用户主体标识 | 必填，`ToClaims()` 一定会输出 `sub` |
 | `UserId` | 业务用户 ID | 可选，映射 `user_id` |
 | `TenantId` | 租户 ID | 可选，映射 `tenant_id` |
+| `ClientId` | 后端服务调用方 ID | 可选，映射 `client_id` |
 | `Roles` | 角色列表 | 映射 `roles`，JSON 数组 |
 | `Permissions` | 权限列表 | 映射 `permissions`，JSON 数组 |
 | `Scope` | 作用域列表 | 映射 `scope`，JSON 数组 |
@@ -59,6 +60,18 @@ description: Asgard 身份用户信息 skill。Use when a task needs AbsAsgardUs
 - 然后调用 `InitFromClaims(...)` 还原基础字段
 - 如果 `TenantId` 能解析成 `Guid`，用户类型会被判定为 `UserType.Tenant`
 - 如果 `TenantId` 为空或不是合法 `Guid`，默认会判定为 `UserType.Platform`
+- `token_type` 优先识别官方值 `UserLogin` / `BackendService`；历史别名只作为兼容输入，不应继续作为正式输出
+- `client_id` 是后端服务令牌的官方调用方标识；`azp` / `appid` / `app_id` 只作为兼容别名
+
+### 后端服务令牌约定
+
+Asgard 现在正式收口了后端服务令牌的最小契约：
+
+- 必填：`sub`、`client_id`、`token_type=BackendService`
+- 可选：`tenant_id`、`scope`
+- 禁止：`user_id`
+
+如果认证后的后端服务令牌缺少 `client_id`，或者同时带了 `user_id`，框架会在认证阶段直接判定为不符合约定。
 
 ### 授权行为
 
@@ -94,11 +107,23 @@ Asgard 授权表达式、元数据匹配会直接读取 `AbsAsgardUserInfo` 中�
   "sub": "user-sub-001",
   "user_id": "user-001",
   "tenant_id": "11111111-2222-3333-4444-555555555555",
+  "token_type": "UserLogin",
   "roles": ["user"],
   "permissions": ["profile.read"],
   "scope": ["api"],
   "userMetadatas": {},
   "tenantMetadata": {}
+}
+```
+
+后端服务令牌最小示例：
+
+```json
+{
+  "sub": "svc-orders-job",
+  "client_id": "orders-job-runner",
+  "token_type": "BackendService",
+  "scope": ["jobs.execute"]
 }
 ```
 
