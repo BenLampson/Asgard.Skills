@@ -116,7 +116,7 @@ description: Asgard 插件项目结构 skill。Use when scaffolding a new Asgard
 - `wwwroot/`
   放静态资源
 - `Controllers/`
-  放所有 API 声明
+  放所有 API 声明；Controller 只负责输入输出编排，把 Service 返回的 DTO 转成 VO 后，再统一包装成 `Response<T>` / `PageResponse<T>` / `CursorResponse<T>` 对外返回
 - `Mapper/`
   放对象映射器
 - `Models/VO/`
@@ -159,6 +159,15 @@ Controller → 转 VO 【给前端展示】
 ```
 
 实际代码访问时，`Service` 仍然必须通过 `Repository` 访问 `Entity` 与数据库。上面的输出链路强调的是模型转换职责，不表示可以跳过仓储层。
+
+**补充强制要求：**
+
+- `Controller` 层对外输出时，必须把结果包装成 Asgard 统一响应模型
+- `Service` 层内部返回仍然遵循 DTO 边界，不直接承担统一响应壳职责
+- 非分页接口使用 `Response<T>` / `Response<object>`
+- 页码分页接口使用 `PageResponse<T>`
+- 游标分页接口使用 `CursorResponse<T>`
+- 不允许在 `Controllers/` 中直接返回裸 `VO`、裸集合或自定义另一套响应壳
 
 进入链路按反方向理解：
 

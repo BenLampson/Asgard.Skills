@@ -23,6 +23,13 @@ Asgard 框架的 AI 技能仓库。
 
 本仓库作为 Asgard 主项目的子目录，由 AI 助手自动加载使用。技能定义会根据 Asgard 框架的演进持续更新。
 
+当前需要重点遵守的一条 API 硬规则是：
+
+- 所有 Asgard Controller 都必须继承 `BaseController`
+- 分层职责固定为：`Controller -> Service -> Repository -> Entity`
+- 输出职责固定为：`Service` 产出 DTO，`Controller` 把 DTO 转成 VO 后，再统一包装成 `Response<T>`、`Response<object>`、`PageResponse<T>` 或 `CursorResponse<T>`
+- 不允许 Controller 直接返回未包装的 DTO / VO / 集合 / 基元 / 匿名对象
+
 ## 仓库边界
 
 `Asgard Skills` 作为独立维护的 Git 仓库存在，日常可按 Asgard 主项目的子模块 / 子仓库方式接入。

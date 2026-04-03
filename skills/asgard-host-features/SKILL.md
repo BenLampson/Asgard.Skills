@@ -101,7 +101,8 @@ swagger:
 
 **推荐做法：**
 - 为所有控制器和操作添加 XML 注释
-- 统一使用 `Response<T>` 响应格式
+- Controller 对外返回统一使用 Asgard 的 `Response` 家族响应模型
+- 非分页接口使用 `Response<T>` / `Response<object>`，分页接口使用 `PageResponse<T>` / `CursorResponse<T>`
 - Swagger 会自动包含注释信息
 
 ### 全局限流（host.rateLimiting）

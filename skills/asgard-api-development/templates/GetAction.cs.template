@@ -10,11 +10,12 @@
 public async Task<ActionResult<Response<{VoType}>>> {ActionName}(
     [FromRoute] {ParameterType} {ParameterName})
 {
-    var vo = await _{serviceName}.{MethodName}({ParameterName});
-    if (vo == null)
+    var dto = await _{serviceName}.{MethodName}({ParameterName});
+    if (dto == null)
     {
         return NotFound<{VoType}>({NotFoundMessage});
     }
 
+    var vo = _{mapperName}.Map<{VoType}>(dto);
     return Success(vo);
 }

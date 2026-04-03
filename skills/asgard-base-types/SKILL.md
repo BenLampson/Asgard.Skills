@@ -23,9 +23,9 @@ description: Asgard 基类与基础模型 skill。Use when another AI needs the 
 | `BaseController` | Web API 控制器基类 | 所有控制器继承它 |
 | `PluginBase` | 插件基类 | 所有插件继承它 |
 | `AbsAsgardContext` | 框架统一上下文 | 注入它获取缓存、消息、作业等能力 |
-| `Response<T>` | 统一 API 响应模型 | 所有 API 返回此类型 |
-| `PageResponse<T>` | 页码分页响应 | 传统分页查询返回 |
-| `CursorResponse<T>` | 游标分页响应 | 无限滚动/瀑布流查询返回 |
+| `Response<T>` | 统一 API 响应模型 | 所有非分页 API 默认返回此类型 |
+| `PageResponse<T>` | 页码分页响应 | 所有页码分页查询必须返回 |
+| `CursorResponse<T>` | 游标分页响应 | 所有游标分页/无限滚动查询必须返回 |
 | `HostConfig` | 宿主根配置 | 宿主全局配置 |
 | `PluginConfig` | 插件系统根配置 | 插件系统配置 |
 
@@ -52,6 +52,13 @@ public class {ControllerName}Controller : BaseController
 - 提供便捷响应方法：`Success(data)`, `SuccessPage(...)`, `SuccessCursor(...)`, `Fail(code, message)`, `NotFound(...)`, `BadRequest(...)`
 - 所有响应自动包装为统一格式
 
+**硬约束：**
+- 所有控制器都必须继承 `BaseController`
+- 统一响应模型只约束 Controller 对外返回，不约束 Service / Repository 的内部返回类型
+- Service 层负责产出 DTO，Controller 层负责把 DTO 转成 VO 并包装成统一响应
+- 所有 Action 都必须返回 `Response<T>`、`Response<object>`、`PageResponse<T>` 或 `CursorResponse<T>`
+- 不允许 Controller 直接返回裸对象、裸集合、基元类型或匿名对象
+
 ## 统一响应模型
 
 Asgard 提供四种响应模型：
@@ -63,14 +70,21 @@ Asgard 提供四种响应模型：
 | `PageResponse<T>` | 页码分页（带 totalCount）|
 | `CursorResponse<T>` | 游标分页（瀑布流/无限滚动）|
 
+**强制规则：**
+
+- 单对象、详情、创建、修改、删除等接口由 Controller 统一返回 `Response<T>` 或 `Response<object>`
+- 页码分页接口由 Controller 统一返回 `PageResponse<T>`
+- 游标分页接口由 Controller 统一返回 `CursorResponse<T>`
+- 不允许自己再定义另一套“通用 API 响应模型”替代 `Response` 家族
+
 **示例：**
 
 ```csharp
 // 成功返回数据
 return Success(data);
 
-// 成功分页
-return SuccessPage(items, totalCount, page, size);
+// Controller 中先把 DTO 列表转成 VO，再返回分页响应
+return SuccessPage(vos, totalCount, page, size);
 
 // 失败
 return Fail(400, "参数错误");
@@ -216,4 +230,6 @@ public class {ServiceName}Service : I{ServiceName}Service
 - ❌ 不要在 `ConfigureServicesAsync` 或构造函数中调用 `GetService()` / `CreateLogger()`
 - ❌ 不要误把 `PluginBase.ServiceProvider` 当作任何阶段都可用
 - ❌ 不要在已有 `Response` 家族的情况下，自己再定义另一套通用响应格式
+- ❌ 不要把 Controller 对外统一响应的规则错误地下沉到 Service / Repository 层
+- ❌ 不要让 Controller 直接返回裸 `VO`、`DTO`、集合或基元值
 - ❌ 不要忘了检查 `AbsAsgardContext` 的属性是否为 `null`（因为模块可能未启用）

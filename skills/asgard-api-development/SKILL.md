@@ -34,10 +34,26 @@ description: Asgard Web API 开发 skill。Use when creating or updating control
 |------|------|
 | **基类继承** | 必须继承 `BaseController`，不要直接继承 `ControllerBase` |
 | **上下文注入** | 构造函数必须注入 `AbsAsgardContext` 并传给基类 |
-| **响应统一** | 始终返回框架统一的响应模型，不要发明新格式 |
+| **响应统一** | 统一响应约束只作用于 Controller 对外返回；Controller 必须把最终 VO 包装成 `Response<T>`、`Response<object>`、`PageResponse<T>` 或 `CursorResponse<T>` 返回给前端 |
 | **职责分离** | 控制器只做输入输出编排，业务逻辑放服务，数据访问放仓储 |
 | **模型位置** | 输入 DTO 默认位于 `Models/DTO`，输出 VO 默认位于 `Models/VO` |
 | **异常处理** | 启用 `UseAsgardExceptionHandler()` 全局处理，不要每个 Action 都写 try/catch |
+
+## 强制要求
+
+以下要求属于 Asgard Web API 的硬约束，不允许为了“方便”而放宽：
+
+- 所有 Controller 必须继承 `BaseController`
+- 分层职责固定为：`Controller -> Service -> Repository -> Entity`
+- 输出职责固定为：`Service` 产出 DTO，`Controller` 把 DTO 转成 VO 后再统一包装响应
+- 所有 Controller Action 对外返回值必须统一使用 `Response<T>`、`Response<object>`、`PageResponse<T>` 或 `CursorResponse<T>`
+- 普通查询、详情、创建、修改、删除等接口默认返回 `Response<T>` 或 `Response<object>`
+- 页码分页列表接口必须返回 `PageResponse<T>`
+- 游标分页 / 无限滚动列表接口必须返回 `CursorResponse<T>`
+- 不允许 Controller 直接返回未包装的 VO、DTO、字符串、布尔值、数字、匿名对象或集合
+- 不允许在 Controller 中再自定义另一套通用响应壳模型
+- Swagger / OpenAPI 的 `ProducesResponseType` 也必须与统一响应模型保持一致
+- 对于返回实体详情或单一资源的 Action，如果成功返回类型是 `Response<TVo>`，则 `404 NotFound` 的 `ProducesResponseType` 也应优先标注为 `Response<TVo>`，保持 Swagger 文档与统一响应壳的泛型语义一致
 
 ## 响应方法对照表
 
@@ -95,16 +111,17 @@ public class {ControllerName} : BaseController
 [HttpGet("{Route}")]
 [ProducesResponseType(typeof(Response<{VoType}>), StatusCodes.Status200OK)]
 [ProducesResponseType(typeof(Response<object>), StatusCodes.Status400BadRequest)]
-[ProducesResponseType(typeof(Response<object>), StatusCodes.Status404NotFound)]
+[ProducesResponseType(typeof(Response<{VoType}>), StatusCodes.Status404NotFound)]
 public async Task<ActionResult<Response<{VoType}>>> {ActionName}(
     [FromRoute] {ParameterType} {ParameterName})
 {
-    var vo = await _{serviceName}.{MethodName}({ParameterName});
-    if (vo == null)
+    var dto = await _{serviceName}.{MethodName}({ParameterName});
+    if (dto == null)
     {
         return NotFound<{VoType}>({NotFoundMessage});
     }
 
+    var vo = _{mapperName}.Map<{VoType}>(dto);
     return Success(vo);
 }
 ```
@@ -125,7 +142,8 @@ public async Task<ActionResult<PageResponse<{VoType}>>> {ActionName}(
     [FromQuery] int size = 20)
 {
     var (items, totalCount) = await _{serviceName}.{MethodName}(page, size);
-    return SuccessPage(items, totalCount, page, size);
+    var vos = items.Select(_{mapperName}.Map<{VoType}>).ToList();
+    return SuccessPage(vos, totalCount, page, size);
 }
 ```
 
@@ -145,7 +163,8 @@ public async Task<ActionResult<CursorResponse<{VoType}>>> {ActionName}(
     [FromQuery] int size = 20)
 {
     var (items, hasMore, nextCursor, lastId) = await _{serviceName}.{MethodName}(cursor, size);
-    return SuccessCursor(items, hasMore, nextCursor, lastId);
+    var vos = items.Select(_{mapperName}.Map<{VoType}>).ToList();
+    return SuccessCursor(vos, hasMore, nextCursor, lastId);
 }
 ```
 
@@ -161,15 +180,21 @@ app.UseAsgardExceptionHandler();
 
 - 每个控制器只负责一个业务领域
 - 为每个 Action 添加 `[ProducesResponseType]` 注释，便于 Swagger 生成文档
+- 详情类 / 单资源接口优先让 `200` 与 `404` 共享同一个 `Response<TVo>` 标注，减少 Swagger 类型语义漂移
 - 通过 `AsgardContext` 获取当前用户、租户等上下文信息
 - 保持 Action 简洁，只做参数编排和结果返回
 - 控制器文件放在 `Controllers/`，不要另起结构
 - 需要文档时，在项目根目录 `app.yaml` 中开启 `host.swagger.enabled: true`
 - 所有实现继续遵守 `$asgard-dotnet-10-csharp-14`
+- 审查 Controller 时，优先检查返回类型是否仍然是 `Response` / `PageResponse` 家族
 
 ## 不要这样做
 
-❌ 不要直接返回匿名对象或自定义响应格式破坏统一性
+❌ 不要跳过分层边界，让 Controller 直接承担 Repository / Entity 访问
+
+❌ 不要让 Service 直接返回给前端的响应壳模型，统一响应只属于 Controller 层
+
+❌ 不要让 Controller 直接返回裸 `VO`、`DTO`、`string`、`bool`、`int`、`List<T>` 或 `IEnumerable<T>`
 
 ❌ 不要把业务逻辑直接写在 Action 里，保持职责分离
 
