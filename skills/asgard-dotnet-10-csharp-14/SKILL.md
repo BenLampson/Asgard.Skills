@@ -132,6 +132,41 @@ public static extension {ExtensionName} on {TargetType}<{GenericParameter}>
 
 完整示例见 `references/testing.md`。
 
+## TS Gen 使用约定
+
+当开发人员需要为前端生成 Asgard Controller 对应的 TypeScript 客户端时，统一使用 `Asgard.TsGen` 工具。
+
+### 生成前提
+
+- 只有继承 `ControllerBase` 且显式标记 `[AsgardTsGen]` 的控制器才会被扫描和生成
+- 未标记该特性的控制器不会进入生成结果
+- 控制器返回值仍应遵循 Asgard 统一包装约定，例如 `Response<T>`、`PageResponse<T>`、`CursorResponse<T>` 或 SSE
+
+### 典型用法
+
+```powershell
+dotnet run --project Common/Asgard.TsGen/Asgard.TsGen.csproj -- --assembly ./Host/Asgard.Yggdrasil.AspNetCore/bin/Debug/net10.0/Asgard.Yggdrasil.AspNetCore.dll
+```
+
+也可以在安装为工具后执行：
+
+```powershell
+asgard-tsgen --assembly ./bin/Debug/net10.0/MyApi.dll
+```
+
+### 输出规则
+
+- 默认输出目录就是执行命令时所在的当前目录
+- 生成器会重建自己负责的产物目录，当前固定为 `common/`、`controller/`、`models/`
+- 这些目录应视为纯生成目录，不要手写或混入自定义代码
+- 如果需要隔离生成结果，请先进入专门的前端客户端目录，再执行生成命令
+
+### 团队约定
+
+- 想让某个 API 暴露给前端生成客户端时，先为控制器添加 `[AsgardTsGen]`
+- 修改控制器路由、参数或返回模型后，应重新执行一次 `TS Gen`
+- 前端代码应信任最新生成结果，不要继续引用已被删除的旧接口文件
+
 ## 推荐类库
 
 | 类库 | 用途 | NuGet |

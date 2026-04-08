@@ -38,6 +38,13 @@ Asgard 框架的 AI 技能仓库。
 - IDP、认证测试、授权链路都必须复用同一套标准 claims 契约
 - 不允许在不同项目、不同插件、不同测试里各自发明“用户信息 JSON”或随意命名 claims
 
+当前还需要重点了解的一条工具约定是：
+
+- Asgard 的 TypeScript 客户端统一通过 `Asgard.TsGen` 生成
+- 只有标记了 `[AsgardTsGen]` 的 Controller 会进入生成结果
+- 默认输出目录就是命令执行时的当前目录
+- 生成器会重建 `common/`、`controller/`、`models/` 这类纯生成目录，因此这些目录不应手写自定义代码
+
 ## 仓库边界
 
 `Asgard Skills` 作为独立维护的 Git 仓库存在，日常可按 Asgard 主项目的子模块 / 子仓库方式接入。
