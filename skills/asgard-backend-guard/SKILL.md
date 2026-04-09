@@ -43,7 +43,24 @@ description: Asgard 后端代码复查与守卫 skill。Use when reviewing or se
 
 ## 核心检查项
 
-### 1. 乐观锁更新检查
+### 1. 文件结构硬规则检查
+
+这是来自 `$asgard-dotnet-10-csharp-14` 的硬约束，review 时不能漏掉。
+
+复查结论必须遵守以下规则：
+
+- 一个 `.cs` 文件中禁止放置多个类；默认要求一个文件只承载一个类
+- 如果同一文件里同时出现多个业务类型、实体、服务、控制器、仓储、DTO、VO，默认按问题报告
+- 如果用户没有明确要求偏离该规则，就不要以“只是代码风格”为由忽略
+- 当无法快速判断某个文件结构是否合规时，按“需要根据 `$asgard-dotnet-10-csharp-14` skill 继续核查文件结构硬规则”处理，而不是直接放过
+
+必须重点检查以下模式：
+
+- 一个 `.cs` 文件里声明多个 `class`
+- 为了省文件数，把主类型和辅助业务类型长期放在同一个 `.cs` 文件
+- 新增代码把原本单类文件扩展成“控制器 + DTO”或“服务 + 内部实现类”等组合
+
+### 2. 乐观锁更新检查
 
 这是 Asgard 当前最重要的复查项，必须优先检查。
 
@@ -92,20 +109,20 @@ entity.Update(...);
 await repository.UpdateAsync(entity);
 ```
 
-### 2. 分层边界检查
+### 3. 分层边界检查
 
 - Controller 只能做输入输出编排，不能直接写仓储或拼 ORM 查询
 - Service 负责业务编排，不要直接返回给前端的响应壳模型
 - Repository 只做数据访问，不要塞业务判断
 - Entity 负责自己的状态行为时，优先把状态变更放在实体方法中
 
-### 3. 统一响应检查
+### 4. 统一响应检查
 
 - Controller 必须继承 `BaseController`
 - 对外返回必须使用 `Response<T>`、`Response<object>`、`PageResponse<T>` 或 `CursorResponse<T>`
 - 不要直接返回裸 DTO、VO、集合、字符串、布尔值、数字、匿名对象
 
-### 4. 租户与审计字段检查
+### 5. 租户与审计字段检查
 
 - 租户默认依赖框架全局过滤与身份上下文，不要到处手写默认 `TenantId` 过滤
 - 不要让前端输入决定 `TenantId`、`CreateBy`、`CreateTime`、`Deleted`
