@@ -50,7 +50,7 @@ Asgard 使用强类型配置系统，从 YAML 文件、环境变量、命令行�
 
 | 配置范围 | 路径前缀 | 示例 |
 |----------|----------|------|
-| 宿主级配置 | `host.*` | `host.port`, `host.swagger.enabled` |
+| 宿主级配置 | `host.*` | `host.kestrel.endpoints.http.url`, `host.swagger.enabled` |
 | 基础设施 | `database.*` | 数据库配置 |
 | 基础设施 | `caching.*` | 缓存配置 |
 | 基础设施 | `messaging.*` | 消息队列配置 |
@@ -60,6 +60,31 @@ Asgard 使用强类型配置系统，从 YAML 文件、环境变量、命令行�
 | 插件独立配置 | 插件自身路径 | 放在 `plugin.yaml` 中 |
 
 ## 代码示例
+
+### 宿主端口配置
+
+当前 Asgard 宿主实现通过 `host.kestrel.endpoints.*.url` 配置监听地址与端口，不能写成 `host.port`。
+
+```yaml
+host:
+  kestrel:
+    endpoints:
+      http:
+        url: "http://127.0.0.1:4321"
+```
+
+如果需要 HTTPS：
+
+```yaml
+host:
+  kestrel:
+    endpoints:
+      https:
+        url: "https://0.0.0.0:5001"
+        certificate:
+          path: "certs/dev.pfx"
+          password: "your-password"
+```
 
 ### 强类型配置类
 
@@ -133,6 +158,7 @@ protected override Task OnConfigureServicesAsync(
 
 - 优先使用项目根目录 `app.yaml` 作为宿主主配置文件
 - `app.yaml` 与 `plugin.yaml` 固定位于项目根目录，不要再套 `config/`
+- 配置宿主监听地址时，使用 `host.kestrel.endpoints.*.url`，不要写 `host.port`
 - 每个配置类通过 `ConfigPath` 绑定到明确路径，不要散布魔法字符串
 - 插件独立配置放 `plugin.yaml`，不要混进宿主 `app.yaml`
 - 为可选模块保留默认值与安全降级
@@ -149,6 +175,8 @@ protected override Task OnConfigureServicesAsync(
 ❌ 不要让非法配置流到运行期再失败，启动时就应该报错
 
 ❌ 不要忘记给属性标注 `[ConfigPath]` 特性，否则无法绑定
+
+❌ 不要把宿主端口写成 `host.port`，当前实现不会读取这个键
 
 ## 参考资料
 

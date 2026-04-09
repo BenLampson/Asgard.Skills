@@ -34,6 +34,8 @@ description: Asgard ASP.NET Host 项目编写 skill。Use when creating, refacto
 - 负责加载 `app.yaml`
 - 负责通过 `ProjectReference` 引用插件主体项目
 
+端口等宿主监听配置写在 starter / host 项目的 `app.yaml` 中，并使用 `host.kestrel.endpoints.*.url` 形式，不要写成 `host.port`。
+
 不要把插件内部目录结构也混进宿主结构说明里。
 
 ## 推荐 starter 结构
