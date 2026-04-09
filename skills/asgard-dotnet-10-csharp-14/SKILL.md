@@ -15,6 +15,7 @@ description: Asgard .NET 10 / C# 14 coding conventions skill. This is the mandat
 - 其他 skill 只能引用本 skill，不能改写、放宽、忽略或给出冲突建议
 - Asgard 使用传统 `Controller` 开发 Web API，不使用 Minimal API。接口层请参考 `$asgard-api-development`
 - 项目结构请参考 `$asgard-plugin-structure`
+- 需要对后端改动做复查、守门、踩坑排查时，请启用 `$asgard-backend-guard`
 
 ## 什么时候使用
 
@@ -141,6 +142,8 @@ public static extension {ExtensionName} on {TargetType}<{GenericParameter}>
 - 只有继承 `ControllerBase` 且显式标记 `[AsgardTsGen]` 的控制器才会被扫描和生成
 - 未标记该特性的控制器不会进入生成结果
 - 控制器返回值仍应遵循 Asgard 统一包装约定，例如 `Response<T>`、`PageResponse<T>`、`CursorResponse<T>` 或 SSE
+- 在 Yggdrasil 宿主内通过 `/asgard-tsgen` 导出时，只会导出**当前宿主已经加载的插件程序集**中、且已被 MVC 真实发现到的控制器
+- 宿主不会导出未加载插件、宿主自身控制器，或虽在程序集里但未进入 MVC ApplicationPart 的控制器
 
 ### 典型用法
 
@@ -154,6 +157,14 @@ dotnet run --project Common/Asgard.TsGen/Asgard.TsGen.csproj -- --assembly ./Hos
 asgard-tsgen --assembly ./bin/Debug/net10.0/MyApi.dll
 ```
 
+开发环境下，如果使用 Yggdrasil 宿主内置导出端点，访问地址为：
+
+```text
+http://127.0.0.1:5000/asgard-tsgen
+```
+
+实际端口以宿主启动日志中的告警输出为准。宿主会在启动后打印完整访问地址，并在收到导出请求时输出当前插件程序集、MVC 已发现控制器以及最终命中的 TS 导出控制器，便于排查“只生成 common、不生成 controller/models”的问题。
+
 ### 输出规则
 
 - 默认输出目录就是执行命令时所在的当前目录
@@ -166,6 +177,7 @@ asgard-tsgen --assembly ./bin/Debug/net10.0/MyApi.dll
 - 想让某个 API 暴露给前端生成客户端时，先为控制器添加 `[AsgardTsGen]`
 - 修改控制器路由、参数或返回模型后，应重新执行一次 `TS Gen`
 - 前端代码应信任最新生成结果，不要继续引用已被删除的旧接口文件
+- 如果宿主导出结果只出现 `common/`，优先检查：插件是否真的已加载、控制器是否被 MVC 发现、控制器是否显式标记 `[AsgardTsGen]`
 
 ## 推荐类库
 
@@ -213,6 +225,60 @@ asgard-tsgen --assembly ./bin/Debug/net10.0/MyApi.dll
 | **Global using** | 利用 Global using，减少重复 |
 
 这些规则属于**必须遵守**的硬约束，不允许其他 skill 自行覆盖。
+
+## Asgard 默认更新策略
+
+以下规则属于 Asgard 项目生成服务层更新代码时**必须优先遵守**的默认策略，不是建议项：
+
+### 适用范围
+
+- 只要实体继承 `AbsAsgardBaseEntity`
+- 或实体继承 `AbsAsgardTenantEntity`
+- 或实体继承 `AbsAsgardTenantUserDataEntity`
+- 或实体存在 `Version` 字段并标记 `[Column(IsVersion = true)]`
+
+以上任一条件成立，都必须视为启用了 FreeSql 乐观锁，更新路径必须采用“先查后改”。
+
+### 硬规则
+
+- `Create` 场景可以使用 `dto.ToEntity()`
+- `Update` 场景默认**禁止**使用 `dto.ToEntity()` 后直接 `UpdateAsync(entity)`
+- 更新前必须先从数据库读取当前实体
+- 必须在数据库读取出的原始实体上应用 DTO 中允许修改的字段
+- 最后再执行 `UpdateAsync(entity)`
+- `DTO` 不是 `Version` 的可信来源，乐观锁版本必须来自数据库当前实体
+- 不允许让前端或 DTO 决定 `CreateTime`、`CreateBy`、`Deleted`、租户归属字段、客户端归属字段或其他持久化标识字段
+- 对租户实体，更新时不允许随 DTO 覆盖 `TenantId` 等归属字段；如果业务明确允许，必须在代码中加中文注释说明原因和边界
+
+### 实现要求
+
+- 如果实体提供了 `Update(...)`、`Enable()`、`Disable()` 等行为方法，优先调用实体方法承接状态变更
+- 如果实体没有行为方法，再在服务层显式逐字段赋值
+- 逐字段赋值完成后，如果实体约定需要调用 `MarkAsUpdated()`，必须显式调用
+- 遇到 `UpdateAsync(string id, XxxDto dto, ...)` 这类签名时，要主动警惕乐观锁问题，优先检查实体继承链和 `Version` / `IsVersion = true` 标记
+- 如果没有特别说明，**不要生成**“DTO 重建实体后直接更新”的代码
+
+### 反模式与推荐模式
+
+❌ 反模式：
+
+```csharp
+var entity = dto.ToEntity();
+entity.Id = id;
+await repository.UpdateAsync(entity);
+```
+
+✅ 推荐模式：
+
+```csharp
+var entity = await repository.GetByIdAsync(id)
+    ?? throw new InvalidOperationException($"未找到实体：{id}");
+
+entity.Update(...);
+await repository.UpdateAsync(entity);
+```
+
+如果没有 `Update(...)` 行为方法，则改为先查询实体，再显式逐字段赋值，并在需要时调用 `MarkAsUpdated()`。
 
 完整规则见 `references/project_rules.md` 和 `references/never-do-this.md`。
 

@@ -16,6 +16,7 @@
 | Missing `ValidateOnStart()` | Always add `.ValidateOnStart()` |
 | Singleton → Scoped injection | Use `IServiceScopeFactory` |
 | `_count++` in singleton | `Interlocked.Increment(ref _count)` |
+| `dto.ToEntity()` 后直接 `UpdateAsync(entity)` | 先查询当前实体，再在原实体上变更并更新 |
 
 ---
 
@@ -153,6 +154,40 @@ var orders = await db.Orders
 var order = await db.Orders.FindAsync(id);
 await db.Entry(order).Collection(o => o.Items).LoadAsync();
 ```
+
+---
+
+## Optimistic Lock Update Misuse
+
+```csharp
+// WRONG: DTO 重建实体会丢失数据库当前 Version 和持久化字段
+var entity = dto.ToEntity();
+entity.Id = id;
+await repository.UpdateAsync(entity);
+
+// CORRECT: 先读取数据库当前实体, 再在原实体上修改
+var entity = await repository.GetByIdAsync(id)
+    ?? throw new InvalidOperationException($"未找到实体：{id}");
+
+entity.Update(dto.Name, dto.Description);
+await repository.UpdateAsync(entity);
+
+// CORRECT: 没有行为方法时显式逐字段赋值, 并在需要时标记更新时间
+var entity = await repository.GetByIdAsync(id)
+    ?? throw new InvalidOperationException($"未找到实体：{id}");
+
+entity.Name = dto.Name;
+entity.Description = dto.Description;
+entity.MarkAsUpdated();
+
+await repository.UpdateAsync(entity);
+```
+
+适用规则:
+
+- 只要实体继承 `AbsAsgardBaseEntity`、`AbsAsgardTenantEntity`、`AbsAsgardTenantUserDataEntity`, 就默认按乐观锁实体处理
+- 只要存在 `Version` / `[Column(IsVersion = true)]`, 更新就必须采用“先查后改”
+- `CreateTime`、`CreateBy`、`Deleted`、`TenantId`、`ClientId` 等持久化字段不能由 DTO 回填覆盖
 
 ---
 

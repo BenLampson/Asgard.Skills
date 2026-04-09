@@ -45,6 +45,12 @@ Asgard 框架的 AI 技能仓库。
 - 默认输出目录就是命令执行时的当前目录
 - 生成器会重建 `common/`、`controller/`、`models/` 这类纯生成目录，因此这些目录不应手写自定义代码
 
+当前还需要重点使用的一条复查约定是：
+
+- Asgard 后端代码在生成后、修改后、提交前，优先使用 `asgard-backend-guard` 做一次复查
+- 该 skill 专门检查后端硬规则、分层边界、统一响应、租户与审计字段、乐观锁更新等高频踩坑点
+- 遇到 `UpdateAsync(string id, XxxDto dto, ...)`、`dto.ToEntity()`、`Version`、`TenantId` 等线索时，应主动启用该 skill 做风险排查
+
 ## 仓库边界
 
 `Asgard Skills` 作为独立维护的 Git 仓库存在，日常可按 Asgard 主项目的子模块 / 子仓库方式接入。

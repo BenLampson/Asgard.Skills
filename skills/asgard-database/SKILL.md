@@ -14,6 +14,10 @@ description: Asgard 数据库模块 skill。Use when configuring database.enable
 - 仓储实现统一继承 `AbsAsgardRepositoryBase<TEntity, TKey>`，不要再自建另一套 FreeSql 仓储基类
 - FreeSql 的租户隔离统一通过框架内置 `GlobalFilter` + 身份上下文完成，租户实体不要在每个查询里重复手写 `TenantId` 条件
 
+当前仓库的更新路径还必须统一遵守一条硬规则：
+
+- 只要实体继承 `AbsAsgardBaseEntity` / `AbsAsgardTenantEntity` / `AbsAsgardTenantUserDataEntity`，或存在 `Version` + `[Column(IsVersion = true)]`，更新时默认采用“先查后改”，禁止 `dto.ToEntity()` 后直接 `UpdateAsync(entity)`
+
 结构与规则边界：
 
 - 实体默认位于 `Models/Entities`
@@ -21,6 +25,7 @@ description: Asgard 数据库模块 skill。Use when configuring database.enable
 - 仓储实现默认位于 `Domains/Repositories`
 - 项目结构见 `$asgard-plugin-structure`
 - 编码硬规则见 `$asgard-dotnet-10-csharp-14`
+- 需要对数据库相关实现做风险复查时，请启用 `$asgard-backend-guard`
 
 什么时候使用本 skill：
 - 启用数据库功能配置
@@ -116,6 +121,39 @@ public class {EntityName}Repository : AbsAsgardRepositoryBase<{EntityName}, {Key
 - 仓储统一使用框架仓储基类，不要在每个方法里重复 `Where(x => x.TenantId == ...)`
 - 只有在明确需要跨租户或禁用过滤时，才在非常局部的位置做特殊处理，并补注释说明原因
 
+### 乐观锁实体更新规范
+
+Asgard 项目的大多数实体基类默认带有 `Version` 和 `[Column(IsVersion = true)]`，因此更新代码必须把乐观锁当作默认前提，而不是可选项。
+
+硬规则：
+
+- `Create` 场景可以使用 `dto.ToEntity()`
+- `Update` 场景默认禁止使用 `dto.ToEntity()` 后直接更新
+- 更新时必须先查询数据库当前实体，再在原实体上应用允许修改的字段
+- `Version` 必须来自数据库当前实体，不能信任前端或 DTO 提供的值
+- `CreateBy`、`CreateTime`、`Deleted`、`TenantId`、`ClientId` 等持久化字段不能在更新时被 DTO 覆盖
+- 对租户实体，不允许在更新路径中随 DTO 改写租户归属字段；只有业务明确允许时，才能局部放开并补中文注释
+
+推荐模式：
+
+```csharp
+var entity = await repository.GetByIdAsync(id)
+    ?? throw new InvalidOperationException($"未找到实体：{id}");
+
+entity.Update(...);
+await repository.UpdateAsync(entity);
+```
+
+如果实体没有行为方法，则显式逐字段赋值，并在约定需要时调用 `MarkAsUpdated()`。
+
+反模式：
+
+```csharp
+var entity = dto.ToEntity();
+entity.Id = id;
+await repository.UpdateAsync(entity);
+```
+
 ## 注册方式
 
 | 场景 | 推荐做法 |
@@ -148,3 +186,4 @@ public class {EntityName}Repository : AbsAsgardRepositoryBase<{EntityName}, {Key
 - ❌ 不要自行定义另一套实体或仓储目录结构
 - ❌ 不要为租户实体重复手写 `TenantId` 过滤作为默认路径，这会和框架全局过滤割裂
 - ❌ 不要省略仓储构造函数里的 `IAsgardIdentityContext`，否则租户实体写入时无法自动回填 `TenantId`
+- ❌ 不要对乐观锁实体使用 `dto.ToEntity()` 后直接 `UpdateAsync(entity)`，这会丢失数据库当前 `Version` 并覆盖持久化字段

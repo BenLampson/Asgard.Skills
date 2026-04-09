@@ -17,6 +17,8 @@ description: Asgard 仓储与服务注册 skill。Use when implementing reposito
 - 服务实现默认放在 `Services/Services`
 - 项目结构见 `$asgard-plugin-structure`
 - 编码硬规则见 `$asgard-dotnet-10-csharp-14`
+- 乐观锁与更新路径规则见 `$asgard-database`
+- 需要对仓储/服务层改动做复查时，请启用 `$asgard-backend-guard`
 
 什么时候使用本 skill：
 - 实现新的数据库仓储类时
@@ -119,6 +121,36 @@ public class {ServiceName}Service : I{ServiceName}Service
 - **扫描范围**：只扫描当前模块程序集，不扫描整个解决方案
 - **目录归属**：仓储与服务默认按结构 skill 的目录归位
 - **租户隔离**：默认由框架仓储基类和 FreeSql 过滤器统一承接，不要让每个仓储各自实现一套
+- **默认更新策略**：乐观锁实体必须采用“先查后改”，不要在服务层把 DTO 重建成新实体后直接更新
+
+## 服务层更新硬规则
+
+对于继承 `AbsAsgardBaseEntity`、`AbsAsgardTenantEntity`、`AbsAsgardTenantUserDataEntity` 的实体服务，生成更新代码时必须遵守以下要求：
+
+- 遇到 `UpdateAsync(string id, XxxDto dto, ...)` 之类的方法签名时，先检查实体是否带 `Version` / `[Column(IsVersion = true)]`
+- 只要存在乐观锁字段，就必须先从仓储读取当前实体
+- 优先调用实体自己的 `Update(...)`、`Enable()`、`Disable()` 等行为方法
+- 如果没有行为方法，再在服务层显式逐字段赋值
+- 如果实体约定需要更新时间或审计标记，赋值后显式调用 `MarkAsUpdated()`
+- 禁止让 DTO 覆盖 `CreateTime`、`CreateBy`、`Deleted`、`TenantId`、`ClientId` 等持久化字段
+
+推荐模式：
+
+```csharp
+var entity = await repository.GetByIdAsync(id)
+    ?? throw new InvalidOperationException($"未找到实体：{id}");
+
+entity.Update(...);
+await repository.UpdateAsync(entity);
+```
+
+反模式：
+
+```csharp
+var entity = dto.ToEntity();
+entity.Id = id;
+await repository.UpdateAsync(entity);
+```
 
 ## 代码模板
 
@@ -146,3 +178,4 @@ AI 生成代码时，建议套用这些模板保持风格一致。
 - ❌ 不要自行定义另一套仓储/服务目录规则
 - ❌ 不要绕开 `AbsAsgardRepositoryBase` 直接 new `BaseRepository` 作为默认仓储实现
 - ❌ 不要在每个仓储方法里复制粘贴 `TenantId` 条件，默认租户过滤应交给框架统一处理
+- ❌ 不要在服务层把 DTO 重建成新实体后直接 `UpdateAsync`，这会破坏乐观锁版本和持久化字段

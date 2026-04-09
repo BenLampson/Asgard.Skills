@@ -1,0 +1,4 @@
+interface:
+  display_name: "Asgard Backend Guard"
+  short_description: "复查 Asgard 后端代码是否违反硬规则与高频踩坑规范"
+  default_prompt: "Use this skill to review Asgard backend code changes, detect rule violations, and identify risky patterns such as optimistic-lock update bugs before they enter the codebase."
