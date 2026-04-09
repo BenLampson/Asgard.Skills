@@ -1,22 +1,22 @@
 ---
 name: asgard-plugin-structure
-description: Asgard 插件项目结构 skill。Use when scaffolding a new Asgard plugin project, defining folder layout, choosing starter files, placing DTO/VO/Entity/Repository/Service code, configuring GlobalUsings.cs, or deciding where Mapper, Config, app.yaml, and plugin.yaml belong.
+description: Asgard 插件项目结构 skill。Use when scaffolding a new Asgard plugin project, defining folder layout, choosing starter files, separating plugin implementation from starter/host bootstrap, placing DTO/VO/Entity/Repository/Service code, configuring GlobalUsings.cs, or deciding where Mapper, Config, app.yaml, and plugin.yaml belong.
 ---
 
 # Asgard Plugin Structure
 
 ## 作用
 
-这个 skill 是 **Asgard 插件项目结构的唯一权威来源**。
+这个 skill 是 **Asgard 插件项目结构的权威来源**。
 
-它只负责定义：
+它负责定义：
 
-- 项目目录长什么样
-- 基础文件放哪里
-- 依赖怎么装
-- `GlobalUsings.cs` 怎么放
+- 插件主体项目怎么组织
+- starter / 宿主启动项目怎么组织
+- `Program.cs`、`plugin.yaml`、`app.yaml` 各自默认归属
+- `GlobalUsings.cs`、`ProjectReference`、基础依赖怎么放
 - `DTO / VO / Entity / Repository / Service / Mapper` 应该放在哪
-- 层间数据怎么流转
+- 插件主体与启动承载方的职责边界
 
 它**不负责**讲某一层的具体实现细节。
 
@@ -35,14 +35,56 @@ description: Asgard 插件项目结构 skill。Use when scaffolding a new Asgard
 
 - 新建 Asgard 插件项目
 - 搭项目骨架
-- 设计目录结构
+- 设计插件项目与 starter 项目的分工
 - 决定 `GlobalUsings.cs`、`Program.cs`、`app.yaml`、`plugin.yaml` 放置位置
 - 决定 `Mapper`、`Models`、`Domains`、`Services` 的归属
 - 决定 `DTO / VO / Entity` 的分层与流转
+- 判断当前仓库属于单项目快速验证，还是双项目分离
+
+## 推荐项目组织方式
+
+Asgard 当前认可、也更希望推广的形式是：
+
+- `Asgard.Heimdall` 这类项目负责插件主体实现
+- `Asgard.Heimdall.Starter` 这类项目负责启动入口与调试承载
+- 正式开发、长期维护、业务复杂度上来后，**优先推荐插件项目 + starter 项目分离**
+
+可以接受两种模式：
+
+### 模式 A：单项目快速验证
+
+适用场景：
+
+- PoC
+- Demo
+- 临时验证插件生命周期或配置装配
+- 业务代码很少，且短期内不会继续扩展
+
+特点：
+
+- `Program.cs`、`plugin.yaml`、业务代码位于同一项目
+- `app.yaml` 可以直接放在同项目根目录
+- 适合最短路径验证，但**不是默认推荐的长期结构**
+
+### 模式 B：插件项目 + starter 项目分离
+
+适用场景：
+
+- 正式开发
+- 长期维护
+- 需要独立调试、发布、复用插件主体
+- 需要清晰区分“插件实现”与“启动承载”
+
+特点：
+
+- 插件主体项目只承载插件实现、业务目录、插件清单
+- starter 项目承载 `Program.cs`、启动参数、宿主编排、调试入口
+- starter 项目通过 `ProjectReference` 引用插件主体项目
+- `PluginWebAppDefaults.RunAsync<TPlugin>()` 通常位于 starter，而不是业务插件主体项目
 
 ## 标准依赖
 
-新插件项目默认只安装以下依赖：
+### 插件主体项目默认依赖
 
 ```xml
 <ItemGroup>
@@ -51,16 +93,27 @@ description: Asgard 插件项目结构 skill。Use when scaffolding a new Asgard
 </ItemGroup>
 ```
 
-## 标准基础文件
+### starter 项目默认职责
 
-这些文件默认属于 starter 的硬组成部分：
+- 引用插件主体项目
+- 提供启动入口
+- 决定 `app.yaml` 的加载路径
+- 根据需要补充宿主级依赖与调试配置
 
-- `GlobalUsings.cs`
+## 基础文件归属
+
 - `Program.cs`
-- `app.yaml`
+  默认属于 starter / host / 启动项目，不要默认放进插件主体项目
 - `plugin.yaml`
+  默认属于插件主体项目，是插件清单与插件级元数据
+- `app.yaml`
+  属于运行配置入口，是否与插件项目同目录取决于组织方式
+- `GlobalUsings.cs`
+  插件项目与 starter 项目都可以有，但各自只维护自己的全局 using
 
 ## 标准目录树
+
+### 模式 A：单项目快速验证
 
 ```text
 {ProjectName}/
@@ -105,8 +158,64 @@ description: Asgard 插件项目结构 skill。Use when scaffolding a new Asgard
     └── {CustomFiles}
 ```
 
+### 模式 B：插件项目 + starter 项目分离
+
+```text
+{SolutionRoot}/
+├── src/
+│   ├── {PluginProjectName}/
+│   │   ├── plugin.yaml
+│   │   ├── GlobalUsings.cs
+│   │   ├── {PluginProjectName}.csproj
+│   │   ├── {PluginClassName}.cs
+│   │   ├── Config/
+│   │   │   ├── PluginConfigs/
+│   │   │   │   └── {PluginConfigClassName}.cs
+│   │   │   └── {ThirdPartyName}/
+│   │   │       └── {ThirdPartyConfigClassName}.cs
+│   │   ├── wwwroot/
+│   │   │   └── {StaticAssetFiles}
+│   │   ├── Controllers/
+│   │   │   └── {FeatureName}Controller.cs
+│   │   ├── Mapper/
+│   │   │   └── {AggregateName}Mapper.cs
+│   │   ├── Models/
+│   │   │   ├── VO/
+│   │   │   │   └── {AggregateName}Vo.cs
+│   │   │   ├── DTO/
+│   │   │   │   └── {AggregateName}Dto.cs
+│   │   │   └── Entities/
+│   │   │       └── {AggregateName}Entity.cs
+│   │   ├── Domains/
+│   │   │   ├── IRepositories/
+│   │   │   │   └── I{AggregateName}Repository.cs
+│   │   │   └── Repositories/
+│   │   │       └── {AggregateName}Repository.cs
+│   │   ├── Services/
+│   │   │   ├── IServices/
+│   │   │   │   └── I{AggregateName}Service.cs
+│   │   │   └── Services/
+│   │   │       └── {AggregateName}Service.cs
+│   │   ├── Extensions/
+│   │   │   └── {FeatureName}Extensions.cs
+│   │   ├── Middlewares/
+│   │   │   └── {FeatureName}Middleware.cs
+│   │   └── {CustomModuleName}/
+│   │       └── {CustomFiles}
+│   └── {StarterProjectName}/
+│       ├── app.yaml
+│       ├── GlobalUsings.cs
+│       ├── Program.cs
+│       └── {StarterProjectName}.csproj
+└── {SolutionName}.slnx
+```
+
 ## 固定职责
 
+### 插件主体项目职责
+
+- `{PluginClassName}.cs`
+  插件入口类，继承 `PluginBase`
 - `Config/`
   放配置类、配置绑定辅助类型、第三方集成配置相关代码
 - `Config/PluginConfigs/`
@@ -139,8 +248,31 @@ description: Asgard 插件项目结构 skill。Use when scaffolding a new Asgard
   放自定义中间件
 - `{CustomModuleName}/`
   这是“其他自定义目录”的占位写法，不是必须创建名为 `yyy` 的真实目录
+- `plugin.yaml`
+  放插件清单与插件元数据
 
-`app.yaml` 与 `plugin.yaml` 始终位于项目根目录。`Config/` 不承担 YAML 根文件职责。
+### starter / 宿主启动项目职责
+
+- `Program.cs`
+  启动入口、调试入口、参数解析入口
+- `GlobalUsings.cs`
+  只维护启动项目自身需要的全局 using
+- `ProjectReference`
+  引用插件主体项目
+- `app.yaml`
+  运行配置入口，决定宿主启动期加载的主配置
+- `PluginWebAppDefaults.RunAsync<TPlugin>()`
+  快速验证或单插件启动的默认位置
+- `YggdrasilHost.CreateBuilder(...)`
+  宿主构建、插件装配、中间件编排、启动路径选择
+
+## 文件归属补充规则
+
+- 不要再把 `Program.cs`、`app.yaml`、`plugin.yaml` 一刀切地说成“插件项目根目录标配”
+- `Program.cs` 默认属于 starter；只有在模式 A 快速验证时，才与插件实现同项目
+- `plugin.yaml` 默认属于插件主体项目
+- `app.yaml` 默认由启动承载方加载
+- 在模式 B 中，如果插件项目需要携带运行配置资源，可以包含 `app.yaml` 作为输出资源，但必须明确说明由 starter / host 加载，或复制到运行目录后再加载
 
 ## 固定流转
 
@@ -193,11 +325,19 @@ Entity
 - 不要把转换逻辑散落在 Controller 或 Service 里
 - `Asgard.PluginSdk` 已经带上常用映射能力，默认先用框架已有能力，不要另起一套
 
+## 回答结构问题时的默认判断顺序
+
+1. 先判断用户当前仓库是单项目模式，还是双项目分离
+2. 如果仓库已经采用“插件实现 + starter 启动器”分离结构，优先尊重现有结构
+3. 如果用户只是做快速验证，可以提供模式 A
+4. 如果用户在做正式开发或维护现有业务，优先推荐模式 B
+5. 不要把“快速验证示例”表述成唯一标准结构
+
 ## 使用原则
 
 - 结构问题只在本 skill 定义
 - 其他 skill 可以提示“某类文件通常位于哪个目录”
-- 其他 skill 不允许再定义第二套完整目录树
+- 其他 skill 不允许再定义第二套相互冲突的完整目录树
 - 代码实现仍必须遵守 `$asgard-dotnet-10-csharp-14`
 
 ## 参考资源
@@ -206,6 +346,7 @@ Entity
 - `references/layer-flow.md`
 - `references/package-globalusings-and-mapper.md`
 - `templates/AsgardPlugin.csproj.template`
+- `templates/AsgardStarter.csproj.template`
 - `templates/GlobalUsings.cs.template`
 - `templates/Program.cs.template`
 - `templates/app.yaml.template`

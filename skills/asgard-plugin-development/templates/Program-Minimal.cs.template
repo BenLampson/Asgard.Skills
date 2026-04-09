@@ -1,5 +1,6 @@
 using Asgard.PluginSdk;
 
+// 这是 starter / 启动项目中的 Program.cs 模板。
 await PluginWebAppDefaults.RunAsync<{PluginClassName}>(
     "app.yaml",
     app =>

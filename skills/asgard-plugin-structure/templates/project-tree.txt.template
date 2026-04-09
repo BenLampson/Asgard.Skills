@@ -1,3 +1,5 @@
+模式 A：单项目快速验证
+
 {ProjectName}/
 ├── app.yaml
 ├── plugin.yaml
@@ -38,3 +40,53 @@
 │   └── {FeatureName}Middleware.cs
 └── {CustomModuleName}/
     └── {CustomFiles}
+
+模式 B：插件项目 + starter 项目分离（正式推荐）
+
+{SolutionRoot}/
+├── src/
+│   ├── {PluginProjectName}/
+│   │   ├── plugin.yaml
+│   │   ├── GlobalUsings.cs
+│   │   ├── {PluginProjectName}.csproj
+│   │   ├── {PluginClassName}.cs
+│   │   ├── Config/
+│   │   │   ├── PluginConfigs/
+│   │   │   │   └── {PluginConfigClassName}.cs
+│   │   │   └── {ThirdPartyName}/
+│   │   │       └── {ThirdPartyConfigClassName}.cs
+│   │   ├── wwwroot/
+│   │   │   └── {StaticAssetFiles}
+│   │   ├── Controllers/
+│   │   │   └── {FeatureName}Controller.cs
+│   │   ├── Mapper/
+│   │   │   └── {AggregateName}Mapper.cs
+│   │   ├── Models/
+│   │   │   ├── VO/
+│   │   │   │   └── {AggregateName}Vo.cs
+│   │   │   ├── DTO/
+│   │   │   │   └── {AggregateName}Dto.cs
+│   │   │   └── Entities/
+│   │   │       └── {AggregateName}Entity.cs
+│   │   ├── Domains/
+│   │   │   ├── IRepositories/
+│   │   │   │   └── I{AggregateName}Repository.cs
+│   │   │   └── Repositories/
+│   │   │       └── {AggregateName}Repository.cs
+│   │   ├── Services/
+│   │   │   ├── IServices/
+│   │   │   │   └── I{AggregateName}Service.cs
+│   │   │   └── Services/
+│   │   │       └── {AggregateName}Service.cs
+│   │   ├── Extensions/
+│   │   │   └── {FeatureName}Extensions.cs
+│   │   ├── Middlewares/
+│   │   │   └── {FeatureName}Middleware.cs
+│   │   └── {CustomModuleName}/
+│   │       └── {CustomFiles}
+│   └── {StarterProjectName}/
+│       ├── app.yaml
+│       ├── GlobalUsings.cs
+│       ├── Program.cs
+│       └── {StarterProjectName}.csproj
+└── {SolutionName}.slnx

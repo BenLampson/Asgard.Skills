@@ -1,3 +1,5 @@
 using Asgard.PluginSdk;
 
+// 这是 starter / 启动项目中的 Program.cs 模板。
+// 正式开发默认推荐“插件主体项目 + starter 项目分离”。
 await PluginWebAppDefaults.RunAsync<{PluginClassName}>("app.yaml");

@@ -1,5 +1,6 @@
 using Asgard.Yggdrasil.AspNetCore;
 
+// 这是 starter / host 项目中的完整 Program.cs 模板。
 var builder = YggdrasilHost.CreateBuilder("app.yaml")
     .UseBuiltInPlugin<{PluginName}>()
     .ConfigureMiddleware(app =>

@@ -1,6 +1,6 @@
-# 最小 Asgard 插件结构示例
+# 最小 Asgard 项目结构示例
 
-## 目录树
+## 模式 A：单项目快速验证
 
 ```text
 DemoPlugin/
@@ -31,12 +31,13 @@ DemoPlugin/
 
 ## 适用场景
 
-- 新建插件项目
-- 先搭 starter，再补业务代码
-- 需要统一 `GlobalUsings.cs` 与 YAML 根文件位置
+- 新功能 PoC
+- 快速验证单个插件
+- 临时演示生命周期、配置绑定或调试链路
 
 ## 关键点
 
-- `GlobalUsings.cs` 不是可选项
-- `app.yaml` 与 `plugin.yaml` 都在项目根目录
-- 空目录可以先留空，但目录名字不要自行改造
+- 这是快速验证结构，不是正式开发唯一标准
+- `Program.cs` 只是在该模式下与插件代码同项目
+- `plugin.yaml` 属于插件清单
+- `app.yaml` 作为运行配置入口，直接由当前项目加载

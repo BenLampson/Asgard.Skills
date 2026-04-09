@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -9,13 +10,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Asgard.Analyzers" />
-    <PackageReference Include="Asgard.PluginSdk" />
+    <ProjectReference Include="..\\{PluginProjectName}\\{PluginProjectName}.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="plugin.yaml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    <None Update="app.yaml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 

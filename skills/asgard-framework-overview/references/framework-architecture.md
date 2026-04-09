@@ -51,7 +51,7 @@
 | 入口 | 使用场景 |
 |------|----------|
 | `YggdrasilHost.CreateBuilder()` | 创建宿主构建器 |
-| `PluginWebAppDefaults.RunAsync<TPlugin>()` | 单插件运行入口 |
+| `PluginWebAppDefaults.RunAsync<TPlugin>()` | starter / host 中的单插件运行入口 |
 | `builder.UseBuiltInPlugin<TPlugin>()` | 注册内建插件 |
 | `AbsAsgardContext` | 公共能力统一入口 |
 
@@ -78,7 +78,7 @@
 ## 调用链示例
 
 ```
-Program.cs
+starter / host Program.cs
   ↓
 YggdrasilHost.CreateBuilder()
   ↓
@@ -119,8 +119,13 @@ src/
 │   ├── Asgard.Users/
 │   ├── Asgard.Orders/
 │   └── ...
-└── app.yaml                   # 宿主主配置
 ```
+
+推荐原则：
+
+- 插件主体项目负责业务实现与 `plugin.yaml`
+- starter / host 项目负责 `Program.cs`、`app.yaml` 与启动承载
+- 单项目结构只用于快速验证，不作为默认推荐
 
 插件工程内部的标准目录、`GlobalUsings.cs`、`plugin.yaml`、`Config/`、`Models/`、`Domains/`、`Services/` 等结构，请统一参考 `$asgard-plugin-structure`。
 
