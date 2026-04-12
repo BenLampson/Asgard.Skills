@@ -280,5 +280,21 @@ public abstract class AbsAsgardContext
     /// </para>
     /// </remarks>
     public abstract IWildcardMatcher? WildcardMatcher { get; }
+
+    /// <summary>
+    /// 获取当前请求可用的轻量级追踪上下文。
+    /// </summary>
+    /// <value>
+    /// 追踪上下文实例；当当前宿主未启用 HTTP 追踪能力时返回 <c>null</c>。
+    /// </value>
+    /// <remarks>
+    /// <para>
+    /// 业务代码可以通过该入口追加备注、标签与分支说明，用于补充框架自动采集之外的测试线索。
+    /// </para>
+    /// <para>
+    /// 该接口不会暴露框架自动步骤的可变入口，因此不会破坏框架追踪日志的一致性。
+    /// </para>
+    /// </remarks>
+    public abstract IAsgardTraceContext? Trace { get; }
 }
 

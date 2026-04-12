@@ -53,6 +53,7 @@ public class AsgardContext : AbsAsgardContext
     private readonly IKeyGenerator? _keyGenerator;
     private readonly ISystemConfig? _systemConfig;
     private readonly IWildcardMatcher? _wildcardMatcher;
+    private readonly IAsgardTraceContext? _trace;
 
     /// <summary>
     /// 初始化 <see cref="AsgardContext"/> 类的新实例。
@@ -68,6 +69,7 @@ public class AsgardContext : AbsAsgardContext
     /// <param name="keyGenerator">密钥生成器（可选）。</param>
     /// <param name="systemConfig">系统配置（可选）。</param>
     /// <param name="wildcardMatcher">通配符匹配器（可选）。</param>
+    /// <param name="trace">请求追踪上下文（可选）。</param>
     /// <remarks>
     /// <para>
     /// 所有参数均为可选，未注册的服务将为 <c>null</c>。
@@ -95,7 +97,8 @@ public class AsgardContext : AbsAsgardContext
         IPasswordHasher? passwordHasher = null,
         IKeyGenerator? keyGenerator = null,
         ISystemConfig? systemConfig = null,
-        IWildcardMatcher? wildcardMatcher = null)
+        IWildcardMatcher? wildcardMatcher = null,
+        IAsgardTraceContext? trace = null)
     {
         _cache = cache;
         _compression = compression;
@@ -108,6 +111,7 @@ public class AsgardContext : AbsAsgardContext
         _keyGenerator = keyGenerator;
         _systemConfig = systemConfig;
         _wildcardMatcher = wildcardMatcher;
+        _trace = trace;
     }
 
     /// <inheritdoc />
@@ -142,4 +146,7 @@ public class AsgardContext : AbsAsgardContext
 
     /// <inheritdoc />
     public override IWildcardMatcher? WildcardMatcher => _wildcardMatcher;
+
+    /// <inheritdoc />
+    public override IAsgardTraceContext? Trace => _trace;
 }

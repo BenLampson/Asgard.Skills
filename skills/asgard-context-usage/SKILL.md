@@ -1,13 +1,13 @@
 ---
 name: asgard-context-usage
-description: AsgardContext 使用 skill。Use when a task needs AsgardContext, AbsAsgardContext, shared infrastructure access, null-safe capability usage, service lifetime reasoning, or guidance on whether to use context versus direct dependency injection in Asgard.
+description: AsgardContext 使用 skill。Use when a task needs AsgardContext, AbsAsgardContext, shared infrastructure access, null-safe capability usage, Trace note/tag usage, service lifetime reasoning, or guidance on whether to use context versus direct dependency injection in Asgard.
 ---
 
 # Asgard Context Usage
 
 ## 作用
 
-`AbsAsgardContext` 是 Asgard 框架的**公共能力聚合入口**，所有可选基础设施能力（缓存、消息队列、作业调度、加密等）都通过 Context 统一访问。这种设计避免了循环依赖，支持可选模块优雅降级。
+`AbsAsgardContext` 是 Asgard 框架的**公共能力聚合入口**，所有可选基础设施能力（缓存、消息队列、作业调度、加密、轻量追踪等）都通过 Context 统一访问。这种设计避免了循环依赖，支持可选模块优雅降级。
 
 ## 什么时候使用
 
@@ -31,6 +31,7 @@ description: AsgardContext 使用 skill。Use when a task needs AsgardContext, A
 | `KeyGenerator` | 密钥生成 | 加密模块 |
 | `SystemConfig` | 系统配置 | 配置模块 |
 | `WildcardMatcher` | 通配符匹配 | 工具模块 |
+| `Trace` | 当前请求轻量追踪上下文 | 可观测性 / 追踪模块 |
 
 ## 获取方式
 
@@ -51,12 +52,23 @@ description: AsgardContext 使用 skill。Use when a task needs AsgardContext, A
 | **注册顺序** | 先注册其他模块，**最后**调用 `AddAsgardContext()` |
 | **身份模型** | `IdentityContext.UserInfo` 的统一模型是 `AbsAsgardUserInfo`，需要字段语义与 claim 契约时转到 `$asgard-identity-userinfo` |
 | **租户注入** | `TenantScopeFactory` 创建的作用域会把租户写入身份上下文，随后 FreeSql 仓储和全局过滤会自动读取 |
+| **追踪补充** | `Trace` 只允许追加备注、标签和分支说明，不暴露框架步骤的修改入口 |
 
 ## `IdentityContext` 特别说明
 
 - `IdentityContext` 负责暴露当前请求的身份快照，而不是让业务层自己到处解析 `ClaimsPrincipal`
 - `IdentityContext.UserInfo` 的标准模型是 `AbsAsgardUserInfo`
 - 如果你需要定义 IDP 输出、用户字段扩展、claim 命名、测试登录态，请不要在本 skill 里自行发挥，直接切到 `$asgard-identity-userinfo`
+
+## `Trace` 特别说明
+
+- `Trace` 用于给当前 HTTP 请求补充**可用于定位问题和反推测试条件**的信息
+- 它不是全量审计日志，也不是给你转储任意对象图的入口
+- 业务代码可以调用：
+  - `AsgardContext.Trace?.AddNote(...)`
+  - `AsgardContext.Trace?.AddTag(...)`
+  - `AsgardContext.Trace?.AddBranch(...)`
+- 如果问题本身是“框架追踪能力怎么设计、为什么只记录轻量摘要、哪些入口会自动记步骤”，直接切到 `$asgard-tracing-observability`
 
 ## 代码示例
 
@@ -153,6 +165,24 @@ builder.Services.AddJobScheduler(builder.Configuration);
 builder.Services.AddAsgardContext(); // 最后注入，确保所有服务都已注册
 ```
 
+### 追加轻量追踪备注
+
+```csharp
+/// <summary>
+/// 创建订单
+/// </summary>
+/// <param name="command">订单命令</param>
+/// <returns>订单标识</returns>
+public async Task<Guid> CreateOrderAsync(CreateOrderCommand command)
+{
+    AsgardContext.Trace?.AddTag("OrderId", command.OrderId.ToString());
+    AsgardContext.Trace?.AddBranch("OrderCreate", "ValidateBeforePersist");
+    AsgardContext.Trace?.AddNote("该备注用于反推单元测试输入，不用于记录完整对象图。");
+
+    return await _orderRepository.InsertAsync(command.ToEntity());
+}
+```
+
 ## 推荐做法
 
 - 把 `AbsAsgardContext` 当作公共能力的统一入口，简化依赖注入
@@ -161,6 +191,7 @@ builder.Services.AddAsgardContext(); // 最后注入，确保所有服务都已�
 - 需要后台租户作用域时，优先使用 `TenantScopeFactory`
 - 需要后台租户数据库访问时，先进入 `TenantScopeFactory.CreateScope(tenantId)`，再调用仓储或 `IFreeSql`
 - 在其他模块都注册完成后，再调用 `AddAsgardContext()`
+- 需要定位运行链路或补充测试线索时，优先用 `AsgardContext.Trace` 追加简明备注和标签
 
 ## 不要这样做
 
@@ -175,6 +206,8 @@ builder.Services.AddAsgardContext(); // 最后注入，确保所有服务都已�
 ❌ 不要跳过空检查直接使用 `!` 强制非空，模块未启用时会抛出空引用异常
 
 ❌ 不要在后台任务里手动拼接默认租户过滤，如果已经进入 `TenantScopeFactory` 作用域，框架会自动把租户传给 FreeSql
+
+❌ 不要把 `AsgardContext.Trace` 当作大对象序列化出口，它应该只承载轻量说明信息
 
 ## 参考资料
 

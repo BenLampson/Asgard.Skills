@@ -52,6 +52,7 @@ Asgard 当前更推荐：
 - 插件实现、插件约定、内建插件与外部插件：使用 `$asgard-plugin-development`。
 - 宿主钩子、插件阶段、状态机：使用 `$asgard-plugin-lifecycle`。
 - `AbsAsgardContext` 与公共能力获取：使用 `$asgard-context-usage`。
+- 请求追踪、运行时链路说明、`AsgardContext.Trace`：使用 `$asgard-tracing-observability`。
 - `AbsAsgardUserInfo`、`IAsgardIdentityContext`、IDP claim 设计、测试身份构造：使用 `$asgard-identity-userinfo`。
 - 基类、响应模型、字段语义、什么时候继承：使用 `$asgard-base-types`。
 - 仓储扫描、服务注册、约定装配：使用 `$asgard-repository-service-registration`。
