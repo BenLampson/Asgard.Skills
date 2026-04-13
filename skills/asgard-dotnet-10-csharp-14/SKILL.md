@@ -1,6 +1,6 @@
 ---
 name: asgard-dotnet-10-csharp-14
-description: Asgard .NET 10 / C# 14 coding conventions skill. This is the mandatory coding-rules authority for Asgard. Use when writing any C# code for Asgard framework, following required .NET 10 / C# 14 conventions, comments, file rules, dependency injection patterns, and testing expectations.
+description: Asgard .NET 10 / C# 14 coding conventions skill. This is the mandatory coding-rules authority for Asgard. Use when writing any C# code for Asgard framework, following required .NET 10 / C# 14 conventions, comments, file rules, dependency injection patterns, testing expectations, Serilog infrastructure, or FreeSql-backed database logging conventions.
 ---
 
 # Asgard .NET 10 / C# 14 Coding Conventions
@@ -106,6 +106,7 @@ public static extension {ExtensionName} on {TargetType}<{GenericParameter}>
 
 - 总是给选项配置加上 `.ValidateOnStart()`
 - 结构化日志使用占位符，不使用字符串插值
+- Asgard 数据库日志统一走 `LogConfig.Database` + Serilog + 独立 `IFreeSql` + `Channel` 批量写入
 - HttpClient 总是通过 `IHttpClientFactory` 注入
 - HttpClient 总是加上 `AddStandardResilienceHandler()`
 - 后台任务使用 `BackgroundService`

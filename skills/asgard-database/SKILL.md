@@ -32,6 +32,7 @@ description: Asgard 数据库模块 skill。Use when configuring database.enable
 - 新增数据库支持的业务模块
 - 解释数据库配置与仓储分层的约定
 - 调试数据库连接问题
+- 设计或解释基于 FreeSql 的数据库日志存储能力
 
 ## 配置方式
 
@@ -78,6 +79,59 @@ app.UseAuthorization();
 | `oracle` | Oracle | Oracle |
 | `dm` | Dameng | 达梦数据库 |
 | `kingbase / 人大金仓` | KingbaseES | 人大金仓 |
+
+## 数据库日志约定
+
+Asgard 的数据库日志不属于业务仓储层，而是日志基础设施的一部分。它虽然同样基于 FreeSql，但有一套独立边界：
+
+- 数据库日志通过 `LogConfig.Database` 启用，不走 `AddDatabase(DatabaseConfig)` 注册路径
+- 数据库日志必须自建独立 `IFreeSql`，不要复用业务主库 `IFreeSql`
+- `logging.database.provider` 与主数据库 `database.provider` 使用同一套 provider 语义
+- 启动时允许自动同步一次日志表结构
+- 运行期使用 `Channel` 做异步批量落库，不在业务线程中直接插入数据库
+- 停止时必须尽量冲刷尾批次日志，再释放日志数据库连接
+
+配置示例：
+
+```yaml
+logging:
+  database:
+    enabled: true
+    provider: mysql
+    connectionString: "Server=localhost;Database=asgard_logs;Uid=root;Pwd=123456;"
+    tableName: app_logs
+    batchSize: 100
+    period: 2
+```
+
+推荐字段：
+
+- `Id`
+- `Timestamp`
+- `Level`
+- `Message`
+- `MessageTemplate`
+- `Exception`
+- `PropertiesJson`
+- `TraceId`
+- `SpanId`
+- `MachineName`
+- `ThreadId`
+
+实现建议：
+
+- `Message` 保存渲染后的最终文本，便于直接检索
+- `MessageTemplate` 保存模板原文，便于结构化统计
+- `PropertiesJson` 保存结构化属性展开后的 JSON
+- `TraceId` / `SpanId` 优先从日志属性获取，没有时再回退到当前链路上下文
+- 后台写入异常只记诊断日志，不反抛回业务线程
+
+不要这样做：
+
+- ❌ 不要把数据库日志表当业务实体表纳入仓储层
+- ❌ 不要让日志写入复用租户过滤或业务仓储基类
+- ❌ 不要在 `Emit` 或业务日志调用点同步写数据库
+- ❌ 不要遗漏关闭阶段的 flush
 
 ## 代码组织分层
 

@@ -78,6 +78,75 @@ logger.LogInformation("User {UserId} created at {CreatedAt}", userId, createdAt)
 logger.LogInformation($"User {userId} created at {createdAt}");
 ```
 
+### Asgard FreeSql Database Logging
+
+Use Asgard `LogConfig` database sink when logs need to be persisted into a database table:
+
+```csharp
+var config = new LogConfig
+{
+    MinimumLevel = LogLevel.Information,
+    Console = new ConsoleSinkOptions
+    {
+        Enabled = true
+    },
+    Database = new DatabaseSinkOptions
+    {
+        Enabled = true,
+        Provider = "MySQL",
+        ConnectionString = "Server=localhost;Database=asgard_logs;Uid=root;Pwd=123456;",
+        TableName = "app_logs",
+        BatchSize = 100,
+        Period = 2
+    }
+};
+
+services.AddAsgardSerilog(config);
+```
+
+YAML:
+
+```yaml
+logging:
+  database:
+    enabled: true
+    provider: MySQL
+    connectionString: "Server=localhost;Database=asgard_logs;Uid=root;Pwd=123456;"
+    tableName: app_logs
+    batchSize: 100
+    period: 2
+```
+
+Rules:
+
+- Use an independent `IFreeSql` instance for database logging, not the application data `IFreeSql`.
+- Keep `logging.database.provider` semantics aligned with `database.provider`.
+- Sync the log table structure once during startup before accepting writes.
+- Use `Channel.CreateUnbounded` for the in-process queue so business threads are not blocked by database latency.
+- Flush immediately when queue size reaches `BatchSize`, or flush on timer when `Period` seconds elapse first.
+- On shutdown, dispose the Serilog pipeline with `dispose: true` so the final batch can be flushed.
+- Record sink/worker failures into a diagnostic channel such as `Serilog.Debugging.SelfLog`; do not throw back into business code.
+
+Recommended columns:
+
+- `Id`
+- `Timestamp`
+- `Level`
+- `Message`
+- `MessageTemplate`
+- `Exception`
+- `PropertiesJson`
+- `TraceId`
+- `SpanId`
+- `MachineName`
+- `ThreadId`
+
+Testing guidance:
+
+- Validate configuration for `provider`, `connectionString`, `batchSize`, and `period`.
+- Add queue behavior tests for batch flush, timer flush, and shutdown flush.
+- Use an environment variable such as `ASGARD_TEST_MYSQL_CONNECTION_STRING` for optional real-database integration tests.
+
 ## HTTP Client
 
 Always use `IHttpClientFactory`:
