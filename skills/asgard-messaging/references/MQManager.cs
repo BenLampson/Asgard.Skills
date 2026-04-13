@@ -6,7 +6,7 @@ namespace Asgard.Core.Messaging;
 /// <remarks>
 /// <para>
 /// 此类独立于 IoC 容器，在系统启动阶段（Phase 3）完成初始化和连接验证。
-/// 初始化时会创建 RabbitMQ/Kafka 连接，并通过健康检查验证可用性。
+/// 初始化时会创建 RabbitMQ 连接，并通过健康检查验证可用性。
 /// </para>
 /// </remarks>
 public sealed class MQManager : IMQManager
@@ -39,11 +39,11 @@ public sealed class MQManager : IMQManager
     /// <inheritdoc/>
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
-        _logger.LogDebug("正在初始化消息队列系统（Provider: {Provider}）...", _config.Provider);
+        _logger.LogDebug("正在初始化消息队列系统（RabbitMQ）...");
 
         _config.Validate();
 
-        // 创建消息队列实例（内部会创建 RabbitMQ/Kafka 连接）
+        // 创建消息队列实例（内部会创建 RabbitMQ 连接）
         _messageQueue = new MessageQueue(_config);
 
         // 验证连接可用性
@@ -58,10 +58,10 @@ public sealed class MQManager : IMQManager
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "消息队列连接验证失败（Provider: {Provider}）", _config.Provider);
+            _logger.LogError(ex, "消息队列连接验证失败（RabbitMQ）");
             await _messageQueue.DisposeAsync();
             _messageQueue = null;
-            throw new InvalidOperationException($"消息队列连接验证失败（Provider: {_config.Provider}）", ex);
+            throw new InvalidOperationException("消息队列连接验证失败（RabbitMQ）", ex);
         }
 
         IsConnected = true;
@@ -69,7 +69,7 @@ public sealed class MQManager : IMQManager
     }
 
     /// <inheritdoc/>
-    public async Value DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         if (_disposed) return;
         _disposed = true;

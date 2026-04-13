@@ -1,6 +1,5 @@
 messaging:
   enabled: {Enabled}
-  provider: {Provider} # RabbitMQ or Kafka
   rabbitmq:
     enabled: {RabbitMQEnabled}
     hostName: "{HostName}"
@@ -12,17 +11,6 @@ messaging:
     requestedConnectionTimeout: {RequestedConnectionTimeout}
     retryCount: {RetryCount}
     retryIntervalMilliseconds: {RetryIntervalMilliseconds}
-  kafka:
-    enabled: {KafkaEnabled}
-    bootstrapServers: "{BootstrapServers}"
-    groupId: "{GroupId}"
-    acks: {Acks} # 0, 1, or -1
-    retries: {Retries}
-    numPartitions: {NumPartitions}
-    replicationFactor: {ReplicationFactor}
-    sessionTimeoutMs: {SessionTimeoutMs}
-    maxPollIntervalMs: {MaxPollIntervalMs}
-    maxPollRecords: {MaxPollRecords}
   tracing:
     enabled: {TracingEnabled}
   retry:

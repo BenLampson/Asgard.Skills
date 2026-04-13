@@ -29,10 +29,10 @@ namespace Asgard.Abstractions;
 ///         _context = context;
 ///     }
 ///     
-///     public async Task<Order> GetOrderAsync(int id)
+///     public async Task&lt;Order&gt; GetOrderAsync(int id)
 ///     {
 ///         // 先查缓存
-///         var cached = await _context.Cache?.GetAsync<Order>($"order:{id}")!;
+///         var cached = await _context.Cache?.GetAsync&lt;Order&gt;($"order:{id}")!;
 ///         if (cached != null) return cached;
 ///         
 ///         // 查数据库...
@@ -164,7 +164,7 @@ public abstract class AbsAsgardContext
     /// </value>
     /// <remarks>
     /// <para>
-    /// 消息队列提供消息的发布和订阅功能，支持 RabbitMQ 和 Kafka。
+/// 消息队列提供消息的发布和订阅功能，当前默认基于 RabbitMQ 实现。
     /// </para>
     /// <para>
     /// <b>使用场景：</b>
@@ -297,4 +297,3 @@ public abstract class AbsAsgardContext
     /// </remarks>
     public abstract IAsgardTraceContext? Trace { get; }
 }
-

@@ -17,22 +17,10 @@ public class MQConfig : ISystemConfig
     public bool Enabled { get; set; } = false;
 
     /// <summary>
-    /// 获取或设置选定的消息队列提供商。
-    /// </summary>
-    [ConfigPath("messaging.provider", DefaultValue = MQProvider.RabbitMQ)]
-    public MQProvider Provider { get; set; } = MQProvider.RabbitMQ;
-
-    /// <summary>
     /// 获取或设置 RabbitMQ 特定选项。
     /// </summary>
     [ConfigPath("messaging.rabbitmq")]
     public RabbitMQOptions RabbitMQ { get; set; } = new();
-
-    /// <summary>
-    /// 获取或设置 Kafka 特定选项。
-    /// </summary>
-    [ConfigPath("messaging.kafka")]
-    public KafkaOptions Kafka { get; set; } = new();
 
     /// <summary>
     /// 获取或设置消息追踪选项。
@@ -97,22 +85,17 @@ public class MQConfig : ISystemConfig
     /// <remarks>
     /// 此方法在配置加载后自动调用。它验证以下内容：
     /// <list type="number">
-    ///   <item><description>RabbitMQ、Kafka、Tracing、Retry 和 DelayedMessage 配置对象不为 null</description></item>
+    ///   <item><description>RabbitMQ、Tracing、Retry 和 DelayedMessage 配置对象不为 null</description></item>
     ///   <item><description>Tracing、Retry 和 DelayedMessage 配置有效</description></item>
-    ///   <item><description>提供商特定选项有效</description></item>
+    ///   <item><description>RabbitMQ 相关选项有效</description></item>
     /// </list>
-    /// 注意：仅当消息队列模块启用时（Enabled = true）才执行提供商特定验证。
+    /// 注意：仅当消息队列模块启用时（Enabled = true）才执行 RabbitMQ 选项验证。
     /// </remarks>
     public void Validate()
     {
         if (RabbitMQ is null)
         {
             throw new InvalidOperationException(MessagingErrorMessages.RabbitMQConfigCannotBeNull);
-        }
-
-        if (Kafka is null)
-        {
-            throw new InvalidOperationException(MessagingErrorMessages.KafkaConfigCannotBeNull);
         }
 
         if (Tracing is null)
@@ -134,20 +117,10 @@ public class MQConfig : ISystemConfig
         Retry.Validate();
         DelayedMessage.Validate();
 
-        // 仅当模块启用时验证提供商特定选项
+        // 仅在模块启用时验证 RabbitMQ 参数，避免纯声明配置阻塞宿主启动。
         if (Enabled)
         {
-            switch (Provider)
-            {
-                case MQProvider.RabbitMQ:
-                    ValidateRabbitMQOptions();
-                    break;
-                case MQProvider.Kafka:
-                    ValidateKafkaOptions();
-                    break;
-                default:
-                    throw new InvalidOperationException($"Unsupported MQ provider: {Provider}");
-            }
+            ValidateRabbitMQOptions();
         }
     }
 
@@ -191,59 +164,6 @@ public class MQConfig : ISystemConfig
         if (RabbitMQ.RetryIntervalMilliseconds <= 0)
         {
             throw new InvalidOperationException(MessagingErrorMessages.RabbitMQRetryIntervalMustBeGreaterThanZero);
-        }
-    }
-
-    private void ValidateKafkaOptions()
-    {
-        if (!Kafka.Enabled)
-        {
-            throw new InvalidOperationException("提供商是 Kafka，但 Kafka 已被禁用。");
-        }
-
-        if (string.IsNullOrWhiteSpace(Kafka.BootstrapServers))
-        {
-            throw new InvalidOperationException("Kafka BootstrapServers 是必需的。");
-        }
-
-        if (string.IsNullOrWhiteSpace(Kafka.GroupId))
-        {
-            throw new InvalidOperationException("Kafka GroupId 是必需的。");
-        }
-
-        if (Kafka.SessionTimeoutMs <= 0)
-        {
-            throw new InvalidOperationException("Kafka SessionTimeoutMs 必须大于 0。");
-        }
-
-        if (Kafka.MaxPollIntervalMs <= 0)
-        {
-            throw new InvalidOperationException("Kafka MaxPollIntervalMs 必须大于 0。");
-        }
-
-        if (Kafka.MaxPollRecords <= 0)
-        {
-            throw new InvalidOperationException("Kafka MaxPollRecords 必须大于 0。");
-        }
-
-        if (Kafka.Acks is not (0 or 1 or -1))
-        {
-            throw new InvalidOperationException("Kafka Acks 必须是 0、1 或 -1。");
-        }
-
-        if (Kafka.Retries < 0)
-        {
-            throw new InvalidOperationException("Kafka 重试次数不能为负数。");
-        }
-
-        if (Kafka.NumPartitions <= 0)
-        {
-            throw new InvalidOperationException("Kafka NumPartitions 必须大于 0。");
-        }
-
-        if (Kafka.ReplicationFactor <= 0)
-        {
-            throw new InvalidOperationException("Kafka ReplicationFactor 必须大于 0。");
         }
     }
 }

@@ -24,7 +24,7 @@ namespace Asgard.Abstractions;
 /// {
 ///     private readonly AbsAsgardContext _context;
 ///     
-///     public OrderService(AbsAsgardContext context)
+///     public MyService(AbsAsgardContext context)
 ///     {
 ///         _context = context;
 ///     }
@@ -164,7 +164,7 @@ public abstract class AbsAsgardContext
     /// </value>
     /// <remarks>
     /// <para>
-    /// 消息队列提供消息的发布和订阅功能，支持 RabbitMQ 和 Kafka。
+    /// 消息队列提供消息的发布和订阅功能，当前默认基于 RabbitMQ 实现。
     /// </para>
     /// <para>
     /// <b>使用场景：</b>
