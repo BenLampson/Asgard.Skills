@@ -42,6 +42,11 @@
 - 只有 attribute 无法满足时，才写显式集中配置
 - `Mapper` 只负责模型转换，不负责业务判断
 - `Asgard.PluginSdk` 已经带上常用映射依赖，优先复用，不要额外再造一套映射方案
+- `Asgard.PluginSdk.PluginObjectMapper` 是默认入口，优先复用
+- `PluginObjectMapper` 支持 `class -> class` 的同名属性映射，不需要固定继承基类
+- 对象转换默认使用 `PluginObjectMapper.Map<TSource, TDestination>(source)`
+- 应用更新默认使用 `PluginObjectMapper.MapToExisting<TSource, TDestination>(source, destination)`
+- 集合转换默认使用 `PluginObjectMapper.MapList<TSource, TDestination>(source)`
 
 ## 推荐分工
 

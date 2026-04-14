@@ -11,7 +11,8 @@ Asgard 使用强类型配置系统，从 YAML 文件、环境变量、命令行�
 
 结构与规则边界：
 
-- `app.yaml` 与 `plugin.yaml` 固定位于项目根目录
+- `plugin.yaml` 默认位于插件主体项目根目录
+- `app.yaml` 默认由 starter / host 启动项目加载；单项目快速验证时也可位于同项目根目录
 - 配置类默认位于 `Config/PluginConfigs` 或 `Config/{ThirdPartyName}`
 - 项目结构见 `$asgard-plugin-structure`
 - 编码硬规则见 `$asgard-dotnet-10-csharp-14`
@@ -148,7 +149,7 @@ protected override Task OnConfigureServicesAsync(
     IPluginServiceConfigurationContext context,
     CancellationToken cancellationToken)
 {
-    var config = context.AddPluginConventions<{PluginName}, {ConfigName}>(this);
+    var config = context.AddPluginConventions<{PluginName}, {ConfigName}>();
     {AdditionalRegistration}
     return Task.CompletedTask;
 }
@@ -156,8 +157,8 @@ protected override Task OnConfigureServicesAsync(
 
 ## 推荐做法
 
-- 优先使用项目根目录 `app.yaml` 作为宿主主配置文件
-- `app.yaml` 与 `plugin.yaml` 固定位于项目根目录，不要再套 `config/`
+- 优先在启动承载项目使用 `app.yaml` 作为宿主主配置文件
+- `plugin.yaml` 默认位于插件主体项目根目录；`app.yaml` 由启动承载方加载；两者都不要再套 `config/`
 - 配置宿主监听地址时，使用 `host.kestrel.endpoints.*.url`，不要写 `host.port`
 - 每个配置类通过 `ConfigPath` 绑定到明确路径，不要散布魔法字符串
 - 插件独立配置放 `plugin.yaml`，不要混进宿主 `app.yaml`

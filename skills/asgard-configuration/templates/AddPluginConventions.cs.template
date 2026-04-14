@@ -5,7 +5,7 @@ protected override Task OnConfigureServicesAsync(
     IPluginServiceConfigurationContext context,
     CancellationToken cancellationToken)
 {
-    var config = context.AddPluginConventions<{PluginName}, {ConfigName}>(this);
+    var config = context.AddPluginConventions<{PluginName}, {ConfigName}>();
     {AdditionalRegistration}
     return Task.CompletedTask;
 }

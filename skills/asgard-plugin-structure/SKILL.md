@@ -324,6 +324,11 @@ Entity
 - 只有 attribute 无法表达时，才在 `Mapper/` 中补显式配置
 - 不要把转换逻辑散落在 Controller 或 Service 里
 - `Asgard.PluginSdk` 已经带上常用映射能力，默认先用框架已有能力，不要另起一套
+- 优先使用 `Asgard.PluginSdk` 提供的 `PluginObjectMapper`
+- `PluginObjectMapper` 默认支持 `class -> class` 同名同类型（或类型兼容）属性映射，不要求固定继承基类
+- 简单对象转换优先使用 `PluginObjectMapper.Map<TSource, TDestination>(source)`
+- 更新既有实体优先使用 `PluginObjectMapper.MapToExisting<TSource, TDestination>(source, destination)`
+- 列表转换优先使用 `PluginObjectMapper.MapList<TSource, TDestination>(source)`
 
 ## 回答结构问题时的默认判断顺序
 

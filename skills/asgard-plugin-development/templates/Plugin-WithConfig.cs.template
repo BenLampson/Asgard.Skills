@@ -32,7 +32,7 @@ public sealed class {PluginClassName} : PluginBase
         IPluginServiceConfigurationContext context,
         CancellationToken cancellationToken)
     {
-        var pluginConfig = context.AddPluginConventions<{PluginClassName}, {PluginConfigClassName}>(this);
+        var pluginConfig = context.AddPluginConventions<{PluginClassName}, {PluginConfigClassName}>();
 
         _ = pluginConfig;
         _ = context.Services.Add{FeatureName}Module();
