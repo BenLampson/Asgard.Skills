@@ -7,8 +7,8 @@ public class {EntityName}Repository : AbsAsgardRepositoryBase<{EntityName}, {Key
         IFreeSql fsql,
         IMultiLevelCache cache,
         ILogger<{EntityName}Repository> logger,
-        IAsgardIdentityContext identityContext)
-        : base(fsql, cache, logger, identityContext)
+        IAsgardRepositoryContext repositoryContext)
+        : base(fsql, cache, logger, repositoryContext)
     {
     }
 }

@@ -33,7 +33,7 @@ description: Asgard 仓储与服务注册 skill。Use when implementing reposito
 | 步骤 | 做法 |
 |------|------|
 | 1. 标记仓储类 | 添加 `[Repository]` 特性 |
-| 2. 基类继承 | 统一继承 `AbsAsgardRepositoryBase<TEntity, TKey>`，并注入 `IAsgardIdentityContext` |
+| 2. 基类继承 | 统一继承 `AbsAsgardRepositoryBase<TEntity, TKey>`，并注入 `IAsgardRepositoryContext` |
 | 3. 手动批量注册 | `services.AddRepositories(typeof(EntryType).Assembly)` |
 | 3. 插件中注册 | 使用 `context.AddPluginConventions<TPlugin, TConfig>()` 一键完成 |
 
@@ -49,8 +49,8 @@ public class {EntityName}Repository : AbsAsgardRepositoryBase<{EntityName}, {Key
         IFreeSql fsql,
         IMultiLevelCache cache,
         ILogger<{EntityName}Repository> logger,
-        IAsgardIdentityContext identityContext)
-        : base(fsql, cache, logger, identityContext)
+        IAsgardRepositoryContext repositoryContext)
+        : base(fsql, cache, logger, repositoryContext)
     {
     }
 }
@@ -59,7 +59,7 @@ public class {EntityName}Repository : AbsAsgardRepositoryBase<{EntityName}, {Key
 **租户仓储补充约定：**
 
 - 如果实体继承 `AbsAsgardTenantEntity`，默认查询路径依赖 FreeSql 全局过滤自动附加当前租户条件
-- 仓储构造函数里应保留 `IAsgardIdentityContext`，让 `AbsAsgardRepositoryBase` 在写入租户实体时自动回填 `TenantId`
+- 仓储构造函数里应注入 `IAsgardRepositoryContext`，让 `AbsAsgardRepositoryBase` 统一获取身份与追踪能力
 - 业务服务和控制器不需要重复计算默认租户过滤，除非场景明确要求跨租户访问
 
 **代码示例 - 手动注册：**

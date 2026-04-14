@@ -13,8 +13,12 @@ namespace Asgard.Abstractions.Data;
 /// [Repository]
 /// public class UserRepository : AbsAsgardRepositoryBase&lt;User, Guid&gt;
 /// {
-///     public UserRepository(IFreeSql fsql, IMultiLevelCache cache, ILogger&lt;UserRepository&gt; logger)
-///         : base(fsql, cache, logger) { }
+///     public UserRepository(
+///         IFreeSql fsql,
+///         IMultiLevelCache cache,
+///         ILogger&lt;UserRepository&gt; logger,
+///         IAsgardRepositoryContext repositoryContext)
+///         : base(fsql, cache, logger, repositoryContext) { }
 /// }
 /// </code>
 /// </example>

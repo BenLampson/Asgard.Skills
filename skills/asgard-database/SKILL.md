@@ -138,7 +138,7 @@ logging:
 | 层级 | 职责 | 做法 |
 |------|------|------|
 | **实体层** | 原始数据库对象 | 放在 `Models/Entities` |
-| **仓储层** | 数据访问、CRUD、查询 | 默认放在 `Domains/IRepositories` 与 `Domains/Repositories`，实现类继承 `AbsAsgardRepositoryBase<TEntity, TKey>`，加 `[Repository]` 特性，并注入 `IAsgardIdentityContext` 以启用租户写入回填 |
+| **仓储层** | 数据访问、CRUD、查询 | 默认放在 `Domains/IRepositories` 与 `Domains/Repositories`，实现类继承 `AbsAsgardRepositoryBase<TEntity, TKey>`，加 `[Repository]` 特性，并注入 `IAsgardRepositoryContext` 以统一接入租户与追踪能力 |
 | **业务服务层** | 跨仓储编排、事务、业务逻辑 | 注入多个仓储，处理业务流程 |
 | **控制器层** | API 入口 | 只调用业务服务，不直接访问仓储 |
 
@@ -154,8 +154,8 @@ public class {EntityName}Repository : AbsAsgardRepositoryBase<{EntityName}, {Key
         IFreeSql fsql,
         IMultiLevelCache cache,
         ILogger<{EntityName}Repository> logger,
-        IAsgardIdentityContext identityContext)
-        : base(fsql, cache, logger, identityContext)
+        IAsgardRepositoryContext repositoryContext)
+        : base(fsql, cache, logger, repositoryContext)
     {
     }
 }
@@ -164,7 +164,7 @@ public class {EntityName}Repository : AbsAsgardRepositoryBase<{EntityName}, {Key
 ### 多租户约定
 
 - 查询、更新、删除：只要实体继承 `AbsAsgardTenantEntity`，FreeSql 会通过框架注册的 `GlobalFilter` 自动带当前租户条件
-- 新增、更新：如果租户实体的 `TenantId` 为空，`AbsAsgardRepositoryBase` 会从 `IAsgardIdentityContext` 自动回填当前租户
+- 新增、更新：如果租户实体的 `TenantId` 为空，`AbsAsgardRepositoryBase` 会通过 `IAsgardRepositoryContext.IdentityContext` 自动回填当前租户
 - HTTP 请求：租户值来自 `UseAsgardTenant()` 写入的请求身份上下文
 - 后台任务：租户值来自 `ITenantScopeFactory.CreateScope(tenantId)` 创建的作用域
 - 平台级流程：当前租户为空时，不会附加租户过滤，也不会强行写入 `TenantId`
@@ -239,5 +239,5 @@ await repository.UpdateAsync(entity);
 - ❌ 不要把连接字符串硬编码在代码里，通过配置覆盖
 - ❌ 不要自行定义另一套实体或仓储目录结构
 - ❌ 不要为租户实体重复手写 `TenantId` 过滤作为默认路径，这会和框架全局过滤割裂
-- ❌ 不要省略仓储构造函数里的 `IAsgardIdentityContext`，否则租户实体写入时无法自动回填 `TenantId`
+- ❌ 不要省略仓储构造函数里的 `IAsgardRepositoryContext`，否则仓储无法统一获得租户回填与链路追踪能力
 - ❌ 不要对乐观锁实体使用 `dto.ToEntity()` 后直接 `UpdateAsync(entity)`，这会丢失数据库当前 `Version` 并覆盖持久化字段
