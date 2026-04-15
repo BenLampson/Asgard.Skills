@@ -7,7 +7,7 @@ description: AsgardContext 使用 skill。Use when a task needs AsgardContext, A
 
 ## 作用
 
-`AbsAsgardContext` 是 Asgard 框架的**公共能力聚合入口**，所有可选基础设施能力（缓存、消息队列、作业调度、加密、轻量追踪等）都通过 Context 统一访问。这种设计避免了循环依赖，支持可选模块优雅降级。
+`AbsAsgardContext` 是 Asgard 框架的**公共能力聚合入口**，所有可选基础设施能力（缓存、消息队列、分布式锁、作业调度、加密、轻量追踪等）都通过 Context 统一访问。这种设计避免了循环依赖，支持可选模块优雅降级。
 
 ## 什么时候使用
 
@@ -26,6 +26,7 @@ description: AsgardContext 使用 skill。Use when a task needs AsgardContext, A
 | `IdentityContext` | 当前身份上下文 | 身份认证模块 |
 | `JobScheduler` | 作业调度器 | 作业调度模块 |
 | `MessageQueue` | 消息队列 | 消息模块 |
+| `DistributedLock` | 基于 Redis 的分布式锁 | 分布式锁模块 |
 | `Encryption` | 加密服务（AES、MD5）| 加密模块 |
 | `PasswordHasher` | 密码哈希（BCrypt）| 安全模块 |
 | `KeyGenerator` | 密钥生成 | 加密模块 |
@@ -155,6 +156,38 @@ public async Task ExecuteAsync(CancellationToken cancellationToken)
 }
 ```
 
+### 分布式锁使用（带优雅降级）
+
+```csharp
+/// <summary>
+/// 执行单实例任务
+/// </summary>
+/// <param name="cancellationToken">取消令牌</param>
+public async Task ExecuteOnceAsync(CancellationToken cancellationToken)
+{
+    if (AsgardContext.DistributedLock == null)
+    {
+        await {FallbackLogic}(cancellationToken);
+        return;
+    }
+
+    await using var handle = await AsgardContext.DistributedLock.TryAcquireAsync(
+        "jobs:{JobName}",
+        new DistributedLockAcquireOptions
+        {
+            LeaseTime = TimeSpan.FromMinutes(2)
+        },
+        cancellationToken);
+
+    if (handle == null)
+    {
+        return;
+    }
+
+    await {BusinessLogic}(cancellationToken);
+}
+```
+
 ### 注册服务（Program.cs）
 
 ```csharp
@@ -188,6 +221,7 @@ public async Task<Guid> CreateOrderAsync(CreateOrderCommand command)
 - 把 `AbsAsgardContext` 当作公共能力的统一入口，简化依赖注入
 - 访问任何能力**先判空**，支持模块动态启用禁用
 - 判空后**一定要降级**，不要因为模块未启用就直接抛出异常
+- 需要多实例互斥时，优先通过 `AsgardContext.DistributedLock` 获取锁能力
 - 需要后台租户作用域时，优先使用 `TenantScopeFactory`
 - 需要后台租户数据库访问时，先进入 `TenantScopeFactory.CreateScope(tenantId)`，再调用仓储或 `IFreeSql`
 - 在其他模块都注册完成后，再调用 `AddAsgardContext()`
@@ -195,7 +229,7 @@ public async Task<Guid> CreateOrderAsync(CreateOrderCommand command)
 
 ## 不要这样做
 
-❌ 不要假设 `Cache`、`MessageQueue`、`JobScheduler` 一定存在，始终做空检查
+❌ 不要假设 `Cache`、`MessageQueue`、`DistributedLock`、`JobScheduler` 一定存在，始终做空检查
 
 ❌ 不要把所有依赖都替换成 `IServiceProvider`，`AbsAsgardContext` 已经提供了更稳定的类型入口
 

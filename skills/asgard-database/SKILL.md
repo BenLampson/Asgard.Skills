@@ -138,7 +138,7 @@ logging:
 | 层级 | 职责 | 做法 |
 |------|------|------|
 | **实体层** | 原始数据库对象 | 放在 `Models/Entities` |
-| **仓储层** | 数据访问、CRUD、查询 | 默认放在 `Domains/IRepositories` 与 `Domains/Repositories`，实现类继承 `AbsAsgardRepositoryBase<TEntity, TKey>`，加 `[Repository]` 特性，并注入 `IAsgardRepositoryContext` 以统一接入租户与追踪能力 |
+| **仓储层** | 数据访问、CRUD、查询 | 默认放在 `Domains/IRepositories` 与 `Domains/Repositories`，实现类继承 `AbsAsgardRepositoryBase<TEntity, TKey>`，加 `[Repository]` 特性，并注入 `IAsgardRepositoryContext` 以统一接入租户、追踪与分布式锁能力 |
 | **业务服务层** | 跨仓储编排、事务、业务逻辑 | 注入多个仓储，处理业务流程 |
 | **控制器层** | API 入口 | 只调用业务服务，不直接访问仓储 |
 
@@ -239,5 +239,5 @@ await repository.UpdateAsync(entity);
 - ❌ 不要把连接字符串硬编码在代码里，通过配置覆盖
 - ❌ 不要自行定义另一套实体或仓储目录结构
 - ❌ 不要为租户实体重复手写 `TenantId` 过滤作为默认路径，这会和框架全局过滤割裂
-- ❌ 不要省略仓储构造函数里的 `IAsgardRepositoryContext`，否则仓储无法统一获得租户回填与链路追踪能力
+- ❌ 不要省略仓储构造函数里的 `IAsgardRepositoryContext`，否则仓储无法统一获得租户回填、链路追踪与分布式锁入口
 - ❌ 不要对乐观锁实体使用 `dto.ToEntity()` 后直接 `UpdateAsync(entity)`，这会丢失数据库当前 `Version` 并覆盖持久化字段

@@ -178,6 +178,27 @@ public abstract class AbsAsgardContext
     public abstract IMessageQueue? MessageQueue { get; }
 
     /// <summary>
+    /// 获取分布式锁服务。
+    /// </summary>
+    /// <value>
+    /// 分布式锁服务实例，如果未注册则返回 <c>null</c>。
+    /// </value>
+    /// <remarks>
+    /// <para>
+    /// 分布式锁服务提供基于 Redis 的通用互斥能力，适合多实例任务防重、同业务键串行化等场景。
+    /// </para>
+    /// <para>
+    /// <b>使用场景：</b>
+    /// <list type="bullet">
+    ///   <item><description>定时任务单实例执行</description></item>
+    ///   <item><description>同一业务键并发串行化</description></item>
+    ///   <item><description>防止重复提交或重复初始化</description></item>
+    /// </list>
+    /// </para>
+    /// </remarks>
+    public abstract IDistributedLock? DistributedLock { get; }
+
+    /// <summary>
     /// 获取加密服务。
     /// </summary>
     /// <value>

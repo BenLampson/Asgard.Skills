@@ -48,6 +48,7 @@ public class AsgardContext : AbsAsgardContext
     private readonly IAsgardIdentityContext? _identityContext;
     private readonly IJobScheduler? _jobScheduler;
     private readonly IMessageQueue? _messageQueue;
+    private readonly IDistributedLock? _distributedLock;
     private readonly IEncryptionService? _encryption;
     private readonly IPasswordHasher? _passwordHasher;
     private readonly IKeyGenerator? _keyGenerator;
@@ -64,6 +65,7 @@ public class AsgardContext : AbsAsgardContext
     /// <param name="identityContext">身份上下文（可选）。</param>
     /// <param name="jobScheduler">任务调度器（可选）。</param>
     /// <param name="messageQueue">消息队列（可选）。</param>
+    /// <param name="distributedLock">分布式锁服务（可选）。</param>
     /// <param name="encryption">加密服务（可选）。</param>
     /// <param name="passwordHasher">密码哈希器（可选）。</param>
     /// <param name="keyGenerator">密钥生成器（可选）。</param>
@@ -93,6 +95,7 @@ public class AsgardContext : AbsAsgardContext
         IAsgardIdentityContext? identityContext = null,
         IJobScheduler? jobScheduler = null,
         IMessageQueue? messageQueue = null,
+        IDistributedLock? distributedLock = null,
         IEncryptionService? encryption = null,
         IPasswordHasher? passwordHasher = null,
         IKeyGenerator? keyGenerator = null,
@@ -106,6 +109,7 @@ public class AsgardContext : AbsAsgardContext
         _identityContext = identityContext;
         _jobScheduler = jobScheduler;
         _messageQueue = messageQueue;
+        _distributedLock = distributedLock;
         _encryption = encryption;
         _passwordHasher = passwordHasher;
         _keyGenerator = keyGenerator;
@@ -131,6 +135,9 @@ public class AsgardContext : AbsAsgardContext
 
     /// <inheritdoc />
     public override IMessageQueue? MessageQueue => _messageQueue;
+
+    /// <inheritdoc />
+    public override IDistributedLock? DistributedLock => _distributedLock;
 
     /// <inheritdoc />
     public override IEncryptionService? Encryption => _encryption;

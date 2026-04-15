@@ -72,6 +72,7 @@ public static class AsgardContextServiceCollectionExtensions
     /// </example>
     public static IServiceCollection AddAsgardContext(this IServiceCollection services)
     {
+        _=services.AddScoped<IAsgardRepositoryContext, AsgardRepositoryContext>();
         _=services.AddScoped<AbsAsgardContext, AsgardContext>();
         return services;
     }

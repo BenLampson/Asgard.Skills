@@ -59,7 +59,7 @@ public class {EntityName}Repository : AbsAsgardRepositoryBase<{EntityName}, {Key
 **租户仓储补充约定：**
 
 - 如果实体继承 `AbsAsgardTenantEntity`，默认查询路径依赖 FreeSql 全局过滤自动附加当前租户条件
-- 仓储构造函数里应注入 `IAsgardRepositoryContext`，让 `AbsAsgardRepositoryBase` 统一获取身份与追踪能力
+- 仓储构造函数里应注入 `IAsgardRepositoryContext`，让 `AbsAsgardRepositoryBase` 统一获取身份、追踪与分布式锁入口
 - 业务服务和控制器不需要重复计算默认租户过滤，除非场景明确要求跨租户访问
 
 **代码示例 - 手动注册：**

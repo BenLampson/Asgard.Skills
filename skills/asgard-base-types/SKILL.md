@@ -22,7 +22,7 @@ description: Asgard 基类与基础模型 skill。Use when another AI needs the 
 |------|------|----------|
 | `BaseController` | Web API 控制器基类 | 所有控制器继承它 |
 | `PluginBase` | 插件基类 | 所有插件继承它 |
-| `AbsAsgardContext` | 框架统一上下文 | 注入它获取缓存、消息、作业等能力 |
+| `AbsAsgardContext` | 框架统一上下文 | 注入它获取缓存、消息、分布式锁、作业等能力 |
 | `AbsAsgardUserInfo` | 框架统一用户信息基类 | IDP、身份上下文、授权链路都围绕它建模 |
 | `Response<T>` | 统一 API 响应模型 | 所有非分页 API 默认返回此类型 |
 | `PageResponse<T>` | 页码分页响应 | 所有页码分页查询必须返回 |
@@ -199,6 +199,7 @@ public class {ServiceName}Service : I{ServiceName}Service
 | `Cache` | 多级缓存 |
 | `JobScheduler` | 作业调度 |
 | `MessageQueue` | 消息队列 |
+| `DistributedLock` | 分布式锁 |
 | `IdentityContext` | 当前身份信息 |
 | `TenantScopeFactory` | 租户作用域工厂 |
 | `Encryption` | 加密服务 |
