@@ -1,0 +1,11 @@
+{
+  "sub": "{Subject}",
+  "user_id": "{UserId}",
+  "tenant_id": "{TenantId}",
+  "token_type": "{TokenType}",
+  "roles": ["{Role}"],
+  "permissions": ["{Permission}"],
+  "scope": ["{Scope}"],
+  "userMetadatas": {},
+  "tenantMetadata": {}
+}

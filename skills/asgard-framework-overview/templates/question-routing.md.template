@@ -9,7 +9,7 @@
 - [ ] **宿主项目创建/启动** → 使用 `$asgard-host-project`
 - [ ] **项目结构/GlobalUsings/目录分层** → 使用 `$asgard-plugin-structure`
 - [ ] **配置相关（app.yaml/plugin.yaml/ConfigPath）** → 使用 `$asgard-configuration`
-- [ ] **宿主功能（静态文件/认证/Swagger/限流/健康检查）** → 使用 `$asgard-host-features`
+- [ ] **宿主功能（静态文件/宿主 JWT 接线/Swagger/限流/健康检查）** → 使用 `$asgard-host-features`
 - [ ] **Web API/控制器/统一响应** → 使用 `$asgard-api-development`
 - [ ] **插件开发/插件约定** → 使用 `$asgard-plugin-development`
 - [ ] **插件生命周期/阶段/状态机** → 使用 `$asgard-plugin-lifecycle`
@@ -20,7 +20,8 @@
 - [ ] **缓存/多级缓存** → 使用 `$asgard-cache`
 - [ ] **消息队列/发布订阅** → 使用 `$asgard-messaging`
 - [ ] **作业调度/定时任务** → 使用 `$asgard-job-scheduling`
-- [ ] **认证授权/安全** → 使用 `$asgard-security`
+- [ ] **Web 登录流/OIDC/PKCE/token 契约** → 使用 `$identity-integration`
+- [ ] **加密/密码哈希/密钥生成** → 使用 `$asgard-security`
 - [ ] **编码规范/.NET 10/C# 14** → 使用 `$asgard-dotnet-10-csharp-14`
 
 ## 第二步：确认全局共识

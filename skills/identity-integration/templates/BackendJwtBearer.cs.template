@@ -1,0 +1,8 @@
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.Authority = "{Authority}";
+        options.Audience = "{Audience}";
+        options.RequireHttpsMetadata = true;
+    });

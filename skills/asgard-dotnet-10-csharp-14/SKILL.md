@@ -7,7 +7,7 @@ description: Asgard .NET 10 / C# 14 coding conventions skill. This is the mandat
 
 ## 作用
 
-本 skill 定义了 Asgard 框架下编写 .NET 10 / C# 14 代码时必须遵循的编码规范和最佳实践。包括语言特性使用、基础设施模式、安全、测试、反模式避免、推荐类库等内容。
+本 skill 定义了 Asgard 框架下编写 .NET 10 / C# 14 代码时必须遵循的编码规范和最佳实践。包括语言特性使用、基础设施模式、通用后端安全编码、测试、反模式避免、推荐类库等内容。
 
 **重要**：
 
@@ -22,8 +22,14 @@ description: Asgard .NET 10 / C# 14 coding conventions skill. This is the mandat
 - **编写任何新代码时** - 确保遵循 C# 14 语法和 Asgard 约定
 - **重构现有代码** - 将旧语法升级为新标准
 - **添加依赖注入** - 遵循生命周期约定
-- **编写安全相关代码** - 遵循认证授权最佳实践
+- **编写通用安全相关后端代码** - 遵循 API token 校验、密钥保护、CORS 等服务端实践
 - **编写集成测试** - 使用 WebApplicationFactory 正确模式
+
+以下内容不属于本 skill 的主职责，请改用对应 skill：
+
+- Web 前端登录流、OIDC、PKCE、IDP 接入：`$identity-integration`
+- `AbsAsgardUserInfo` 与 claim 契约：`$asgard-identity-userinfo`
+- `AsgardAuth` 授权 DSL：`$asgard-auth-authorization`
 
 ## C# 14 语言特性使用指南
 

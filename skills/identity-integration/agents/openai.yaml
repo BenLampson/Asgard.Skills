@@ -1,0 +1,4 @@
+interface:
+  display_name: "Identity Integration"
+  short_description: "处理 IDP、Web PKCE、token 契约与 Asgard 身份接入"
+  default_prompt: "Use $identity-integration to design or integrate login, PKCE, token claims, or backend JWT validation for Asgard systems."

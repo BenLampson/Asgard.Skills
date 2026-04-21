@@ -1,0 +1,12 @@
+# {ApplicationName} OIDC PKCE Checklist
+
+- Frontend type: `{FrontendType}`
+- Flow: `Authorization Code + PKCE`
+- Authority: `{Authority}`
+- ClientId: `{ClientId}`
+- RedirectUri: `{RedirectUri}`
+- PostLogoutRedirectUri: `{PostLogoutRedirectUri}`
+- Scope: `{Scopes}`
+- Access token audience: `{Audience}`
+- Backend validation mode: `{ValidationMode}`
+- Asgard token profile: `{TokenProfile}`

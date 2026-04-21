@@ -1,6 +1,6 @@
 ---
 name: asgard-identity-userinfo
-description: Asgard 身份用户信息 skill。Use when a task needs AbsAsgardUserInfo, IAsgardIdentityContext, IDP claim design, tenant/user identity modeling, or test/user-session construction in Asgard.
+description: Asgard 身份用户信息 skill。Use when a task needs AbsAsgardUserInfo, IAsgardIdentityContext, standard claim contract mapping, tenant/user identity modeling, identity snapshot structure, or test/user-session construction in Asgard.
 ---
 
 # Asgard Identity UserInfo
@@ -20,11 +20,13 @@ description: Asgard 身份用户信息 skill。Use when a task needs AbsAsgardUs
 
 ## 什么时候使用
 
-- 设计或修改登录 / IDP / Token 颁发逻辑时
+- 需要定义或调整 Asgard 标准 claim 契约时
 - 需要定义“当前用户信息”模型时
 - 要从 `AbsAsgardContext.IdentityContext` 读取当前用户信息时
 - 编写授权、租户隔离、权限判断逻辑时
 - 编写需要模拟登录态的测试时
+
+如果问题重点是“前端 Web 如何登录”“为什么 Web 要走 PKCE”“IDP、前端、Asgard API 之间怎么接”，优先切到 `$identity-integration`；本 skill 主要负责 claim 契约和身份模型本身。
 
 ## 先记住的硬约束
 

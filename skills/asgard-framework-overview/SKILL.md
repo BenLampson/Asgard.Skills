@@ -1,6 +1,6 @@
 ---
 name: asgard-framework-overview
-description: Asgard 框架总览与路由 skill。Use when working with the Asgard framework but the request spans multiple modules, the correct entry point is unclear, or another AI needs a high-level map before choosing host, configuration, api, plugin, context, lifecycle, repository, or infrastructure skills.
+description: Asgard 框架总览与路由 skill。Use when working with the Asgard framework but the request spans multiple modules, the correct entry point is unclear, or another AI needs a high-level map before choosing host, configuration, api, plugin, context, lifecycle, repository, infrastructure, identity, login, auth, or security skills.
 ---
 
 # Asgard Framework Overview
@@ -47,6 +47,7 @@ Asgard 当前更推荐：
 - 项目结构、基础文件、目录分层：使用 `$asgard-plugin-structure`。
 - 配置体系、`app.yaml`、`plugin.yaml`、`ConfigPath`：使用 `$asgard-configuration`。
 - `host.staticFiles`、`host.auth`、`host.swagger`、限流、健康检查：使用 `$asgard-host-features`。
+- Web 登录流、OIDC / PKCE、IDP 对接、token 契约与前后端认证协作：使用 `$identity-integration`。
 - Web API、控制器、统一响应：使用 `$asgard-api-development`。
 - `AsgardAuth`、授权 DSL、`token_type` / 角色 / 权限 / metadata 授权：使用 `$asgard-auth-authorization`。
 - 插件实现、插件约定、内建插件与外部插件：使用 `$asgard-plugin-development`。

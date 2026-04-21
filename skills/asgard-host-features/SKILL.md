@@ -1,6 +1,6 @@
 ---
 name: asgard-host-features
-description: Asgard 宿主特性配置与用法 skill。Use when configuring or explaining host.staticFiles, host.cors, host.auth, host.swagger, host.rateLimiting, host.healthCheck, middleware order, tenant middleware placement, or host-managed web features in Asgard.
+description: Asgard 宿主特性配置与用法 skill。Use when configuring or explaining host.staticFiles, host.cors, host.auth, host.swagger, host.rateLimiting, host.healthCheck, middleware order, tenant middleware placement, or host-managed web features in Asgard. For host.auth, this skill covers host-side JWT Bearer registration, middleware wiring, and config semantics, not frontend login flows or PKCE design.
 ---
 
 # Asgard 宿主 Web 功能配置
@@ -12,9 +12,11 @@ description: Asgard 宿主特性配置与用法 skill。Use when configuring or 
 什么时候使用本 skill：
 - 配置新宿主的 `app.yaml` 时
 - 需要开启/关闭某个 Web 功能
-- 添加 CORS、认证、限流、健康检查等功能
+- 添加 CORS、宿主默认 JWT 认证接线、限流、健康检查等功能
 - 调整中间件注册顺序
 - 需要验证配置项有效性
+
+如果问题重点是“前端怎么登录”“Web 为什么要走 PKCE”“IDP、前端、Asgard API 之间怎么协作”，优先切到 `$identity-integration`；本 skill 主要负责宿主 `host.*` 配置和默认 Bearer JWT 接线。
 
 ## 配置结构
 

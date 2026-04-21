@@ -90,7 +90,13 @@ starter 项目的 `Program.cs` 默认负责：
 - 调用 `PluginWebAppDefaults.RunAsync<TPlugin>()` 或 `YggdrasilHost.CreateBuilder(...)`
 - 决定 `app.yaml` 加载路径
 - 解析启动参数
-- 视需要补充认证授权中间件
+- 视需要补充宿主认证接线或授权中间件
+
+其中：
+
+- 宿主默认 JWT / `host.auth` 接线优先看 `$asgard-host-features`
+- Web 登录流、OIDC / PKCE、IDP 对接优先看 `$identity-integration`
+- `AsgardAuth` 授权 DSL 和声明式授权优先看 `$asgard-auth-authorization`
 
 `PluginWebAppDefaults.RunAsync<TPlugin>()` 通常应位于 starter，而不是业务插件主体项目。
 
