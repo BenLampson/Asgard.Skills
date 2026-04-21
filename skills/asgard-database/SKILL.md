@@ -18,6 +18,38 @@ description: Asgard 数据库模块 skill。Use when configuring database.enable
 
 - 只要实体继承 `AbsAsgardBaseEntity` / `AbsAsgardTenantEntity` / `AbsAsgardTenantUserDataEntity`，或存在 `Version` + `[Column(IsVersion = true)]`，更新时默认采用“先查后改”，禁止 `dto.ToEntity()` 后直接 `UpdateAsync(entity)`
 
+当前仓库的数据库设计还必须统一遵守以下结构约束：
+
+- 表名、列名一律使用全小写 `snake_case` 命名，禁止使用 `PascalCase`、`camelCase` 或混合大小写
+- 主键列统一命名为 `id`
+- 多租户业务表默认包含 `tenant_id`
+- 审计与并发控制列统一使用 `create_time`、`update_time`、`create_by`、`update_by`、`deleted`、`version`
+- 关联标识列统一使用 `{entity}_id` 风格，例如 `planet_id`、`faction_id`
+- 若无额外说明，Guid 字符串主键和关联标识优先按 `char(36)` 设计
+- 若无额外说明，时间列优先按 `datetime(3)` 设计
+- 设计建表 SQL、实体映射、迁移脚本、初始化脚本与文档示例时，默认遵循以下 MySQL 风格：
+
+```sql
+CREATE TABLE `city` (
+  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `tenant_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL,
+  `planet_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `faction_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `create_time` datetime(3) NOT NULL,
+  `update_time` datetime(3) NULL DEFAULT NULL,
+  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `deleted` bit(1) NOT NULL DEFAULT b'0',
+  `version` int NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE
+);
+```
+
+- 禁止新增任何数据库外键约束
+- 即使存在逻辑上的实体关联，也只保留关联 ID 列与必要索引，不生成 `FOREIGN KEY`、`REFERENCES`、级联删除或级联更新约束
+
 结构与规则边界：
 
 - 实体默认位于 `Models/Entities`
@@ -241,3 +273,5 @@ await repository.UpdateAsync(entity);
 - ❌ 不要为租户实体重复手写 `TenantId` 过滤作为默认路径，这会和框架全局过滤割裂
 - ❌ 不要省略仓储构造函数里的 `IAsgardRepositoryContext`，否则仓储无法统一获得租户回填、链路追踪与分布式锁入口
 - ❌ 不要对乐观锁实体使用 `dto.ToEntity()` 后直接 `UpdateAsync(entity)`，这会丢失数据库当前 `Version` 并覆盖持久化字段
+- ❌ 不要在建表脚本、迁移或实体映射中新增任何数据库外键
+- ❌ 不要把逻辑关联直接实现成 `FOREIGN KEY` / `REFERENCES` / 级联更新 / 级联删除
