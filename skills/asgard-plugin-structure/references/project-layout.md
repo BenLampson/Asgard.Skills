@@ -5,6 +5,59 @@
 - 正式开发优先采用“插件主体项目 + starter 项目分离”
 - 单项目结构只作为快速验证模式存在
 - 不要默认把 `Program.cs`、`app.yaml`、`plugin.yaml` 都说成插件项目根目录标配
+- 多业务模块插件默认“顶层按 Asgard 标准层，层内按业务模块分组”
+
+## 多业务模块分组规则
+
+正式项目中如果存在多个业务模块、聚合或子域，默认不要把业务模块作为第一层目录后再重复一套 `Models / Domains / Services`。推荐先固定 Asgard 标准层，再在层内按业务模块分组。
+
+推荐结构：
+
+```text
+{PluginProjectName}/
+├── Controllers/
+│   ├── {BusinessModuleName}/
+│   └── {OtherModuleName}/
+├── Mapper/
+│   ├── {BusinessModuleName}/
+│   └── {OtherModuleName}/
+├── Models/
+│   ├── DTO/
+│   │   ├── {BusinessModuleName}/
+│   │   └── {OtherModuleName}/
+│   ├── VO/
+│   │   ├── {BusinessModuleName}/
+│   │   └── {OtherModuleName}/
+│   └── Entities/
+│       ├── {BusinessModuleName}/
+│       └── {OtherModuleName}/
+├── Domains/
+│   ├── IRepositories/
+│   │   ├── {BusinessModuleName}/
+│   │   └── {OtherModuleName}/
+│   └── Repositories/
+│       ├── {BusinessModuleName}/
+│       └── {OtherModuleName}/
+└── Services/
+    ├── IServices/
+    │   ├── {BusinessModuleName}/
+    │   └── {OtherModuleName}/
+    └── Services/
+        ├── {BusinessModuleName}/
+        └── {OtherModuleName}/
+```
+
+不推荐结构：
+
+```text
+{PluginProjectName}/
+└── {BusinessModuleName}/
+    ├── Models/
+    ├── Domains/
+    └── Services/
+```
+
+例外：某个业务模块拥有独立领域引擎、DSL、规则定义、协议适配或运行时内核时，可以保留顶层 `{BusinessModuleName}/` 放这些非 CRUD 分层代码。该模块的 Controller、DTO、VO、Entity、Repository、Service 默认仍放回标准层目录下的模块子目录。
 
 ## 模式 A：单项目快速验证
 
@@ -87,21 +140,21 @@
 - `Controllers/`
   放 API 控制器
 - `Mapper/`
-  放模型映射器
+  放模型映射器；多业务模块时可继续分 `{BusinessModuleName}/`
 - `Models/VO/`
-  放展示用输出模型
+  放展示用输出模型；多业务模块时可继续分 `{BusinessModuleName}/`
 - `Models/DTO/`
-  放输入输出传输模型
+  放输入输出传输模型；多业务模块时可继续分 `{BusinessModuleName}/`
 - `Models/Entities/`
-  放数据库实体
+  放数据库实体；多业务模块时可继续分 `{BusinessModuleName}/`
 - `Domains/IRepositories/`
-  放仓储接口
+  放仓储接口；多业务模块时可继续分 `{BusinessModuleName}/`
 - `Domains/Repositories/`
-  放仓储实现
+  放仓储实现；多业务模块时可继续分 `{BusinessModuleName}/`
 - `Services/IServices/`
-  放服务接口
+  放服务接口；多业务模块时可继续分 `{BusinessModuleName}/`
 - `Services/Services/`
-  放服务实现
+  放服务实现；多业务模块时可继续分 `{BusinessModuleName}/`
 - `Extensions/`
   放扩展方法
 - `Middlewares/`

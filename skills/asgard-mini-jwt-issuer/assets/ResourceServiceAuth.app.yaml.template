@@ -1,0 +1,9 @@
+host:
+  auth:
+    enabled: true
+    jwt:
+      issuerTemplate: "https://auth.example.com"
+      audience: "asgard-api"
+      requireHttpsMetadata: true
+      discoveryCacheMinutes: 60
+      jwksCacheMinutes: 60

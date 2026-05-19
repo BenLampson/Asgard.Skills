@@ -1,0 +1,28 @@
+app.MapPost("/login", async (
+    LoginRequest request,
+    IUserLoginService loginService,
+    IAsgardJwtIssuer issuer,
+    CancellationToken cancellationToken) =>
+{
+    var loginUser = await loginService.ValidateAsync(request.UserName, request.Password, cancellationToken);
+    if (loginUser is null)
+    {
+        return Results.Unauthorized();
+    }
+
+    var token = issuer.Issue(new AsgardJwtSubject
+    {
+        Subject = loginUser.Subject,
+        UserId = loginUser.UserId,
+        TenantId = loginUser.TenantId,
+        Roles = loginUser.Roles,
+        Permissions = loginUser.Permissions,
+        Scope = ["api"],
+        Name = loginUser.DisplayName,
+        Email = loginUser.Email,
+        AuthenticationTime = DateTimeOffset.UtcNow,
+        SessionId = loginUser.SessionId
+    });
+
+    return Results.Ok(token);
+});

@@ -1,0 +1,7 @@
+var token = issuer.Issue(new AsgardJwtSubject
+{
+    Subject = "orders-worker",
+    ClientId = "orders-worker",
+    TokenType = AsgardJwtConstants.BackendServiceTokenType,
+    Scope = ["jobs.execute"]
+});

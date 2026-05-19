@@ -1,0 +1,4 @@
+interface:
+  display_name: "Asgard Mini JWT Issuer"
+  short_description: "Use Heimdall lightweight JWT signing for small Asgard projects."
+  default_prompt: "Use this skill to wire the Heimdall mini JWT issuer, expose discovery/JWKS, issue Asgard-compatible user or backend-service tokens, and configure resource services to validate them."

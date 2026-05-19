@@ -1,0 +1,51 @@
+using Asgard.Heimdall.JwtSigning;
+using Asgard.Heimdall.JwtSigning.AspNetCore;
+
+var builder = WebApplication.CreateBuilder(args);
+
+var privateKeyPem = builder.Configuration["JwtSigning:RsaPrivateKeyPem"]
+    ?? throw new InvalidOperationException("JwtSigning:RsaPrivateKeyPem is required.");
+var publicKeyPem = builder.Configuration["JwtSigning:RsaPublicKeyPem"];
+
+builder.Services.AddAsgardHeimdallJwtSigning(options =>
+{
+    options.Issuer = builder.Configuration["JwtSigning:Issuer"]
+        ?? throw new InvalidOperationException("JwtSigning:Issuer is required.");
+    options.Audience = builder.Configuration["JwtSigning:Audience"]
+        ?? throw new InvalidOperationException("JwtSigning:Audience is required.");
+    options.KeyId = builder.Configuration["JwtSigning:KeyId"] ?? "main-key";
+    options.RsaPrivateKeyPem = privateKeyPem;
+    options.RsaPublicKeyPem = publicKeyPem;
+    options.AccessTokenLifetime = TimeSpan.FromHours(1);
+});
+
+var app = builder.Build();
+
+app.MapAsgardHeimdallJwtSigningDiscovery();
+
+app.MapPost("/login", (LoginRequest request, IAsgardJwtIssuer issuer) =>
+{
+    // Replace this block with real account, tenant, role, and permission validation.
+    if (string.IsNullOrWhiteSpace(request.UserName) || string.IsNullOrWhiteSpace(request.Password))
+    {
+        return Results.Unauthorized();
+    }
+
+    var token = issuer.Issue(new AsgardJwtSubject
+    {
+        Subject = request.UserName,
+        UserId = request.UserName,
+        TenantId = "scm",
+        Roles = ["user"],
+        Permissions = ["profile.read"],
+        Scope = ["api"],
+        Name = request.UserName,
+        AuthenticationTime = DateTimeOffset.UtcNow
+    });
+
+    return Results.Ok(token);
+});
+
+app.Run();
+
+public sealed record LoginRequest(string UserName, string Password);
