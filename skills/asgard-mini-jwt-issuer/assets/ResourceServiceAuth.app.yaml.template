@@ -7,3 +7,7 @@ host:
       requireHttpsMetadata: true
       discoveryCacheMinutes: 60
       jwksCacheMinutes: 60
+
+# If the issuer is hosted under a business prefix, configure the resource service
+# with the same issuer value used by the signing service, for example:
+# issuerTemplate: "https://auth.example.com/scm"

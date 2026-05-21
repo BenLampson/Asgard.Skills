@@ -16,8 +16,9 @@ This package exposes discovery and JWKS endpoints so Asgard resource services ca
 ```csharp
 builder.Services.AddAsgardHeimdallJwtSigning(options =>
 {
-    options.Issuer = "https://auth.example.com";
+    options.Issuer = "https://auth.example.com/scm";
     options.Audience = "asgard-api";
+    options.DiscoveryPathPrefix = "/scm";
     options.KeyId = "main-key";
     options.RsaPrivateKeyPem = privateKeyPem;
     options.RsaPublicKeyPem = publicKeyPem;
@@ -25,6 +26,22 @@ builder.Services.AddAsgardHeimdallJwtSigning(options =>
 
 app.MapAsgardHeimdallJwtSigningDiscovery();
 ```
+
+When `DiscoveryPathPrefix` is set to `/scm`, the package maps:
+
+```text
+/scm/.well-known/openid-configuration
+/scm/.well-known/jwks.json
+```
+
+The discovery document keeps the issuer contract aligned:
+
+```text
+issuer == options.Issuer
+jwks_uri == options.Issuer + "/.well-known/jwks.json"
+```
+
+For reverse proxy or gateway rewrites where the externally reachable JWKS URL is different, set `JwksUriOverride` as an escape hatch.
 
 Your application still implements its own login API. Inside that API, inject `IAsgardJwtIssuer` and issue a token after your own user validation succeeds.
 
@@ -54,6 +71,6 @@ host:
   auth:
     enabled: true
     jwt:
-      issuerTemplate: "https://auth.example.com"
+      issuerTemplate: "https://auth.example.com/scm"
       audience: "asgard-api"
 ```

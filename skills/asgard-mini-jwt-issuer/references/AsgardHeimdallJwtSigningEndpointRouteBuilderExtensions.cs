@@ -26,10 +26,15 @@ public static class AsgardHeimdallJwtSigningEndpointRouteBuilderExtensions
     {
         ArgumentNullException.ThrowIfNull(endpoints);
 
-        _ = endpoints.MapGet("/.well-known/openid-configuration", (HttpContext httpContext, IOptions<AsgardJwtSigningOptions> options) =>
+        var options = endpoints.ServiceProvider.GetRequiredService<IOptions<AsgardJwtSigningOptions>>().Value;
+        var pathPrefix = NormalizePathPrefix(options.DiscoveryPathPrefix);
+        var openIdConfigurationPath = $"{pathPrefix}/.well-known/openid-configuration";
+        var jwksPath = $"{pathPrefix}/.well-known/jwks.json";
+
+        _ = endpoints.MapGet(openIdConfigurationPath, (IOptions<AsgardJwtSigningOptions> options) =>
         {
             var issuer = options.Value.Issuer.TrimEnd('/');
-            var jwksUri = BuildAbsoluteUri(httpContext, "/.well-known/jwks.json");
+            var jwksUri = BuildJwksUri(options.Value, issuer);
             return Results.Json(new Dictionary<string, object>
             {
                 ["issuer"] = issuer,
@@ -41,14 +46,23 @@ public static class AsgardHeimdallJwtSigningEndpointRouteBuilderExtensions
             });
         });
 
-        _ = endpoints.MapGet("/.well-known/jwks.json", (IAsgardJwtIssuer issuer) => Results.Json(issuer.CreateJwksDocument()));
+        _ = endpoints.MapGet(jwksPath, (IAsgardJwtIssuer issuer) => Results.Json(issuer.CreateJwksDocument()));
 
         return endpoints;
     }
 
-    private static string BuildAbsoluteUri(HttpContext httpContext, string path)
+    private static string NormalizePathPrefix(string? pathPrefix)
     {
-        var request = httpContext.Request;
-        return $"{request.Scheme}://{request.Host}{request.PathBase}{path}";
+        if (string.IsNullOrWhiteSpace(pathPrefix) || pathPrefix == "/")
+        {
+            return string.Empty;
+        }
+
+        return pathPrefix.TrimEnd('/');
     }
+
+    private static string BuildJwksUri(AsgardJwtSigningOptions options, string issuer)
+        => string.IsNullOrWhiteSpace(options.JwksUriOverride)
+            ? $"{issuer}/.well-known/jwks.json"
+            : options.JwksUriOverride.Trim();
 }

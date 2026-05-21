@@ -49,4 +49,14 @@ public sealed class AsgardJwtSigningOptions
     /// 获取或设置默认令牌主体类型。
     /// </summary>
     public string DefaultTokenType { get; set; } = AsgardJwtConstants.UserLoginTokenType;
+
+    /// <summary>
+    /// 获取或设置 discovery 与 JWKS 端点路径前缀。
+    /// </summary>
+    public string? DiscoveryPathPrefix { get; set; }
+
+    /// <summary>
+    /// 获取或设置 discovery 文档中的 JWKS 地址覆盖值。
+    /// </summary>
+    public string? JwksUriOverride { get; set; }
 }

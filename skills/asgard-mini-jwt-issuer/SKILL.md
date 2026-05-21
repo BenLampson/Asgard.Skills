@@ -7,21 +7,64 @@ description: Asgard mini 认证颁发 / Heimdall lightweight JWT issuer skill。
 
 ## 作用
 
-本 skill 说明 Heimdall 的 mini 认证颁发方案：用 `Asgard.Heimdall.JwtSigning` / `Asgard.Heimdall.JwtSigning.AspNetCore` 在小项目里签发 Asgard 可识别的 JWT access token。
+本 skill 说明 Heimdall 的 mini 认证颁发方案：用 `Asgard.Heimdall.JwtSigning` / `Asgard.Heimdall.JwtSigning.AspNetCore` 在小项目里快速签发 Asgard 可识别的 JWT access token。
 
-它解决的是“已经有自己的登录校验、但不想手写 Asgard claim 和 JWKS/discovery”的场景。
+核心目标是快捷、方便、少理解协议：业务项目已经有自己的登录校验，登录成功后只把“用户是谁、租户是谁、有什么角色权限”交给包；包自动完成 Asgard claim、JWT 签发、discovery、JWKS。
+
+一句话：**业务只写登录，包负责发 token 和暴露验签元数据。**
+
+## 最快接入
+
+默认按这个最短路径实现，不要一上来设计额外封装：
+
+```csharp
+builder.Services.AddAsgardHeimdallJwtSigning(options =>
+{
+    options.Issuer = "https://auth.example.com/scm";
+    options.Audience = "scm-api";
+    options.DiscoveryPathPrefix = "/scm";
+    options.KeyId = "scm-main";
+    options.RsaPrivateKeyPem = privateKeyPem;
+});
+
+app.MapAsgardHeimdallJwtSigningDiscovery();
+```
+
+登录成功后只调用一次 `Issue(...)`：
+
+```csharp
+var token = issuer.Issue(new AsgardJwtSubject
+{
+    Subject = user.Id,
+    UserId = user.Id,
+    TenantId = "scm",
+    Roles = ["scm-user"],
+    Permissions = ["scm.api"],
+    Scope = ["api"]
+});
+```
+
+配置 `DiscoveryPathPrefix = "/scm"` 后，包自动暴露：
+
+```text
+/scm/.well-known/openid-configuration
+/scm/.well-known/jwks.json
+```
+
+业务方不要手写 discovery/JWKS，不要自己拼 `jwks_uri`，不要新增 mini issuer 包外的一层复杂胶水。
 
 ## mini 的第一原则
 
-mini issuer 的价值是少写、少懂、少配置。实现时优先选择最朴素的形态：
+mini issuer 的价值是快捷、少写、少懂、少配置。实现时优先选择最朴素的形态：
 
 - 直接调用 `AddAsgardHeimdallJwtSigning(...)`
 - 直接调用 `app.MapAsgardHeimdallJwtSigningDiscovery()`
 - 登录接口只做业务校验，然后注入 `IAsgardJwtIssuer` 调 `Issue(...)`
 - 固定小项目里的项目事实，例如 `TenantId = "scm"`、`Audience = "scm-api"`、`Roles = ["scm-user"]`
+- 业务系统有路径前缀时只配置 `DiscoveryPathPrefix = "/scm"`，不要自己手写 discovery/JWKS
 - 只配置环境会变的东西，例如正式 issuer 域名、RSA 私钥、公钥、token 有效期
 
-不要把“未来可能变化”提前做成配置。对小项目来说，固定事实 hardcode 比到处配置更清楚，也更符合 mini 的目的。
+不要把“未来可能变化”提前做成配置。对小项目来说，固定事实 hardcode 比到处配置更清楚，也更符合 mini 的目的。看到复杂抽象时，优先把代码收回到上面的最快接入形态。
 
 ## 先记住边界
 
@@ -33,6 +76,8 @@ mini issuer 只负责这些事：
 - 支持 RSA 签名和对称签名
 - 暴露 `/.well-known/openid-configuration`
 - 暴露 `/.well-known/jwks.json`
+- 支持通过 `DiscoveryPathPrefix` 暴露 `/{prefix}/.well-known/openid-configuration` 和 `/{prefix}/.well-known/jwks.json`
+- 保证 token `iss`、discovery `issuer`、discovery `jwks_uri` 使用同一 issuer 语义
 - 让资源服务继续使用 Asgard `host.auth.jwt` 校验 token
 
 mini issuer 不负责这些事：
@@ -75,16 +120,16 @@ mini issuer 不负责这些事：
 
 ### 1. 注册服务
 
-在签发端宿主中注册 `AddAsgardHeimdallJwtSigning`：
+在签发端宿主中注册 `AddAsgardHeimdallJwtSigning`。优先用直接、可读、少配置的写法：
 
 ```csharp
 builder.Services.AddAsgardHeimdallJwtSigning(options =>
 {
-    options.Issuer = "https://auth.example.com";
-    options.Audience = "asgard-api";
-    options.KeyId = "main-key";
+    options.Issuer = "https://auth.example.com/scm";
+    options.Audience = "scm-api";
+    options.DiscoveryPathPrefix = "/scm";
+    options.KeyId = "scm-main";
     options.RsaPrivateKeyPem = privateKeyPem;
-    options.RsaPublicKeyPem = publicKeyPem;
     options.AccessTokenLifetime = TimeSpan.FromHours(1);
 });
 ```
@@ -95,6 +140,15 @@ builder.Services.AddAsgardHeimdallJwtSigning(options =>
 - `Audience`：默认受众，必须与资源服务 `audience` 对齐
 - `KeyId`：当前签名密钥 ID，会进入 JWT header 和 JWKS
 - `RsaPrivateKeyPem` 或 `SymmetricSecurityKey`：二选一
+
+常用但仍然简单的配置：
+
+- `DiscoveryPathPrefix`：discovery/JWKS 的路径前缀，例如 `/scm`
+- `RsaPublicKeyPem`：可显式提供公钥；不提供时由私钥导出
+
+高级逃生口：
+
+- `JwksUriOverride`：只有反向代理或网关改写导致外部 JWKS 地址不同于 issuer 派生地址时才用
 
 默认算法是 `RS256`。生产环境优先使用 RSA 私钥签发、公钥验证。
 
@@ -112,6 +166,29 @@ app.MapAsgardHeimdallJwtSigningDiscovery();
 /.well-known/openid-configuration
 /.well-known/jwks.json
 ```
+
+如果配置：
+
+```csharp
+options.Issuer = "https://auth.example.com/scm";
+options.DiscoveryPathPrefix = "/scm";
+```
+
+它会暴露：
+
+```text
+/scm/.well-known/openid-configuration
+/scm/.well-known/jwks.json
+```
+
+discovery 文档应保持以下关系：
+
+```text
+issuer == options.Issuer.TrimEnd('/')
+jwks_uri == options.Issuer.TrimEnd('/') + "/.well-known/jwks.json"
+```
+
+只有当网关、反向代理、内外网地址导致 JWKS 外部可访问地址不同于 issuer 派生地址时，才使用 `JwksUriOverride`。
 
 资源服务通过 discovery 找到 JWKS，再用公钥校验 JWT 签名。
 
@@ -285,8 +362,8 @@ host:
   auth:
     enabled: true
     jwt:
-      issuerTemplate: "https://auth.example.com"
-      audience: "asgard-api"
+      issuerTemplate: "https://auth.example.com/scm"
+      audience: "scm-api"
       requireHttpsMetadata: true
       discoveryCacheMinutes: 60
       jwksCacheMinutes: 60
@@ -296,7 +373,7 @@ host:
 
 - `issuerTemplate` 必须等于签发端 `Issuer`
 - `audience` 必须等于签发端 `Audience` 或单次签发覆盖的 audience
-- 资源服务必须能访问签发端 `/.well-known/openid-configuration` 和 `/.well-known/jwks.json`
+- 资源服务必须能访问签发端 discovery 和 JWKS；如果配置 `DiscoveryPathPrefix = "/scm"`，就是 `/scm/.well-known/openid-configuration` 和 `/scm/.well-known/jwks.json`
 - 生产环境保持 `requireHttpsMetadata: true`
 
 如果是本地开发，可以临时使用 HTTP issuer，但不要把开发配置带到生产。
@@ -324,6 +401,8 @@ host:
 - JWKS 中是否有当前 `kid`
 - token header 的 `kid` 是否等于 `options.KeyId`
 - token 的 `iss` 是否等于资源服务 `issuerTemplate`
+- discovery 的 `issuer` 是否等于 token 的 `iss`
+- discovery 的 `jwks_uri` 是否等于 `Issuer + "/.well-known/jwks.json"`，或显式配置的 `JwksUriOverride`
 - token 的 `aud` 是否等于资源服务 `audience`
 - 资源服务机器时间是否明显偏差
 - token 是否过期
@@ -373,6 +452,7 @@ host:
 
 - 不要把 mini issuer 当完整 OIDC Provider
 - 不要自己手写 discovery/JWKS controller 或 endpoint；使用 `MapAsgardHeimdallJwtSigningDiscovery()`
+- 不要开放两个任意 discovery/JWKS 路径配置；业务前缀用 `DiscoveryPathPrefix`
 - 不要为了小固定项目设计 `/tenants/{tenant}/.well-known/...` 这类 tenant 级 issuer 路由
 - 不要把固定项目事实做成配置项，例如固定 SCM 项目的 `tenant_id`、默认角色、默认权限、默认 scope
 - 不要在登录时根据请求 tenant 动态 `new AsgardJwtIssuer(...)`

@@ -21,6 +21,7 @@ public static class AsgardHeimdallJwtSigningServiceCollectionExtensions
             .Validate(options => !string.IsNullOrWhiteSpace(options.Issuer), "Issuer 不能为空。")
             .Validate(options => !string.IsNullOrWhiteSpace(options.Audience), "Audience 不能为空。")
             .Validate(options => !string.IsNullOrWhiteSpace(options.KeyId), "KeyId 不能为空。")
+            .Validate(options => IsValidDiscoveryPathPrefix(options.DiscoveryPathPrefix), "DiscoveryPathPrefix 必须为空或以 / 开头。")
             .Validate(options => !string.IsNullOrWhiteSpace(options.RsaPrivateKeyPem) || !string.IsNullOrWhiteSpace(options.SymmetricSecurityKey), "必须提供 RsaPrivateKeyPem 或 SymmetricSecurityKey。")
             .ValidateOnStart();
 
@@ -32,4 +33,7 @@ public static class AsgardHeimdallJwtSigningServiceCollectionExtensions
 
         return services;
     }
+
+    private static bool IsValidDiscoveryPathPrefix(string? pathPrefix)
+        => string.IsNullOrWhiteSpace(pathPrefix) || pathPrefix.StartsWith("/", StringComparison.Ordinal);
 }
