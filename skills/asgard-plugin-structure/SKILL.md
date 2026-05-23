@@ -99,6 +99,14 @@ Asgard 当前认可、也更希望推广的形式是：
 - 提供启动入口
 - 决定 `app.yaml` 的加载路径
 - 根据需要补充宿主级依赖与调试配置
+- `AsgardStarter.csproj` 使用 `Microsoft.NET.Sdk`，**不是必须**改成 `Microsoft.NET.Sdk.Web`。  
+  对于只承载启动与配置的 starter，框架启动链路本身不依赖 Web SDK；只有当你明确需要 Web SDK 默认行为时，才改用 `Web`。
+
+### starter 项目可选 SDK 说明
+
+- `Microsoft.NET.Sdk`：推荐默认。更轻量，启动与 `host.*` 配置都可正常生效。
+- `Microsoft.NET.Sdk.Web`：仅在你确认需要 Web SDK 提供的默认行为时才切换。
+- 使用者不要把“starter 必须是 Web SDK”当规则；这是一个常见误解，需要按项目目标来选。
 
 ## 基础文件归属
 

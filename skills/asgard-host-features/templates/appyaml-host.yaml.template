@@ -20,7 +20,10 @@ host:
       allowAnyOrigin: {allow_any_origin}
       allowAnyMethod: {allow_any_method}
       allowAnyHeader: {allow_any_header}
-      origins: {allowed_origins}
+      allowCredentials: {allow_credentials}
+      preflightMaxAgeSeconds: {preflight_max_age_seconds}
+      allowedOrigins:
+        {allowed_origins}
   # JWT 认证配置
   auth:
     enabled: {auth_enabled}

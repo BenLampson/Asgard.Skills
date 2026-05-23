@@ -17,8 +17,10 @@ host:
     enabled: {cors_enabled}
     defaultPolicy:
       allowAnyOrigin: true
+      allowCredentials: false
       allowAnyMethod: true
       allowAnyHeader: true
+      preflightMaxAgeSeconds: 600
   # JWT 认证
   auth:
     enabled: {auth_enabled}
@@ -34,7 +36,7 @@ host:
   rateLimiting:
     enabled: {rateLimiting_enabled}
     permitLimit: {permit_limit}
-    window: {window_seconds}
+    windowSeconds: {window_seconds}
   # 健康检查
   healthCheck:
     enabled: {healthCheck_enabled}

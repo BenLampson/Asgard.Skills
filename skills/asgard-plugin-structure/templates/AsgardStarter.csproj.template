@@ -1,3 +1,4 @@
+<!-- starter / host 通常可用 Microsoft.NET.Sdk；仅在需要 Web SDK 默认行为时再切换 -->
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>

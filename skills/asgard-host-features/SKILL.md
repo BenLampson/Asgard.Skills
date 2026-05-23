@@ -61,22 +61,50 @@ cors:
   enabled: true
   defaultPolicy:
     allowAnyOrigin: true
+    allowedOrigins: []   # allowAnyOrigin 为 true 时可省略
     allowAnyMethod: true
     allowAnyHeader: true
+    allowCredentials: false
+    preflightMaxAgeSeconds: 600
 ```
 
-如果需要指定特定来源：
+完整配置（先关闭任意来源，再逐一列来源）：
 
 ```yaml
 cors:
   enabled: true
   defaultPolicy:
-    origins:
+    allowAnyOrigin: false
+    allowedOrigins:
       - "https://yourdomain.com"
       - "http://localhost:3000"
-    allowAnyMethod: true
-    allowAnyHeader: true
+    allowAnyMethod: false
+    allowAnyHeader: false
+    allowCredentials: true
+    preflightMaxAgeSeconds: 1800
+
+  # 可选：按名称拆分策略（可供插件/中间件按需使用）
+  policies:
+    admin-api:
+      allowAnyOrigin: false
+      allowedOrigins:
+        - "https://admin.yourdomain.com"
+      allowAnyMethod: true
+      allowAnyHeader: true
+      allowCredentials: true
+      preflightMaxAgeSeconds: 1800
 ```
+
+> 可直接抄这个区分：  
+> 1. 单点调试：`allowAnyOrigin: true`（最快速）。  
+> 2. 生产环境：`allowAnyOrigin: false + allowedOrigins: [...] + allowCredentials: true`（或 false）。  
+
+### CORS 常见误区（务必避坑）
+
+- `allowedOrigins` 字段名不能写成 `origins`；否则不会生效。
+- `allowAnyOrigin: true` 与 `allowCredentials: true` 不能同时打开，启动会抛配置错误。
+- `allowAnyOrigin: false` 时必须至少配置一个 `allowedOrigins`（不能为空数组）。
+- `UseCors()` 位置固定在 `UseRouting()` 之后，`UseAuthorization()` 之前，由 `host` 中间件顺序模板统一承接。
 
 ### JWT 认证（host.auth）
 
