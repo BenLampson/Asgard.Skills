@@ -97,7 +97,9 @@ var config = new LogConfig
         ConnectionString = "Server=localhost;Database=asgard_logs;Uid=root;Pwd=123456;",
         TableName = "app_logs",
         BatchSize = 100,
-        Period = 2
+        Period = 2,
+        RetentionDays = 30,
+        CleanupIntervalMinutes = 60
     }
 };
 
@@ -115,6 +117,8 @@ logging:
     tableName: app_logs
     batchSize: 100
     period: 2
+    retentionDays: 30
+    cleanupIntervalMinutes: 60
 ```
 
 Rules:
@@ -124,6 +128,7 @@ Rules:
 - Sync the log table structure once during startup before accepting writes.
 - Use `Channel.CreateUnbounded` for the in-process queue so business threads are not blocked by database latency.
 - Flush immediately when queue size reaches `BatchSize`, or flush on timer when `Period` seconds elapse first.
+- After a successful batch insert, run old-log deletion through a throttled cleanup policy: delete records older than `RetentionDays`, and never run cleanup more often than `CleanupIntervalMinutes`.
 - On shutdown, dispose the Serilog pipeline with `dispose: true` so the final batch can be flushed.
 - Record sink/worker failures into a diagnostic channel such as `Serilog.Debugging.SelfLog`; do not throw back into business code.
 

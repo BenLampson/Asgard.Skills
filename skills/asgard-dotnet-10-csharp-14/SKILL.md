@@ -112,7 +112,7 @@ public static extension {ExtensionName} on {TargetType}<{GenericParameter}>
 
 - 总是给选项配置加上 `.ValidateOnStart()`
 - 结构化日志使用占位符，不使用字符串插值
-- Asgard 数据库日志统一走 `LogConfig.Database` + Serilog + 独立 `IFreeSql` + `Channel` 批量写入
+- Asgard 数据库日志统一走 `LogConfig.Database` + Serilog + 独立 `IFreeSql` + `Channel` 批量写入，并在批量插入成功后按 `RetentionDays` + `CleanupIntervalMinutes` 节流清理旧日志
 - HttpClient 总是通过 `IHttpClientFactory` 注入
 - HttpClient 总是加上 `AddStandardResilienceHandler()`
 - 后台任务使用 `BackgroundService`

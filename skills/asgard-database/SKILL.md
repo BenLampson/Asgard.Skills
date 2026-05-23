@@ -121,6 +121,7 @@ Asgard 的数据库日志不属于业务仓储层，而是日志基础设施的�
 - `logging.database.provider` 与主数据库 `database.provider` 使用同一套 provider 语义
 - 启动时允许自动同步一次日志表结构
 - 运行期使用 `Channel` 做异步批量落库，不在业务线程中直接插入数据库
+- 批量插入成功后必须按 `retentionDays` 删除过期日志，并用 `cleanupIntervalMinutes` 节流，避免每批日志都触发删除 SQL
 - 停止时必须尽量冲刷尾批次日志，再释放日志数据库连接
 
 配置示例：
@@ -134,6 +135,8 @@ logging:
     tableName: app_logs
     batchSize: 100
     period: 2
+    retentionDays: 30
+    cleanupIntervalMinutes: 60
 ```
 
 推荐字段：
@@ -157,6 +160,7 @@ logging:
 - `PropertiesJson` 保存结构化属性展开后的 JSON
 - `TraceId` / `SpanId` 优先从日志属性获取，没有时再回退到当前链路上下文
 - 后台写入异常只记诊断日志，不反抛回业务线程
+- 清理 SQL 应按 `Timestamp` 做时间边界删除，不要按日志级别、消息文本或业务字段清理
 
 不要这样做：
 
@@ -164,6 +168,7 @@ logging:
 - ❌ 不要让日志写入复用租户过滤或业务仓储基类
 - ❌ 不要在 `Emit` 或业务日志调用点同步写数据库
 - ❌ 不要遗漏关闭阶段的 flush
+- ❌ 不要每个批次无条件执行清理；必须加清理间隔节流
 
 ## 代码组织分层
 
