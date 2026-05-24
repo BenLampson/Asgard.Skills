@@ -1,6 +1,6 @@
 ---
 name: asgard-tracing-observability
-description: Asgard 轻量链路追踪与可观测性 skill。Use when working with Asgard request tracing, independent Trace persistence, asgard_trace records, error/5xx request snapshots for AI replay, AsyncLocal context flow, Trace notes/tags, framework step logging, middleware-based observation, or reproducing unit-test inputs from runtime logs.
+description: Asgard 轻量链路追踪与可观测性 skill。Use when working with Asgard request tracing, independent Trace persistence, asgard_trace records, database log records, ITraceQueryService, IDatabaseLogQueryService, plugin-owned observability query APIs, error/5xx request snapshots for AI replay, Trace notes/tags, framework step logging, or reproducing unit-test inputs from runtime logs.
 ---
 
 # Asgard Tracing And Observability
@@ -15,6 +15,7 @@ description: Asgard 轻量链路追踪与可观测性 skill。Use when working w
 - 在请求结束时输出一条汇总日志
 - 允许业务代码通过 `AsgardContext.Trace` 追加备注、标签与分支说明
 - 可按 `Trace.*` 配置把 Trace 独立持久化到 `asgard_trace`，错误请求可采集脱敏后的 request snapshot，供 AI 复现问题
+- 可通过框架内置只读查询服务查询 `asgard_trace` 与 `asgard_logs`，但具体 Controller、权限、VO 暴露边界由插件或业务系统自行实现
 
 ## 什么时候使用
 
@@ -22,6 +23,8 @@ description: Asgard 轻量链路追踪与可观测性 skill。Use when working w
 - **需要从运行日志反推出单元测试入参时**
 - **需要在 Controller / Service / Repository 中追加业务备注时**
 - **需要开启或解释 `Trace.Enabled` / `Trace.CaptureAllRequest` 独立持久化时**
+- **需要给插件或业务系统提供 Trace / 数据库日志查询接口时**
+- **需要说明 `ITraceQueryService` / `IDatabaseLogQueryService` 如何注入和使用时**
 - **需要为异常或 5xx 请求保存可复现现场，供 AI 调试时**
 - **需要判断该用中间件追踪、Context 备注还是仓储自动步骤时**
 - **需要解释 `AsyncLocal<T>` 在 Asgard 中如何承载请求追踪时**
@@ -39,6 +42,7 @@ description: Asgard 轻量链路追踪与可观测性 skill。Use when working w
 | **普通日志策略** | 每请求输出一条轻量 `AsgardTrace` 摘要日志，不再把完整 request snapshot 拼进普通日志 |
 | **持久化策略** | `Trace.Enabled=false` 不落库；`Trace.Enabled=true` 只持久化异常/5xx；`Trace.CaptureAllRequest=true` 时所有请求落库 |
 | **错误快照** | 异常/5xx 请求默认保存脱敏 headers/body/identity，正常请求即使落库也不保存 body |
+| **查询暴露** | 框架只提供 `ITraceQueryService` / `IDatabaseLogQueryService`，不内置 Controller，权限由插件或业务系统控制 |
 
 ## 推荐入口
 
@@ -51,6 +55,8 @@ description: Asgard 轻量链路追踪与可观测性 skill。Use when working w
 | **自动记录控制器执行** | MVC 全局 Action Filter |
 | **自动记录仓储关键调用** | `AbsAsgardRepositoryBase` 统一封装 |
 | **Trace 独立落库** | `Trace.Enabled` + 独立 `FreeSqlTraceStore` |
+| **Trace 分页查询** | 注入 `ITraceQueryService`，插件自行写 Controller 和授权 |
+| **数据库日志分页查询** | 注入 `IDatabaseLogQueryService`，插件自行写 Controller 和授权 |
 | **AI 复现错误现场** | `asgard_trace` 表里的 request snapshot + steps/tags/notes/branches |
 
 ## Trace 独立持久化配置
@@ -89,6 +95,50 @@ Trace:
 - 请求线程只入队，不同步写数据库。
 - 后台 worker 按 `BatchSize` / `Period` 批量写入，并按 `RetentionDays` + `CleanupIntervalMinutes` 清理旧 Trace。
 - 普通日志中的 `AsgardTrace` 只保留摘要，并通过 `TraceId` 与 `asgard_trace` 关联。
+
+## 持久化记录查询
+
+Asgard 提供只读查询服务，不提供默认查询 Controller。这样做是为了把路由、权限、字段裁剪、审计边界留给插件或业务系统。不要为了“方便”在框架层新增公开 Controller。
+
+可注入服务：
+
+- `ITraceQueryService`：分页查询 `asgard_trace`，按 `TraceId` 查询 Trace 详情。
+- `IDatabaseLogQueryService`：分页查询 `asgard_logs`，按日志记录 ID 查询日志详情。
+
+查询服务会复用配置中的 provider、connection string 和 table name：
+
+- Trace 查询读取 `Trace.Provider` / `Trace.ConnectionString` / `Trace.TableName`。
+- 数据库日志查询读取 `logging.database.provider` / `logging.database.connectionString` / `logging.database.tableName`。
+
+插件侧推荐写法：
+
+```csharp
+/// <summary>
+/// 可观测性查询控制器。
+/// </summary>
+public sealed class ObservabilityController(
+    AbsAsgardContext asgardContext,
+    ITraceQueryService traceQueryService,
+    IDatabaseLogQueryService databaseLogQueryService)
+    : BaseController(asgardContext)
+{
+    /// <summary>
+    /// 查询 Trace 列表。
+    /// </summary>
+    /// <param name="request">Trace 查询请求。</param>
+    /// <returns>Trace 分页数据。</returns>
+    [HttpGet("traces")]
+    [AsgardAuthAnyPermission("observability.trace.read")]
+    public async Task<ActionResult<PageResponse<TraceRecordDto>>> QueryTracesAsync(
+        [FromQuery] TraceQueryRequest request)
+    {
+        var result = await traceQueryService.QueryAsync(request);
+        return SuccessPage(result.Items, result.TotalCount, result.Page, result.Size);
+    }
+}
+```
+
+如果插件不希望前端看到完整错误快照、请求头、请求体 Base64 或结构化属性 JSON，应在插件自己的 VO 中裁剪字段，不要直接把详情 DTO 原样暴露给低权限用户。
 
 ## `AsgardContext.Trace` 的定位
 
@@ -162,6 +212,7 @@ public async Task<ActionResult<Response<OrderDto>>> GetByIdAsync(Guid id)
 - 优先记录“为什么走到这个分支”，而不是记录“这行代码执行了”
 - 对用户投诉“框架行为很神奇”的场景，优先看请求汇总日志里的步骤链和备注
 - 对 AI 修 bug 的场景，优先查 `asgard_trace`，拿 `TraceId` 关联普通日志和错误请求快照
+- 对后台管理、运维面板或插件内置诊断页，优先注入查询 service，再由插件自己写 Controller 和授权
 - 正常请求全量落库必须显式使用 `Trace.CaptureAllRequest=true`，避免数据库膨胀
 - 如果问题本身属于 `AsgardContext` 使用方式，再联动 `$asgard-context-usage`
 
@@ -179,11 +230,17 @@ public async Task<ActionResult<Response<OrderDto>>> GetByIdAsync(Guid id)
 
 ❌ 不要让正常请求默认保存 body；body 只属于错误快照或明确的调试场景
 
+❌ 不要在框架层默认暴露 Trace / 日志查询 Controller；这类接口权限敏感，必须由插件或业务系统自己控制
+
 ## 源码锚点
 
 - `Common/Asgard.Abstractions/AbsAsgardContext.cs` - `Trace` 入口抽象
 - `Common/Asgard.Core/AsgardContext.cs` - `Trace` 实现接入点
 - `Common/Asgard.Abstractions/Tracing/TraceOptions.cs` - Trace 独立持久化配置
+- `Common/Asgard.Abstractions/Observability/ITraceQueryService.cs` - Trace 查询服务契约
+- `Common/Asgard.Abstractions/Observability/IDatabaseLogQueryService.cs` - 数据库日志查询服务契约
+- `Common/Asgard.Core/Observability/TraceQueryService.cs` - Trace 查询服务实现
+- `Common/Asgard.Core/Observability/DatabaseLogQueryService.cs` - 数据库日志查询服务实现
 - `Common/Asgard.Core/Tracing/TraceRecord.cs` - `asgard_trace` 持久化实体
 - `Common/Asgard.Core/Tracing/FreeSqlTraceStore.cs` - Trace 后台队列与批量写入入口
 - `Common/Asgard.AspNetCore.Core/Tracing/AsgardRequestTraceMiddleware.cs` - 请求追踪中间件
