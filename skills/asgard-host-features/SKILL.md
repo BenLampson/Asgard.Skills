@@ -246,6 +246,11 @@ app.MapControllers();
 - `UseAuthorization()` 需要在插件或外部中间件之后统一执行，避免扩展链路还没补充身份信息就提前鉴权
 - 不要再用旧版“认证和授权一起包进同一个 if，然后再执行租户中间件”的写法
 
+**版本迁移提醒：**
+- 修复 `PluginWebAppDefaults.RunAsync<TPlugin>()` 快速入口后，starter 不需要再为了 `[Authorize]` 手工补 `UseAuthorization()`。
+- 已经手工补过 `UseAuthentication().UseAuthorization()` 的旧 starter 通常仍可运行，但后续维护时应逐步删掉重复授权中间件，避免授权策略重复执行。
+- 如果 `host.auth.enabled: false` 且认证主体由插件或外部方案提供，只补提供身份所需的 `UseAuthentication()` 或自定义认证中间件，`UseAuthorization()` 仍交给宿主默认链路。
+
 ## 代码模板
 
 完整模板见 `templates/` 目录：

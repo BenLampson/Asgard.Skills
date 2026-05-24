@@ -102,6 +102,17 @@ description: Asgard ASP.NET Host 项目编写 skill。Use when creating, refacto
 - 不要把“示例里出现了中间件”理解成“所有项目都必须手写一遍”
 - 只有在你脱离默认链路、或默认链路无法覆盖你的认证实现时，才需要显式补线
 
+### 版本兼容提醒：`PluginWebAppDefaults` 授权托底
+
+从修复 `PluginWebAppDefaults.RunAsync<TPlugin>()` 与 Yggdrasil 默认链路不一致的版本开始，快速入口也应由框架统一托底 `UseAuthorization()`，并在 `host.auth.enabled: true` 时统一接入宿主默认 `UseAuthentication()`。
+
+升级后的迁移原则：
+
+- 现有 starter 里已经手写 `app.UseAuthentication().UseAuthorization()` 的项目可以继续运行，不需要为了升级立即改代码。
+- 新项目和新模板不要再默认手写认证授权中间件，优先保持 `await PluginWebAppDefaults.RunAsync<TPlugin>(configPath);`。
+- 维护旧项目时，可以在确认没有插件自定义认证链路依赖该回调后，逐步删除 starter 里的重复 `UseAuthentication()` / `UseAuthorization()`。
+- 重复调用通常不会导致应用启动失败，但可能让认证或授权处理重复执行；不要把“重复也能跑”当成推荐结构。
+
 ## 推荐代码结构
 
 ### starter 最简启动（单个内建插件）
@@ -112,7 +123,7 @@ using Asgard.PluginSdk;
 await PluginWebAppDefaults.RunAsync<{PluginName}>("app.yaml");
 ```
 
-如果插件项目自己注册了认证/授权服务，而不是依赖 `host.auth`：
+如果插件项目自己注册了认证服务，并且不依赖 `host.auth` 提供默认认证主体，可以只在回调里补充该认证中间件；`UseAuthorization()` 仍由宿主默认链路统一兜底：
 
 ```csharp
 using Asgard.PluginSdk;
@@ -122,7 +133,6 @@ await PluginWebAppDefaults.RunAsync<{PluginName}>(
     app =>
     {
         _ = app.UseAuthentication();
-        _ = app.UseAuthorization();
     });
 ```
 
