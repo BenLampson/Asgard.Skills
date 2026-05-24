@@ -1,6 +1,6 @@
 ---
 name: asgard-backend-guard
-description: Asgard 后端代码复查与守卫 skill。Use when reviewing or self-checking Asgard backend changes, especially for Controller/Service/Repository/Entity code, DTO mapping, CRUD flows, tenant data, optimistic-lock updates, response wrappers, audit fields, or other places where generated code may violate Asgard hard rules or repeat known project pitfalls.
+description: Asgard 后端代码复查与守卫 skill。Use when reviewing or self-checking Asgard backend changes, especially for Controller/Service/Repository/Entity code, route prefixes, DTO mapping, CRUD flows, tenant data, optimistic-lock updates, response wrappers, audit fields, or other places where generated code may violate Asgard hard rules or repeat known project pitfalls.
 ---
 
 # Asgard Backend Guard
@@ -25,6 +25,7 @@ description: Asgard 后端代码复查与守卫 skill。Use when reviewing or se
 - 代码里出现 `dto.ToEntity()`、`UpdateAsync(...)`、`GetByIdAsync(...)`
 - 代码涉及 `TenantId`、`CreateBy`、`CreateTime`、`Deleted`、`Version`
 - 代码涉及统一响应壳、租户边界、仓储基类、实体基类
+- 代码新增或修改 Controller 路由、`[Route]`、`[HttpGet]` / `[HttpPost]` 等 HTTP 入口
 - 你准备生成或修改 Asgard 后端 CRUD 代码，但还不确定是否踩中了项目坑点
 
 如果既要“写代码”又要“复查代码”，先按对应开发 skill 完成实现，再用本 skill 复查。
@@ -34,7 +35,7 @@ description: Asgard 后端代码复查与守卫 skill。Use when reviewing or se
 按下面顺序复查，避免只看表面：
 
 1. 先识别变更落在哪一层：`Controller -> Service -> Repository -> Entity`
-2. 再识别有没有触发 Asgard 硬规则：统一响应、分层边界、租户边界、乐观锁、审计字段
+2. 再识别有没有触发 Asgard 硬规则：`/api` 路由前缀、统一响应、分层边界、租户边界、乐观锁、审计字段
 3. 再找已知高风险模式：DTO 重建实体更新、前端覆盖持久化字段、越层访问、漏掉包装等
 4. 最后判断问题级别：
    - 会直接导致错误、异常、并发失败、数据污染：按高优先级指出
@@ -119,6 +120,9 @@ await repository.UpdateAsync(entity);
 ### 4. 统一响应检查
 
 - Controller 必须继承 `BaseController`
+- 对外业务 API 路由必须以 `/api` 作为第一段路径，最终 URL 应为 `https://xxx.com/api/xxxx`
+- `[Route("users")]`、`[Route("[controller]")]` 或 Action 裸路径导致业务接口挂在站点根路径时，默认按问题报告
+- 健康检查、静态文件、Swagger、OIDC discovery/JWKS 等框架或协议端点可以不套 `/api`，但业务 Controller 不应例外
 - 对外返回必须使用 `Response<T>`、`Response<object>`、`PageResponse<T>` 或 `CursorResponse<T>`
 - 不要直接返回裸 DTO、VO、集合、字符串、布尔值、数字、匿名对象
 

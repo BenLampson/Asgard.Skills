@@ -1,6 +1,6 @@
 ---
 name: asgard-api-development
-description: Asgard Web API 开发 skill。Use when creating or updating controllers, routes, unified Response models, pagination responses, exception handling, Swagger-facing API behavior, or controller code that should follow Asgard BaseController conventions.
+description: Asgard Web API 开发 skill。Use when creating or updating controllers, routes, /api URL prefixes, unified Response models, pagination responses, exception handling, Swagger-facing API behavior, or controller code that should follow Asgard BaseController conventions.
 ---
 
 # Asgard API Development
@@ -10,6 +10,7 @@ description: Asgard Web API 开发 skill。Use when creating or updating control
 用于开发遵循 Asgard 约定的 Web API 控制器。当你需要：
 - 创建新的 API 控制器
 - 修改现有的 API 接口
+- 设计或调整后端路由前缀
 - 添加分页列表接口
 - 统一 API 响应格式
 - 集成异常处理
@@ -33,6 +34,7 @@ description: Asgard Web API 开发 skill。Use when creating or updating control
 | 约定 | 说明 |
 |------|------|
 | **基类继承** | 必须继承 `BaseController`，不要直接继承 `ControllerBase` |
+| **路由前缀** | 对外 HTTP API 必须统一挂在 `/api/...` 下；域名形态应为 `https://xxx.com/api/xxxx`，不要把业务接口暴露成 `https://xxx.com/xxxx` |
 | **上下文注入** | 构造函数必须注入 `AbsAsgardContext` 并传给基类 |
 | **响应统一** | 统一响应约束只作用于 Controller 对外返回；Controller 必须把最终 VO 包装成 `Response<T>`、`Response<object>`、`PageResponse<T>` 或 `CursorResponse<T>` 返回给前端 |
 | **职责分离** | 控制器只做输入输出编排，业务逻辑放服务，数据访问放仓储 |
@@ -63,6 +65,7 @@ description: Asgard Web API 开发 skill。Use when creating or updating control
 以下要求属于 Asgard Web API 的硬约束，不允许为了“方便”而放宽：
 
 - 所有 Controller 必须继承 `BaseController`
+- 所有对外后端 API 路由必须以 `/api` 作为第一段路径，例如 `[Route("api/[controller]")]`、`[Route("api/users")]`；除健康检查、静态文件、Swagger、OIDC discovery/JWKS 等框架或协议端点外，不要把业务接口挂在根路径
 - 分层职责固定为：`Controller -> Service -> Repository -> Entity`
 - 输出职责固定为：`Service` 产出 DTO，`Controller` 把 DTO 转成 VO 后再统一包装响应
 - 所有 Controller Action 对外返回值必须统一使用 `Response<T>`、`Response<object>`、`PageResponse<T>` 或 `CursorResponse<T>`
@@ -118,6 +121,35 @@ public class {ControllerName} : BaseController
     private readonly I{ServiceName} _{serviceName};
 }
 ```
+
+### 标准路由前缀
+
+控制器级路由必须让最终访问地址落在 `https://xxx.com/api/xxxx` 形态下。推荐在 Controller 上声明基路由，再在 Action 上只写资源内的相对路径。
+
+```csharp
+[ApiController]
+[Route("api/users")]
+public class UsersController : BaseController
+{
+    [HttpGet("{id}")]
+    public async Task<ActionResult<Response<UserVo>>> GetAsync([FromRoute] long id)
+    {
+        // ...
+    }
+}
+```
+
+如果使用 `[controller]` token，也必须保留 `api` 前缀：
+
+```csharp
+[ApiController]
+[Route("api/[controller]")]
+public class UsersController : BaseController
+{
+}
+```
+
+不要写成 `[Route("users")]`、`[Route("[controller]")]` 或只依赖 Action 上的裸路径，除非这是明确的框架端点、健康检查、Swagger 或 OIDC discovery/JWKS 等协议端点。
 
 ### 在 Controller 中获取当前用户信息
 
@@ -329,6 +361,7 @@ app.UseAsgardExceptionHandler();
 ## 推荐做法
 
 - 每个控制器只负责一个业务领域
+- 新增或改造业务接口时，先确认最终 URL 是 `https://xxx.com/api/xxxx` 形态
 - 为每个 Action 添加 `[ProducesResponseType]` 注释，便于 Swagger 生成文档
 - 详情类 / 单资源接口优先让 `200` 与 `404` 共享同一个 `Response<TVo>` 标注，减少 Swagger 类型语义漂移
 - 通过 `AsgardContext` 获取当前用户、租户等上下文信息
@@ -344,6 +377,8 @@ app.UseAsgardExceptionHandler();
 ## 不要这样做
 
 ❌ 不要跳过分层边界，让 Controller 直接承担 Repository / Entity 访问
+
+❌ 不要把业务 Controller 暴露在根路径，例如 `[Route("users")]` 或 `[Route("[controller]")]`；统一使用 `/api/...`
 
 ❌ 不要让 Service 直接返回给前端的响应壳模型，统一响应只属于 Controller 层
 
