@@ -28,6 +28,7 @@ description: Asgard .NET 10 / C# 14 coding conventions skill. This is the mandat
 以下内容不属于本 skill 的主职责，请改用对应 skill：
 
 - Web 前端登录流、OIDC、PKCE、IDP 接入：`$identity-integration`
+- Controller / VO 对外 API 契约、`long` / `ulong` 前端字符串输出规则：`$asgard-api-development`
 - `AbsAsgardUserInfo` 与 claim 契约：`$asgard-identity-userinfo`
 - `AsgardAuth` 授权 DSL：`$asgard-auth-authorization`
 

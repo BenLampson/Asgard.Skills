@@ -42,6 +42,7 @@ description: Asgard Web API 开发 skill。Use when creating or updating control
 | **异常处理** | 启用 `UseAsgardExceptionHandler()` 全局处理，不要每个 Action 都写 try/catch |
 | **身份读取** | 当前用户、租户、角色、权限统一从 `AsgardContext.IdentityContext` 读取，不要在 Controller 里手写 claim 解析 |
 | **授权入口** | 需要按 `token_type`、角色、权限、scope、metadata 控制访问时，优先使用 `AsgardAuth*` 或 `AsgardAuthMatch(...)` |
+| **前端长整型** | VO 中对外暴露的 `long` / `ulong` 标识、雪花 ID、计数字段如可能超过 JavaScript 安全整数范围，必须使用 Asgard 内置 JSON Converter 输出为字符串 |
 
 ## 框架授权 vs 业务租户边界
 
@@ -89,6 +90,41 @@ description: Asgard Web API 开发 skill。Use when creating or updating control
 | `BadRequest<T>(message)` | 参数错误 | `Response<T>` |
 | `NotFound<T>(message)` | 资源不存在 | `Response<T>` |
 | `ServerError<T>(message)` | 服务器内部错误 | `Response<T>` |
+
+## VO 前端兼容规则
+
+前端 JavaScript `number` 不能安全表示超过 `2^53 - 1` 的整数。Asgard 已提供内置转换器，VO 中对外暴露的 `long` / `ulong` 字段仍保持 C# 强类型，但 JSON 输出应转为字符串，避免前端精度丢失。
+
+### 单个字段推荐写法
+
+```csharp
+using Asgard.Abstractions.Serialization.Converters;
+using System.Text.Json.Serialization;
+
+namespace {Namespace}.Models.VO;
+
+/// <summary>
+/// 用户信息 VO。
+/// </summary>
+public class UserVo
+{
+    /// <summary>
+    /// 用户 ID。
+    /// </summary>
+    [JsonConverter(typeof(LongToStringConverter))]
+    public long Id { get; set; }
+
+    /// <summary>
+    /// 外部无符号 ID。
+    /// </summary>
+    [JsonConverter(typeof(ULongToStringConverter))]
+    public ulong ExternalId { get; set; }
+}
+```
+
+转换器读入时兼容 JSON 字符串和数字，写出时统一输出字符串。不要为了前端精度问题把后端 VO 属性类型改成 `string`；除非业务语义本来就是字符串。
+
+`JsonSerializerOptionsFactory.ForFrontend` 也包含 `LongToStringConverter` 和 `ULongToStringConverter`，适合手动序列化或明确使用前端友好 options 的场景。Controller/MVC 响应不能假设已经全局使用该 options；生成 VO 时优先在字段上显式标注。
 
 ## 代码示例
 
@@ -395,6 +431,8 @@ app.UseAsgardExceptionHandler();
 ❌ 不要在 CRUD 代码里漏掉 `CreateBy`、`UpdateBy` 等审计字段，只因为“不知道当前用户从哪里拿”
 
 ❌ 不要在 Controller / Service 里到处直接手写 `HttpContext.User.FindFirst(...)`，统一走 `AsgardContext.IdentityContext`
+
+❌ 不要为了前端 JavaScript 精度问题把本应为 `long` / `ulong` 的 VO 字段手工改成 `string` 或在 Mapper 里到处 `.ToString()`；应使用 `LongToStringConverter` / `ULongToStringConverter`
 
 ## 参考资料
 
