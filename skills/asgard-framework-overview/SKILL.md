@@ -50,6 +50,7 @@ Asgard 当前更推荐：
 - 配置体系、`app.yaml`、`plugin.yaml`、`ConfigPath`：使用 `$asgard-configuration`。
 - `host.staticFiles`、`host.auth`、`host.swagger`、限流、健康检查：使用 `$asgard-host-features`。
 - Web 登录流、OIDC / PKCE、IDP 对接、token 契约与前后端认证协作：使用 `$identity-integration`。
+- 管理后台前端、Heimdall 风格页面、TsGen 客户端消费、Umi/Ant Design Pro 页面调用链：使用 `$asgard-admin-frontend`。
 - Web API、控制器、统一响应：使用 `$asgard-api-development`。
 - `AsgardAuth`、授权 DSL、`token_type` / 角色 / 权限 / metadata 授权：使用 `$asgard-auth-authorization`。
 - 插件实现、插件约定、内建插件与外部插件：使用 `$asgard-plugin-development`。

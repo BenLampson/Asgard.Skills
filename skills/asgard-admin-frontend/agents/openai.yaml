@@ -1,0 +1,4 @@
+interface:
+  display_name: "Asgard Admin Frontend"
+  short_description: "Standardizes Heimdall-style admin frontend pages and generated API clients"
+  default_prompt: "Use $asgard-admin-frontend when building or refactoring Asgard/Heimdall admin frontend pages, generated API clients, OIDC auth wiring, routes, models, tables, and forms."

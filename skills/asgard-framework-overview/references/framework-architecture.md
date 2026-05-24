@@ -63,6 +63,7 @@
 | asgard-configuration | `$asgard-configuration` | 配置体系、YAML、ConfigPath |
 | asgard-host-features | `$asgard-host-features` | 静态文件、宿主默认 JWT / host.auth 接线、Swagger、限流、健康检查 |
 | asgard-api-development | `$asgard-api-development` | Web API、控制器、统一响应 |
+| asgard-admin-frontend | `$asgard-admin-frontend` | 管理后台前端、Heimdall 页面、TsGen 客户端消费 |
 | asgard-plugin-development | `$asgard-plugin-development` | 插件实现与约定 |
 | asgard-plugin-lifecycle | `$asgard-plugin-lifecycle` | 插件生命周期、阶段、状态机 |
 | asgard-context-usage | `$asgard-context-usage` | AbsAsgardContext 使用 |

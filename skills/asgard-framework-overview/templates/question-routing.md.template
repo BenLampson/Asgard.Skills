@@ -11,6 +11,7 @@
 - [ ] **配置相关（app.yaml/plugin.yaml/ConfigPath）** → 使用 `$asgard-configuration`
 - [ ] **宿主功能（静态文件/宿主 JWT 接线/Swagger/限流/健康检查）** → 使用 `$asgard-host-features`
 - [ ] **Web API/控制器/统一响应** → 使用 `$asgard-api-development`
+- [ ] **管理后台前端/Umi/Ant Design Pro/TsGen 客户端消费** → 使用 `$asgard-admin-frontend`
 - [ ] **插件开发/插件约定** → 使用 `$asgard-plugin-development`
 - [ ] **插件生命周期/阶段/状态机** → 使用 `$asgard-plugin-lifecycle`
 - [ ] **AbsAsgardContext 使用** → 使用 `$asgard-context-usage`
