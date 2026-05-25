@@ -124,6 +124,9 @@
 - starter 项目负责 `Program.cs`、启动参数、运行配置入口、宿主编排
 - starter 项目通过 `ProjectReference` 引用插件项目
 - `PluginWebAppDefaults.RunAsync<TPlugin>()` 与 `YggdrasilHost.CreateBuilder(...)` 默认位于 starter
+- 新建正式插件骨架时，默认只需要插件主体项目和 starter 项目
+- 不要因为业务名里有 Web、Agent、Task、Script、Hub 等概念，就自动创建 `.Web`、`.Agent`、`.Worker`、`.Api` 项目
+- 只有明确存在独立运行、独立部署或独立生命周期时，才拆额外项目
 
 ## 目录职责清单
 
@@ -180,3 +183,6 @@
 - `Mapper/` 不承载业务逻辑
 - `Controllers/` 不直接访问数据库
 - `Services/` 不直接承担展示模型输出职责
+- API Controller、Hub、后台任务、脚本执行服务、Agent 相关实体默认仍放插件主体项目
+- `.Web` 仅表示独立 Web 宿主或前端承载层，不表示“有 Controller”
+- `.Agent` 仅表示独立 agent runtime 或远程执行进程，不表示“有 AgentEntity”

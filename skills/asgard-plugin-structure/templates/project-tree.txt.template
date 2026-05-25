@@ -43,6 +43,9 @@
 
 模式 B：插件项目 + starter 项目分离（正式推荐）
 
+默认只创建插件主体项目和 starter 项目。除非存在独立运行、独立部署或独立生命周期，
+不要自动追加 {PluginProjectName}.Web、{PluginProjectName}.Agent、{PluginProjectName}.Worker、{PluginProjectName}.Api。
+
 {SolutionRoot}/
 ├── src/
 │   ├── {PluginProjectName}/

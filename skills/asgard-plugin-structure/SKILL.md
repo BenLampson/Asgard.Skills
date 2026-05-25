@@ -48,6 +48,8 @@ Asgard 当前认可、也更希望推广的形式是：
 - `Asgard.Heimdall` 这类项目负责插件主体实现
 - `Asgard.Heimdall.Starter` 这类项目负责启动入口与调试承载
 - 正式开发、长期维护、业务复杂度上来后，**优先推荐插件项目 + starter 项目分离**
+- 新建插件骨架时，默认只创建插件主体项目和 starter 项目；不要凭业务名自动追加 `.Agent`、`.Web`、`.Api`、`.Worker` 等项目
+- 只有存在明确独立运行边界时才新增额外项目，例如独立进程 Agent runtime、独立前端/Web 宿主、独立 worker 部署单元
 
 可以接受两种模式：
 
@@ -81,6 +83,21 @@ Asgard 当前认可、也更希望推广的形式是：
 - starter 项目承载 `Program.cs`、启动参数、宿主编排、调试入口
 - starter 项目通过 `ProjectReference` 引用插件主体项目
 - `PluginWebAppDefaults.RunAsync<TPlugin>()` 通常位于 starter，而不是业务插件主体项目
+- API Controller、DTO、Entity、Repository、Service 默认都属于插件主体项目，不需要再拆一个 `.Web` 项目
+- 后台任务、脚本任务、Job Handler 默认也属于插件主体项目；只有需要独立部署、独立长连接或独立进程生命周期时，才拆 `.Agent` / `.Worker`
+
+### 额外项目判定规则
+
+默认不要创建这些项目：
+
+- `{PluginName}.Web`
+  除非它是独立 Web 宿主、独立前端承载层，或必须与插件主体分开部署
+- `{PluginName}.Agent`
+  除非它是独立进程、远程执行器、长连接 agent runtime，或有独立发布生命周期
+- `{PluginName}.Api`
+  除非它不是插件 Controller，而是独立 API 应用
+
+如果只是“插件里有 Web API、Hub、后台任务、脚本执行、Agent 实体模型”，默认仍放在插件主体项目对应目录中。
 
 ## 标准依赖
 
@@ -342,6 +359,7 @@ Asgard 当前认可、也更希望推广的形式是：
 - 在模式 B 中，如果插件项目需要携带运行配置资源，可以包含 `app.yaml` 作为输出资源，但必须明确说明由 starter / host 加载，或复制到运行目录后再加载
 - 多业务模块项目默认顶层按 Asgard 标准层组织，层内再按业务模块分子目录
 - 不要默认把 `SupplyChain/Models`、`SupplyChain/Services`、`SupplyChain/Domains` 这类业务模块优先结构作为正式推荐结构
+- 不要因为存在 `Hub`、`Task`、`Script`、`AgentEntity` 这类类型名就推导出需要 `.Web` 或 `.Agent` 独立项目
 
 ## 固定流转
 
@@ -405,7 +423,8 @@ Entity
 2. 如果仓库已经采用“插件实现 + starter 启动器”分离结构，优先尊重现有结构
 3. 如果用户只是做快速验证，可以提供模式 A
 4. 如果用户在做正式开发或维护现有业务，优先推荐模式 B
-5. 不要把“快速验证示例”表述成唯一标准结构
+5. 额外项目必须先证明独立运行、独立部署或独立生命周期，不要按名称臆造 `.Agent` / `.Web`
+6. 不要把“快速验证示例”表述成唯一标准结构
 
 ## 使用原则
 

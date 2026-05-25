@@ -68,6 +68,32 @@ description: Asgard 内建插件开发 skill。Use when implementing built-in pl
 6. 由启动承载方决定 `app.yaml` 的加载位置
 7. 生命周期边界细节交给 `$asgard-plugin-lifecycle`
 
+## PluginSdk 覆盖边界
+
+默认先假设 `Asgard.PluginSdk` 已经处理插件常规装配，不要重复手写。
+
+`PluginWebAppDefaults.RunAsync<TPlugin>()` 已覆盖：
+
+- 创建 Yggdrasil 宿主
+- 注册内建插件
+- 应用推荐插件 Web 中间件默认值
+
+`context.AddPluginConventions<TPlugin, TConfig>()` 已覆盖：
+
+- 扫描插件程序集中的 `[Repository]` 仓储
+- 扫描插件程序集中的 `[Service]` 服务
+- 加载插件项目中的 `plugin.yaml`
+- 注册强类型插件配置
+
+仍需要显式处理的通常是非约定能力：
+
+- SignalR、gRPC、第三方 SDK client 等框架外服务
+- `MapHub<T>`、自定义 endpoint、中间件挂载
+- 数据库结构同步或迁移，例如 `CodeFirst.SyncStructure(...)`
+- 不符合 `[Repository]` / `[Service]` 约定的特殊生命周期服务
+
+如果需求只是“注册服务、仓储、插件配置”，默认写 `AddPluginConventions`，不要再生成一串 `AddScoped`、`AddRepositories`、`AddServices`。
+
 ## 插件入口类职责
 
 插件入口类默认只负责：
@@ -120,7 +146,7 @@ starter 项目的 `Program.cs` 默认负责：
 - 优先继承 `PluginBase`
 - 优先把 `Program.cs` 放在 starter / 启动项目
 - 优先使用 `context.AddPluginConventions<TPlugin, TConfig>()`
-- 将大量服务装配下沉到扩展类或模块装配类
+- 只有 `AddPluginConventions` 未覆盖的能力，才下沉到扩展类或模块装配类
 - 把 `plugin.yaml` 作为插件项目中的插件级 YAML 根文件
 - 正式开发优先采用“插件项目 + starter 项目分离”
 - 所有实现代码都继续遵守 `$asgard-dotnet-10-csharp-14`
@@ -129,6 +155,9 @@ starter 项目的 `Program.cs` 默认负责：
 
 - ❌ 不要把 starter 项目的 `Program.cs` 默认说成“插件项目入口文件”
 - ❌ 不要默认把 `PluginWebAppDefaults.RunAsync<TPlugin>()` 放进插件主体项目
+- ❌ 不要在插件里重复手写 `[Repository]` / `[Service]` 能被 `AddPluginConventions` 扫描到的仓储和服务注册
+- ❌ 不要因为存在 Hub、脚本、任务或 Agent 相关实体，就默认拆出 `.Web` / `.Agent` 项目；结构边界交给 `$asgard-plugin-structure`
+- ❌ 不要把数据库结构同步误认为 `PluginSdk` 已经自动完成；除非框架已有专门约定，否则需要插件显式处理
 - ❌ 不要在本 skill 中自行决定目录结构，目录问题交给 `$asgard-plugin-structure`
 - ❌ 不要在 `OnConfigureServicesAsync` 里构建或解析 `ServiceProvider`
 - ❌ 不要把生命周期规则写成另一套，阶段边界交给 `$asgard-plugin-lifecycle`

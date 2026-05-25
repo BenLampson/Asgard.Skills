@@ -34,8 +34,8 @@ description: Asgard 仓储与服务注册 skill。Use when implementing reposito
 |------|------|
 | 1. 标记仓储类 | 添加 `[Repository]` 特性 |
 | 2. 基类继承 | 统一继承 `AbsAsgardRepositoryBase<TEntity, TKey>`，并注入 `IAsgardRepositoryContext` |
-| 3. 手动批量注册 | `services.AddRepositories(typeof(EntryType).Assembly)` |
 | 3. 插件中注册 | 使用 `context.AddPluginConventions<TPlugin, TConfig>()` 一键完成 |
+| 3. 非插件或特殊扫描范围 | 才手动调用 `services.AddRepositories(typeof(EntryType).Assembly)` |
 
 **代码示例 - 定义仓储：**
 
@@ -62,7 +62,7 @@ public class {EntityName}Repository : AbsAsgardRepositoryBase<{EntityName}, {Key
 - 仓储构造函数里应注入 `IAsgardRepositoryContext`，让 `AbsAsgardRepositoryBase` 统一获取身份、追踪与分布式锁入口
 - 业务服务和控制器不需要重复计算默认租户过滤，除非场景明确要求跨租户访问
 
-**代码示例 - 手动注册：**
+**代码示例 - 手动注册（仅非插件或特殊扫描范围）：**
 
 ```csharp
 // 扫描当前程序集中所有 [Repository] 标记的类
@@ -76,6 +76,8 @@ _ = services.AddRepositories(typeof(Program).Assembly);
 var config = context.AddPluginConventions<{PluginName}Plugin, {PluginConfig}Config>();
 ```
 
+插件项目默认只能保留上面的 `AddPluginConventions`。除非要扫描插件程序集之外的额外程序集，否则不要同时再写 `AddRepositories(...)` 或 `AddServices(...)`。
+
 ### 业务服务注册
 
 | 场景 | 推荐做法 |
@@ -83,6 +85,8 @@ var config = context.AddPluginConventions<{PluginName}Plugin, {PluginConfig}Conf
 | 少量服务 | 显式 `services.AddScoped/AddSingleton/AddTransient` |
 | 模块批量扫描 | 使用 `[Service]` 特性 + `services.AddServices(assembly)` |
 | 插件模块 | 交给 `AddPluginConventions` 自动处理 |
+
+插件模块中，显式 DI 只用于 `AddPluginConventions` 覆盖不了的对象，例如 SignalR、第三方 SDK client、HostedService、特殊单例、跨程序集能力或需要自定义生命周期的服务。普通业务服务只要带 `[Service]` 并在插件程序集内，就不要再手写注册。
 
 **代码示例 - 服务接口与实现必须分文件：**
 
@@ -118,7 +122,8 @@ public class {ServiceName}Service : I{ServiceName}Service
 - **仓储层**：只做数据访问（CRUD、查询）
 - **业务服务层**：做跨仓储编排、事务、缓存调用
 - **控制器**：只调用业务服务，不直接访问仓储
-- **扫描范围**：只扫描当前模块程序集，不扫描整个解决方案
+- **插件扫描入口**：插件中默认只调用 `AddPluginConventions<TPlugin, TConfig>()`
+- **扫描范围**：只扫描当前模块程序集，不扫描整个解决方案；跨程序集扫描必须有明确理由
 - **目录归属**：仓储与服务默认按结构 skill 的目录归位
 - **租户隔离**：默认由框架仓储基类和 FreeSql 过滤器统一承接，不要让每个仓储各自实现一套
 - **默认更新策略**：乐观锁实体必须采用“先查后改”，不要在服务层把 DTO 重建成新实体后直接更新
@@ -172,6 +177,8 @@ AI 生成代码时，建议套用这些模板保持风格一致。
 ## 不要这样做
 
 - ❌ 不要默认 `ServiceScanner` 已经在所有宿主路径中自动接线
+- ❌ 不要在插件项目里既调用 `AddPluginConventions<TPlugin, TConfig>()`，又重复调用 `AddRepositories(typeof(TPlugin).Assembly)` / `AddServices(typeof(TPlugin).Assembly)`
+- ❌ 不要为每个仓储、每个业务服务逐条写 `AddScoped`，只要它们符合 `[Repository]` / `[Service]` 插件约定
 - ❌ 不要把控制器直接当仓储用，不要让控制器写 SQL
 - ❌ 不要扫描范围过大（比如扫描 `Asgard.Common`），导致无关类型被注入
 - ❌ 不要让仓储包含业务逻辑，不要让服务包含 SQL 查询
