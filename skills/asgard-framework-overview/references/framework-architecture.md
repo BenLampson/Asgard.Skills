@@ -133,6 +133,10 @@ src/
 
 ## 参考资料
 
-- `doc/01-框架概览.md` - 框架设计概述
-- `doc/02-快速开始.md` - 快速开始指南
-- `doc/09-源码参考索引.md` - 源码文件索引
+完整源码拷贝请参考本 skill 的 `references/` 目录：
+
+- `ServiceCollectionExtensions.cs`
+- `YggdrasilHostBuilder.Services.cs`
+- `YggdrasilHostBuilder.Configurator.cs`
+- `AsgardAuthAttributes.cs`
+- `AuthOptions.cs`

@@ -7,7 +7,7 @@ description: Asgard 框架总览与路由 skill。Use when working with the Asga
 
 ## 先做路由判断
 
-- 先读取 `../../doc/01-框架概览.md`、`../../doc/02-快速开始.md`、`../../doc/09-源码参考索引.md`。
+- 先读取本 skill 的 `references/framework-architecture.md`；需要核对实现时，只读取本 skill `references/` 中的源码拷贝，不要要求访问外部 doc 或源码仓库。
 - 先判断用户问题属于哪个模块，再决定是否继续读取专项 skill 或源码。
 - 先区分“插件入口类”和“启动入口 Program.cs”。
 - 先判断当前仓库是单项目快速验证，还是“插件实现 + starter 启动器”双项目分离。
@@ -81,10 +81,10 @@ Asgard 当前更推荐：
 
 ## 源码锚点
 
-以下锚点用于总览问题快速落到真实实现：
+完整源码拷贝请参考 `references/` 目录：
 
-- `Common/Asgard.AspNetCore.Core/ServiceCollectionExtensions.cs` - `AddAsgardAspNetCore()` 与 `AsgardAuth` policy 注册
-- `Host/Asgard.Yggdrasil.AspNetCore/YggdrasilHostBuilder.Services.cs` - `host.auth.enabled` 与默认 JWT 服务注册
-- `Host/Asgard.Yggdrasil.AspNetCore/YggdrasilHostBuilder.Configurator.cs` - 默认中间件顺序与 `UseAuthorization()`
-- `Common/Asgard.Abstractions.AspNetCore/Authorization/AsgardAuthAttributes.cs` - 授权特性与策略绑定
-- `Common/Asgard.Abstractions.AspNetCore/Host/AuthOptions.cs` - 认证配置语义
+- `ServiceCollectionExtensions.cs` - `AddAsgardAspNetCore()` 与 `AsgardAuth` policy 注册
+- `YggdrasilHostBuilder.Services.cs` - `host.auth.enabled` 与默认 JWT 服务注册
+- `YggdrasilHostBuilder.Configurator.cs` - 默认中间件顺序与 `UseAuthorization()`
+- `AsgardAuthAttributes.cs` - 授权特性与策略绑定
+- `AuthOptions.cs` - 认证配置语义
