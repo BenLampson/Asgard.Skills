@@ -1,0 +1,4 @@
+interface:
+  display_name: ".NET Unit Testing"
+  short_description: "编写 .NET 单元测试并强制使用 xUnit v3"
+  default_prompt: "Use $dotnet-unit-testing to add or update .NET tests with xUnit v3."
