@@ -36,6 +36,24 @@ Asgard 使用强类型配置系统，从 YAML 文件、环境变量、命令行�
 
 **记住**：后加入的数据覆盖先加入的数据。修复配置问题时先确认覆盖链路，不要只看单个文件。
 
+## 占位符解析
+
+Asgard 支持在 YAML 标量字符串中使用占位符。`app.yaml` 走 `AsgardConfigurationBuilder` 合并配置图时解析，`plugin.yaml` 等直接通过 `YamlConfigLoader.Load/LoadFromFile` 读取的配置也会在绑定前解析。
+
+| 语法 | 作用 | 示例 |
+|------|------|------|
+| `${配置路径}` | 引用合并后配置图中的另一个值 | `${app.baseUrl}/health` |
+| `${env:环境变量名}` | 读取进程环境变量 | `${env:MYSQL_CONNECTION_STRING}` |
+
+示例：
+
+```yaml
+database:
+  connectionString: "${env:MYSQL_CONNECTION_STRING}"
+```
+
+环境变量占位符缺少变量名或对应环境变量未设置时，应在启动/加载阶段直接抛错，不要静默替换为空值。配置路径占位符未命中时保留原始占位符文本。
+
 ## 配置类编写约定
 
 | 约定 | 要求 |
@@ -185,6 +203,7 @@ protected override Task OnConfigureServicesAsync(
 - `ISystemConfig.cs` - 配置接口定义
 - `ConfigPathAttribute.cs` - 配置路径特性
 - `AsgardConfigurationBuilder.cs` - 配置构建器
+- `AsgardConfigurationRoot.cs` - 合并配置根与占位符解析
 - `YamlConfigLoader.cs` - YAML 配置加载器
 - `PluginConventions.cs` - 插件配置加载约定
 

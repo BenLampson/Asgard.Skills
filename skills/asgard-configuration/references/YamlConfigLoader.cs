@@ -36,13 +36,14 @@ public static class YamlConfigLoader
     /// </example>
     public static T Load<T>(string yamlContent) where T : class, ISystemConfig, new()
     {
-        var yamlData = _yamlDeserializer.Deserialize<object>(yamlContent);
+        var yamlData = LoadDictionary(yamlContent);
         var config = new T();
 
         // 仅当根节点被反序列化为字典时才进入绑定流程，其他情况直接返回默认配置对象。
-        if (yamlData is Dictionary<object, object> dict)
+        if (yamlData.Count > 0)
         {
-            YamlConfigBinder.BindConfig(config, dict);
+            var resolvedData = new AsgardConfigurationRoot(yamlData).CreateResolvedSnapshot();
+            YamlConfigBinder.BindConfig(config, resolvedData);
         }
 
         return config;
@@ -106,3 +107,4 @@ public static class YamlConfigLoader
         return LoadDictionary(yamlContent);
     }
 }
+
