@@ -14,6 +14,14 @@ description: Asgard 框架总览与路由 skill。Use when working with the Asga
 - 先记住推荐入口：`YggdrasilHost.CreateBuilder(...)`、`PluginWebAppDefaults.RunAsync<TPlugin>()`、`UseBuiltInPlugin<TPlugin>()`、`BaseController`、`AbsAsgardContext`。
 - 如果走 Yggdrasil 默认链路，通常不需要手写 `UseAuthorization()`；只有完全自定义或旁路默认链路时，才需要显式补齐认证授权中间件。
 
+## 当前版本共识
+
+- 当前对外 NuGet 包线以 `5.0.1` 为最新基线。
+- 不要根据本地仓库目录名（例如 `AsgardV3`）推断框架版本。
+- 不要把已 unlist 的旧包版本当作最新可安装版本；生成依赖或升级建议时默认指向 `5.0.1`。
+- 如果任务涉及发包、覆盖版本或确认真实版本，以源码根目录 `Directory.Build.props` 中的
+  `MajorVersion`、`MinorVersion`、`PatchVersion` 和计算出的 `PackageVersion` 为准。
+
 ## 推荐项目组织方式
 
 Asgard 当前更推荐：
