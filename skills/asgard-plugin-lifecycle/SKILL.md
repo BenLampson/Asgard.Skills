@@ -65,6 +65,32 @@ app.RunAsync() → 启动
 | **停止** | `StopAsync` | ✅ 可用 | 停止接收新请求、停止后台任务 |
 | **释放** | `DisposeAsync` | - | 释放资源 |
 
+## 插件端点映射硬规则
+
+在 `OnConfigureMiddlewareAsync` 中，如果只是注册 endpoint，应优先把 `context.App` 转为
+`IEndpointRouteBuilder` 后调用 `Map...` 方法，例如 `MapMcp(...)`、`MapFallback(...)`
+或其他 `Map...` 扩展。
+
+不要在插件中调用 `context.App.UseEndpoints(...)`。Yggdrasil 的插件中间件扩展点位于
+`UseAuthorization()` 之前；`UseEndpoints(...)` 会提前执行 endpoint，导致带
+`[Authorize]` / `AsgardAuth` 元数据的 Controller 或 endpoint 报缺少授权中间件。
+
+推荐模式：
+
+```csharp
+protected override Task OnConfigureMiddlewareAsync(
+    IPluginMiddlewareConfigurationContext context,
+    CancellationToken cancellationToken)
+{
+    if (context.App is IEndpointRouteBuilder endpoints)
+    {
+        _ = endpoints.MapFallback(...);
+    }
+
+    return Task.CompletedTask;
+}
+```
+
 ## 宿主钩子可用位置
 
 | 钩子 | 执行时机 | 使用场景 |
@@ -145,7 +171,11 @@ public class {PluginName} : PluginBase
         // ✅ 正确：这里可以注册中间件
         context.App.UseMyMiddleware();
 
-        // 映射端点...
+        // ✅ 正确：这里只映射 endpoint，不调用 UseEndpoints(...)
+        if (context.App is IEndpointRouteBuilder endpoints)
+        {
+            _ = endpoints.MapFallback(...);
+        }
 
         return Task.CompletedTask;
     }
@@ -186,6 +216,8 @@ public class {PluginName} : PluginBase
 ❌ 不要在 `InitializeAsync` 之前调用 `GetService` / `GetAsgardContext` / `CreateLogger`，`PluginBase` 会检查阶段并抛出明确异常
 
 ❌ 不要把长期运行任务塞进 `ConfigureServicesAsync`，会阻塞构建
+
+❌ 不要在插件中调用 `context.App.UseEndpoints(...)`；端点注册走 `IEndpointRouteBuilder.Map...`
 
 ❌ 不要把 `PluginState` 当作业务状态使用，它只反映框架生命周期位置
 

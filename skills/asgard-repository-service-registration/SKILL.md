@@ -33,7 +33,7 @@ description: Asgard 仓储与服务注册 skill。Use when implementing reposito
 | 步骤 | 做法 |
 |------|------|
 | 1. 标记仓储类 | 添加 `[Repository]` 特性 |
-| 2. 基类继承 | 统一继承 `AbsAsgardRepositoryBase<TEntity, TKey>`，并注入 `IAsgardRepositoryContext` |
+| 2. 基类继承 | 统一继承 `AbsAsgardRepositoryBase<TEntity, TKey>`，并注入 `IMultiLevelCache`、`ILogger<TRepository>`、`IAsgardRepositoryContext` |
 | 3. 插件中注册 | 使用 `context.AddPluginConventions<TPlugin, TConfig>()` 一键完成 |
 | 3. 非插件或特殊扫描范围 | 才手动调用 `services.AddRepositories(typeof(EntryType).Assembly)` |
 
@@ -59,7 +59,9 @@ public class {EntityName}Repository : AbsAsgardRepositoryBase<{EntityName}, {Key
 **租户仓储补充约定：**
 
 - 如果实体继承 `AbsAsgardTenantEntity`，默认查询路径依赖 FreeSql 全局过滤自动附加当前租户条件
+- 仓储构造函数必须注入 `IMultiLevelCache cache` 并传给 `base(...)`，不要因为业务代码没有显式使用缓存就省略
 - 仓储构造函数里应注入 `IAsgardRepositoryContext`，让 `AbsAsgardRepositoryBase` 统一获取身份、追踪与分布式锁入口
+- 即使 `caching.enabled: false`，Yggdrasil 也会注册可注入的空 `IMultiLevelCache`，仓储构造函数不需要为“禁用缓存”分支改写
 - 业务服务和控制器不需要重复计算默认租户过滤，除非场景明确要求跨租户访问
 
 **代码示例 - 手动注册（仅非插件或特殊扫描范围）：**
@@ -184,5 +186,6 @@ AI 生成代码时，建议套用这些模板保持风格一致。
 - ❌ 不要让仓储包含业务逻辑，不要让服务包含 SQL 查询
 - ❌ 不要自行定义另一套仓储/服务目录规则
 - ❌ 不要绕开 `AbsAsgardRepositoryBase` 直接 new `BaseRepository` 作为默认仓储实现
+- ❌ 不要省略仓储构造函数里的 `IMultiLevelCache`
 - ❌ 不要在每个仓储方法里复制粘贴 `TenantId` 条件，默认租户过滤应交给框架统一处理
 - ❌ 不要在服务层把 DTO 重建成新实体后直接 `UpdateAsync`，这会破坏乐观锁版本和持久化字段

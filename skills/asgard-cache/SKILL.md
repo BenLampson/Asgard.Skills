@@ -130,12 +130,14 @@ public async Task<bool> {MethodName}({ParameterType} {ParameterName})
 
 ## 推荐做法
 
-- 通过 `AbsAsgardContext.Cache` 获取缓存服务，不要直接注入 `IMultiLevelCache`
+- 业务服务通过 `AbsAsgardContext.Cache` 获取缓存服务，不要直接注入 `IMultiLevelCache`
+- 仓储继承 `AbsAsgardRepositoryBase<TEntity, TKey>` 时必须按基类构造函数注入 `IMultiLevelCache cache`
 - 始终对 `AsgardContext.Cache` 做空检查，支持缓存开关动态关闭
 - 缓存未命中时一定要降级到数据源查询，不要直接返回 null
 - 键名使用 `模块:实体:标识` 格式，保持稳定、可读、可追踪
 - 更新/删除数据后，及时移除相关缓存保持一致性
 - 内存缓存用于热点数据，Redis 用于分布式共享
+- 即使缓存模块关闭，Yggdrasil 也会为仓储构造函数提供可注入的空 `IMultiLevelCache`
 
 ## 不要这样做
 
