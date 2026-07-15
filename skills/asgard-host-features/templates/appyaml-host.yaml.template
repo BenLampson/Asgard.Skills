@@ -37,6 +37,9 @@ host:
     title: {swagger_title}
     version: {swagger_version}
     description: {swagger_description}
+  # 可选 TypeScript 客户端导出，仅 Development 环境生效
+  tsGen:
+    enabled: false
   # 全局限流
   rateLimiting:
     enabled: {rate_limiting_enabled}

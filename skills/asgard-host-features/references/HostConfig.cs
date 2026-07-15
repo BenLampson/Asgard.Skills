@@ -85,6 +85,12 @@ public class HostConfig : ISystemConfig
     public SwaggerOptions? Swagger { get; set; }
 
     /// <summary>
+    /// TypeScript 客户端导出配置。
+    /// </summary>
+    [ConfigPath("host.tsGen")]
+    public TsGenHostOptions? TsGen { get; set; }
+
+    /// <summary>
     /// 限流配置。
     /// </summary>
     /// <remarks>
@@ -135,6 +141,7 @@ public class HostConfig : ISystemConfig
         Cors?.Validate();
         Auth?.Validate();
         Swagger?.Validate();
+        TsGen?.Validate();
         RateLimiting?.Validate();
         HealthCheck?.Validate();
         StaticFiles.Validate();

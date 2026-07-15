@@ -70,7 +70,10 @@ public partial class YggdrasilHostBuilder
             _ = services.AddAsgardContext();
 
             ConfigurePluginServices(services, mvcBuilder);
-            RegisterTsGenerationServices(services);
+            if (_hostConfig.TsGen is { Enabled: true })
+            {
+                RegisterTsGenerationServices(services);
+            }
             RegisterHostedServices(services);
 
             if (_hostConfig.Cors is { Enabled: true })

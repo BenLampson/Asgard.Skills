@@ -8,7 +8,7 @@ Use the Heimdall frontend as the reference implementation:
 - Ant Design and `@ant-design/pro-components` for operational admin UI.
 - `axios` through the shared request instance.
 - `oidc-client-ts` and `react-oidc-context` for browser OIDC session handling.
-- Generated Asgard TypeScript clients under `src/services`.
+- An explicit project-selected API client strategy; Asgard.TsGen output under `src/services` is supported but optional.
 
 Expected scripts:
 
@@ -142,9 +142,9 @@ UI permission helpers should read Asgard-compatible `permissions` and `roles` cl
 
 Do not put backend trust decisions in frontend code. Frontend checks hide or disable UI affordances; backend AsgardAuth and resource-boundary checks enforce security.
 
-## TsGen Troubleshooting
+## Optional TsGen Troubleshooting
 
-If frontend developers start writing manual clients because generation is incomplete, stop and check:
+Only use this checklist when the project has opted into TsGen and generation is incomplete:
 
 1. Is the target controller marked `[AsgardTsGen]`?
 2. Is the plugin/assembly loaded by the current host?
@@ -153,4 +153,4 @@ If frontend developers start writing manual clients because generation is incomp
 5. Was TsGen rerun after the backend change?
 6. Were stale frontend imports removed after regeneration?
 
-Do not keep manual clients as a workaround for broken generation unless the endpoint is explicitly outside normal Asgard API generation.
+Do not silently mix a manual wrapper with TsGen output for the same endpoint. Fix generation, explicitly exclude the endpoint, or deliberately migrate the project to another shared client strategy.

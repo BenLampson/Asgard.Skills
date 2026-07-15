@@ -1,6 +1,6 @@
 ---
 name: asgard-host-features
-description: Asgard 宿主特性配置与用法 skill。Use when configuring or explaining host.staticFiles, host.cors, host.auth, host.swagger, host.rateLimiting, host.healthCheck, middleware order, tenant middleware placement, or host-managed web features in Asgard. For host.auth, this skill covers host-side JWT Bearer registration, middleware wiring, and config semantics, not frontend login flows or PKCE design.
+description: Asgard 宿主特性配置与用法 skill。Use when configuring or explaining host.staticFiles, host.cors, host.auth, host.swagger, host.tsGen, host.rateLimiting, host.healthCheck, middleware order, tenant middleware placement, or host-managed web features in Asgard. For host.auth, this skill covers host-side JWT Bearer registration, middleware wiring, and config semantics, not frontend login flows or PKCE design.
 ---
 
 # Asgard 宿主 Web 功能配置
@@ -36,6 +36,7 @@ host:
   cors: ...          # CORS 跨域
   auth: ...         # JWT 认证
   swagger: ...      # Swagger 文档
+  tsGen: ...        # 可选 TypeScript 客户端导出
   rateLimiting: ... # 全局限流
   healthCheck: ...  # 健康检查
 ```
@@ -176,6 +177,21 @@ swagger:
 - 非分页接口使用 `Response<T>` / `Response<object>`，分页接口使用 `PageResponse<T>` / `CursorResponse<T>`
 - Swagger 会自动包含注释信息
 
+### TypeScript 客户端导出（host.tsGen）
+
+```yaml
+tsGen:
+  enabled: true
+```
+
+关键行为：
+
+- TsGen 是可选开发工具，默认关闭，不是所有前端项目的强制依赖
+- 只有 `host.tsGen.enabled: true` 且运行环境为 `Development` 时才映射 `/asgard-tsgen`
+- 选择 TsGen 的项目才需要为目标控制器添加 `[AsgardTsGen]`
+- 每次生成会完整重建 `common/`、`controller/`、`models/` 纯生成目录
+- 不使用 TsGen 的项目可以选择 OpenAPI、共享手写客户端或其他契约方案
+
 ### 全局限流（host.rateLimiting）
 
 ```yaml
@@ -262,6 +278,7 @@ app.MapControllers();
 需要查看配置定义或验证规则时读 `references/`：
 - `HostConfig.cs` - 宿主根配置类
 - `StaticFileHostOptions.cs` - 静态文件配置选项
+- `TsGenHostOptions.cs` - 可选 TypeScript 客户端导出配置
 
 ## 源码锚点
 

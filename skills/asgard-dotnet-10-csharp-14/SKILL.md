@@ -143,11 +143,12 @@ public static extension {ExtensionName} on {TargetType}<{GenericParameter}>
 
 ## TS Gen 使用约定
 
-当开发人员需要为前端生成 Asgard Controller 对应的 TypeScript 客户端时，统一使用 `Asgard.TsGen` 工具。
+TsGen 是可选开发工具，不是 Asgard 前端的强制依赖。项目决定采用生成式 TypeScript 客户端时，优先使用官方 `Asgard.TsGen`；项目也可以明确选择 OpenAPI、共享手写客户端或其他契约方案。
 
 ### 生成前提
 
 - 只有继承 `ControllerBase` 且显式标记 `[AsgardTsGen]` 的控制器才会被扫描和生成
+- 未选择 TsGen 的项目不需要添加 `[AsgardTsGen]`，也不需要保留生成目录
 - 未标记该特性的控制器不会进入生成结果
 - 控制器返回值仍应遵循 Asgard 统一包装约定，例如 `Response<T>`、`PageResponse<T>`、`CursorResponse<T>` 或 SSE
 - 在 Yggdrasil 宿主内通过 `/asgard-tsgen` 导出时，只会导出**当前宿主已经加载的插件程序集**中、且已被 MVC 真实发现到的控制器
@@ -165,7 +166,15 @@ dotnet run --project Common/Asgard.TsGen/Asgard.TsGen.csproj -- --assembly ./Hos
 asgard-tsgen --assembly ./bin/Debug/net10.0/MyApi.dll
 ```
 
-开发环境下，如果使用 Yggdrasil 宿主内置导出端点，访问地址为：
+开发环境下，需要先显式启用 Yggdrasil 宿主导出端点：
+
+```yaml
+host:
+  tsGen:
+    enabled: true
+```
+
+然后访问：
 
 ```text
 http://127.0.0.1:5000/asgard-tsgen
@@ -182,9 +191,10 @@ http://127.0.0.1:5000/asgard-tsgen
 
 ### 团队约定
 
-- 想让某个 API 暴露给前端生成客户端时，先为控制器添加 `[AsgardTsGen]`
-- 修改控制器路由、参数或返回模型后，应重新执行一次 `TS Gen`
-- 前端代码应信任最新生成结果，不要继续引用已被删除的旧接口文件
+- 先由项目明确选择是否使用 TsGen；不要仅因这是 Asgard 项目就强制引入
+- 项目选择 TsGen 后，想让某个 API 进入生成结果时再添加 `[AsgardTsGen]`
+- 使用 TsGen 的项目修改控制器路由、参数或返回模型后，应重新生成
+- 使用 TsGen 的前端应以最新生成结果为准，不要继续引用已删除的旧接口文件
 - 如果宿主导出结果只出现 `common/`，优先检查：插件是否真的已加载、控制器是否被 MVC 发现、控制器是否显式标记 `[AsgardTsGen]`
 
 ## 推荐类库

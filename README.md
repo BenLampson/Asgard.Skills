@@ -40,8 +40,8 @@ Asgard 框架的 AI 技能仓库。
 
 当前还需要重点了解的一条工具约定是：
 
-- Asgard 的 TypeScript 客户端统一通过 `Asgard.TsGen` 生成
-- 只有标记了 `[AsgardTsGen]` 的 Controller 会进入生成结果
+- TypeScript 客户端方案由项目自行选择；`Asgard.TsGen` 是可选的官方生成方案
+- 只有项目选择 TsGen 且 Controller 标记了 `[AsgardTsGen]` 时，控制器才会进入生成结果
 - 默认输出目录就是命令执行时的当前目录
 - 生成器会重建 `common/`、`controller/`、`models/` 这类纯生成目录，因此这些目录不应手写自定义代码
 
