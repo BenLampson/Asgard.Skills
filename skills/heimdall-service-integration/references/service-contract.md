@@ -1,85 +1,47 @@
-# Heimdall 服务集成稳定契约
+# Heimdall 服务集成稳定不变量
 
-## 目录 API
+本页用于设计和代码评审。面向接入方的完整操作说明见同目录其他 references。
 
-推荐资源契约：
+## 身份与租户
 
-| 项目 | 稳定值 |
+- `TenantUser.Id = JWT sub = Webhook subject_id = 用户资源 id = 成员资源 tenant_user_id`。
+- `TenantUid` 仅为历史内部关联键，不应出现在新外部契约中。
+- 租户绑定资源只能依据已验证 Token 中的 `tenant_id` 查询。
+- 跨租户资源按不存在处理，不回退全局查询。
+
+## BackendService Token
+
+目录读取固定使用：
+
+| 项目 | 值 |
 |---|---|
 | Grant | `client_credentials` |
 | Token type | `BackendService` |
 | Scope | `heimdall.directory.read` |
 | Audience | `heimdall-directory-api` |
-| Tenant | 仅从已验证 Token 的 `tenant_id` 读取 |
-| Page | `page >= 1` |
-| Size | 默认 10，最大 500 |
 
-推荐路由：
+必须同时验证签名、Issuer、Audience、Token Type、Scope 和 Tenant。BackendService 只读，不授予组织或目录写权限。
 
-```text
-GET /api/backend/directory/users
-GET /api/backend/directory/groups/{groupId}
-GET /api/backend/directory/groups/{groupId}/members
-GET /api/backend/directory/groups/{groupId}/members/{tenantUserId}
-```
+## 最终身份状态
 
-只允许 GET。列表返回 `PageResponse<T>`，详情返回 `Response<T>`。提供稳定 `updated_at` 或完整 ETag。
-调用方需要离线契约测试时，应交付聚焦这些路由的 OpenAPI 文件；仅添加生成标记不等于已经交付契约产物。
+查询、登录、Refresh Token、Introspection、目录 API 和对账必须调用同一最终状态计算。当前启用条件为：TenantUser 未删除，且至少存在一条未删除、启用的登录记录。
 
-有效成员必须满足：关系未删除、组启用且未删除、用户未删除、用户最终身份状态启用。关系不存在时返回 `active=false`；用户或组不存在时返回 404。
+有效目录成员同时满足：成员关系未删除、组未删除且启用、用户未删除且最终状态启用。
 
-## TenantUser 最终状态
+## 身份失效
 
-最终状态必须由共享入口计算。当前规则为：至少存在一条未删除且启用的登录记录时才启用，否则停用。以下链路不得各自复制或推测状态：
+停用、软删除和管理员撤销在同一数据库事务中：
 
-- 单用户与分页查询
-- 密码、Passkey、LDAP、OIDC 或 SAML 登录完成
-- Refresh Token
-- Introspection 和 Access Token 即时校验
-- BackendService 目录 API
-- 身份对账任务
-
-必须有真实正向集成测试覆盖“启用用户 + 启用凭据 + 正确密码 => 登录成功”，同时覆盖停用、删除和孤儿登录记录失败关闭。
-
-## Subject
-
-新契约统一使用：
-
-```text
-TenantUser.Id
-= JWT sub
-= Webhook subject_id
-= Token/Session subject_id
-= Backend Directory API tenant_user_id
-```
-
-`TenantUid` 只作为历史内部关联键。兼容升级时，失效事务应同时撤销规范 `Id` 与历史 `TenantUid` 对应的旧凭据，但 Webhook 只输出规范 `Id`。
-
-## 身份失效 Webhook
-
-停用、软删除和管理员撤销必须在同一事务内：
-
-1. 写入 Subject 撤销水位；
-2. 撤销 Access Token、Refresh Token、Authorization、Code、Consent 和活动 Session；
-3. 写入持久化 Outbox；
+1. 推进主体撤销水位；
+2. 撤销 Token、Authorization、Code、Consent 和活动 Session；
+3. 写持久化 Outbox；
 4. 为启用订阅创建投递记录。
 
-HTTP 请求由后台 Worker 执行。签名输入使用：
+后台 Worker 投递稳定 `event_id` 的签名 Webhook。接收方验证签名与时间窗口、按 Event ID 幂等，并拒绝 `iat <= revoked_at` 的旧 JWT。
 
-```text
-HMAC-SHA256(secret, timestamp + "." + raw_utf8_body)
-```
+## 失败策略
 
-请求至少携带稳定 Event ID、Unix Timestamp、Key ID 和 `sha256=` 签名。网络错误、超时和非 2xx 持久化指数退避重试；手动重投保持原 Event ID。
-
-接收方必须恒定时间比较签名、限制 Timestamp 偏差、按 Event ID 幂等，并维护每个主体的 `revoked_at` 水位，拒绝 `iat <= revoked_at` 的旧 JWT。
-
-## 验收
-
-- 验证没有接受任意 `tenantId` 的 BackendService 路由。
-- 验证 UserLogin Token、错误 Scope、错误 Audience 和无租户 Token 均返回 403。
-- 验证跨租户 ID 返回 404，不回退全局查询。
-- 验证成员停用或组停用后立即返回 `active=false`。
-- 验证停用与 Outbox 在同一事务提交或回滚。
-- 验证 Webhook 稳定 Event ID、签名、防重放和非 2xx 重试。
-- 验证短 TTL 缓存过期且 Heimdall 不可用时下游 Fail Closed。
+- 自动授权、路由或对账无法确认身份状态时 Fail Closed。
+- 目录缓存只允许短 TTL，并使用稳定 `updated_at` 判断变化。
+- Webhook 网络错误、超时和非 2xx 必须持久化重试。
+- 手动重投保持原 Event ID，但生成新的 Timestamp 和签名。
