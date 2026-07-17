@@ -38,6 +38,12 @@ Asgard 框架的 AI 技能仓库。
 - IDP、认证测试、授权链路都必须复用同一套标准 claims 契约
 - 不允许在不同项目、不同插件、不同测试里各自发明“用户信息 JSON”或随意命名 claims
 
+Heimdall 与微服务集成时，使用 `heimdall-service-integration`：
+
+- BackendService 目录读取必须同时限制 Audience、`token_type`、Scope 和 Token 租户
+- `TenantUser.Id` 必须与 JWT `sub`、Webhook `subject_id` 和目录 `tenant_user_id` 保持一致
+- 停用与删除通过事务 Outbox 投递身份失效事件，下游使用短 Token、撤销水位、短缓存和对账 Fail Closed
+
 当前还需要重点了解的一条工具约定是：
 
 - TypeScript 客户端方案由项目自行选择；`Asgard.TsGen` 是可选的官方生成方案

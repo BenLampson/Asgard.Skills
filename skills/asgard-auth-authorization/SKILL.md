@@ -124,6 +124,7 @@ public async Task<ActionResult<Response<OrderVo>>> GetAsync(string id)
 
 ## 推荐协同 skill
 
+- 需要设计 Heimdall BackendService 目录 API 的 Scope、Audience、租户边界和 Fail Closed：结合 `$heimdall-service-integration`
 - 需要理解 claims 与身份快照来源时：结合 `$asgard-identity-userinfo`
 - 需要写 Controller 与接口授权声明时：结合 `$asgard-api-development`
 - 需要理解宿主认证、默认 JWT 与授权中间件接线时：结合 `$asgard-host-features`

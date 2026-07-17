@@ -306,6 +306,7 @@ new Claim(ClaimTypes.Role, "Admin")
 
 ## 推荐协同 skill
 
+- 需要统一 Heimdall 的 `TenantUser.Id`、JWT `sub`、Webhook `subject_id` 和目录 `tenant_user_id`：结合 `$heimdall-service-integration`
 - 需要读取运行时身份上下文时：使用 `$asgard-context-usage`
 - 需要写 Controller、增删改查接口、统一响应和当前用户读取示例时：结合 `$asgard-api-development`
 - 需要写 `AsgardAuth` 表达式、授权 DSL 或按 `token_type` 控制接口访问时：结合 `$asgard-auth-authorization`

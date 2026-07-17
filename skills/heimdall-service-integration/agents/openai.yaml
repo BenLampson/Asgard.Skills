@@ -1,0 +1,4 @@
+interface:
+  display_name: "Heimdall Service Integration"
+  short_description: "Build secure Heimdall microservice identity integrations"
+  default_prompt: "Use $heimdall-service-integration to design or implement a BackendService directory and identity invalidation integration."

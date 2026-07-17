@@ -190,6 +190,7 @@ builder.Services
 
 ## 推荐协同 skill
 
+- 需要实现 Heimdall BackendService 只读目录、身份失效 Webhook 或身份对账：`$heimdall-service-integration`
 - 需要设计 Asgard 标准 claim、`AbsAsgardUserInfo`、测试身份构造：`$asgard-identity-userinfo`
 - 需要编写授权规则或调试 `AsgardAuthMatch(...)`：`$asgard-auth-authorization`
 - 需要配置宿主认证、CORS、Swagger、中间件顺序：`$asgard-host-features`
