@@ -5,7 +5,7 @@
 - [安全契约](#安全契约)
 - [已交付路由](#已交付路由)
 - [响应模型](#响应模型)
-- [已实现待发布路由](#已实现待发布路由)
+- [单用户查询](#单用户查询)
 - [状态与时间字段](#状态与时间字段)
 - [调用策略](#调用策略)
 - [禁止事项](#禁止事项)
@@ -27,6 +27,7 @@
 
 ```http
 GET /api/backend/directory/users?page=1&size=100
+GET /api/backend/directory/users/{tenantUserId}
 GET /api/backend/directory/groups/{groupId}
 GET /api/backend/directory/groups/{groupId}/members?page=1&size=100
 GET /api/backend/directory/groups/{groupId}/members/{tenantUserId}
@@ -104,7 +105,7 @@ id, tenant_id, code, name, status, member_count, updated_at
 
 机器可读契约以 Heimdall 仓库的 `docs/openapi/backend-directory-api.openapi.yaml` 为准。修改字段或路由时必须同步更新该文件与本 reference。
 
-## 已实现待发布路由
+## 单用户查询
 
 ```http
 GET /api/backend/directory/users/{tenantUserId}
@@ -112,7 +113,7 @@ GET /api/backend/directory/users/{tenantUserId}
 
 该路由返回与用户分页元素相同的对象，用于创建或重新启用业务 Profile 时确认用户存在且最终状态 Enabled，尤其适用于没有指定主目录组的场景。不存在、已删除或属于其他 Tenant 的用户统一返回 `404`。
 
-该路由已经在 Heimdall 源码和 OpenAPI `1.1.0` 中实现并覆盖自动化测试，但尚未进入当前正式 `5.1.0` 固定镜像。在新 commit、tag、不可变镜像和 digest 交付前，接入方仍不得调用它，也不得通过遍历分页或跳过校验代替。
+该路由已随 Heimdall `5.1.1` 和 OpenAPI `1.1.0` 正式交付。调用方应固定正式镜像 digest，不得通过遍历分页或跳过校验代替。
 
 ## 状态与时间字段
 
@@ -124,7 +125,7 @@ GET /api/backend/directory/users/{tenantUserId}
 ## 调用策略
 
 - 自动路由：先确认组有效，再对最终候选人进行有效成员校验。
-- Profile 创建/启用：使用单用户接口；固定镜像尚未包含时 Fail Closed。
+- Profile 创建/启用：使用单用户接口；调用失败或身份状态不确定时 Fail Closed。
 - 定时对账：分页拉取全部用户，处理分页期间的数据变化与重复项。
 - 缓存：仅使用短 TTL；状态敏感操作可绕过缓存或强制刷新。
 - 故障：401/403 视为配置或凭据错误，404 视为租户内不存在，429/5xx/超时可有限重试，但最终仍 Fail Closed。

@@ -28,23 +28,24 @@ Heimdall 是身份与访问管理系统，向业务微服务提供：
 
 | 项目 | 正式值 |
 |---|---|
-| Heimdall 版本 | `5.1.0` |
-| Git commit | `8f4e579b6a512a9b9b505119aa333040a8955543` |
-| Git tag | `v5.1.0` |
-| Docker | `registry.cn-hangzhou.aliyuncs.com/benlampson/asgard.heimdall:5.1.0` |
-| Image digest | `sha256:b6c233396c39d635963138e7932e5241f8b124975c573a5a4738dfccff7a4f6a` |
+| Heimdall 版本 | `5.1.1` |
+| Git commit | `37b9d7480105ebeff1bcf45f63d392a217de72df` |
+| Git tag | `v5.1.1` |
+| Docker | `registry.cn-hangzhou.aliyuncs.com/benlampson/asgard.heimdall:5.1.1` |
+| Image digest | `sha256:5685ae244c7986e74b8972ed6653c2f8bbe2eb137bc5b0ddc572e6b0a9005720` |
 
-部署时优先固定 `registry.cn-hangzhou.aliyuncs.com/benlampson/asgard.heimdall:5.1.0@sha256:b6c233396c39d635963138e7932e5241f8b124975c573a5a4738dfccff7a4f6a`，不要把可变的 `latest` 当作验收版本。镜像已发布不等于某个开发或生产环境已完成部署，环境状态需要单独记录。
+部署时优先固定 `registry.cn-hangzhou.aliyuncs.com/benlampson/asgard.heimdall:5.1.1@sha256:5685ae244c7986e74b8972ed6653c2f8bbe2eb137bc5b0ddc572e6b0a9005720`，不要把可变的 `latest` 当作验收版本。镜像已发布不等于某个开发或生产环境已完成部署，环境状态需要单独记录。
 
-`5.1.0` 正式镜像已包含以下原待发布能力：
+`5.1.1` 正式镜像已包含以下能力：
 
 - Client 停用或删除后阻止新 Token，并原子撤销 Access/Refresh Token、Authorization、Authorization Code、Device Code 和活动 Session；
 - Webhook HTTP JSON 固定使用 `version=1` 和 `reason=disabled|deleted|revoked`，并提供 JSON Schema Draft 2020-12；
 - 提供创建测试 Tenant、用户、目录组和 BackendService Client 的联调 Fixture 脚本。
+- 提供 `GET /api/backend/directory/users/{tenantUserId}`，用于 Tenant 边界内按 ID 查询用户最终身份状态。
 
-发布方验证记录：后端 Release 测试 `470/470`、前端 TypeScript 检查与生产构建通过，并已从 Registry 核对 `5.1.0` 与 `latest` 指向上述相同 digest。这些自动化验证不替代接入方真实端到端验收。
+发布方验证记录：后端 Release 测试 `472/472`、前端 TypeScript 检查与生产构建通过，并已从 Registry 核对 `5.1.1` 与 `latest` 指向上述相同 digest。这些自动化验证不替代接入方真实端到端验收。
 
-当前发布记录尚未包含从 `5.1.0` 运行实例导出的 OpenAPI 静态快照，也尚未完成目标接入环境的真实 `Client -> Token -> Directory API -> identity.subject.invalidated Webhook` 联调。接入方应固定上述 digest，导出并留存 OpenAPI，再按 `end-to-end-acceptance.md` 执行联调；记录完成前只能声明“发布制品已交付”，不能声明“目标环境验收完成”。
+当前发布已交付 OpenAPI `1.1.0` 静态契约 `docs/openapi/backend-directory-api.openapi.yaml`，但尚未完成目标接入环境的真实 `Client -> Token -> Directory API -> identity.subject.invalidated Webhook` 联调。接入方应固定上述 digest，并按 `end-to-end-acceptance.md` 执行联调；记录完成前只能声明“发布制品已交付”，不能声明“目标环境验收完成”。
 
 更新 Heimdall 外部契约或发布版本时，必须同步更新此表。
 
@@ -92,16 +93,16 @@ Heimdall 身份事务
 | 目录组详情 | 已交付 | 返回组状态和更新时间 |
 | 目录组成员分页 | 已交付 | 可拉取组内候选人 |
 | 单成员有效性校验 | 已交付 | 适合自动路由逐候选人 Fail Closed |
-| 单 TenantUser 查询 | 已实现待发布 | 目标路由 `GET /api/backend/directory/users/{tenantUserId}`；不属于 5.1.0 固定镜像 |
+| 单 TenantUser 查询 | 已发布（5.1.1） | `GET /api/backend/directory/users/{tenantUserId}`，跨租户按不存在处理 |
 | 身份失效 Webhook | 已交付 | Outbox、签名、防重放、重试 |
 | Client Secret 轮换 | 已交付 | 支持 0–1440 分钟旧 Secret 重叠窗口 |
 | Client 停用/删除即时撤销 | 已发布（5.1.0） | 阻止新 Token，并原子撤销已签发协议状态 |
 | Webhook `version/revoked` 契约 | 已发布（5.1.0） | 以 JSON Schema Draft 2020-12 固化 |
 | 联调 Fixture 脚本 | 已发布（5.1.0） | 创建 Tenant、用户、组和 BackendService Client |
-| 5.1.0 OpenAPI 静态快照 | 待接入验收 | 从固定 digest 的运行实例导出并记录版本或哈希 |
+| 5.1.1 OpenAPI 静态快照 | 已交付 | OpenAPI `1.1.0`，随源码和固定镜像版本交付 |
 | 目标环境真实端到端记录 | 待接入验收 | 覆盖 M2M、目录、跨租户拒绝和身份失效回调 |
 
-单用户接口补齐前，不能为了校验一个用户遍历整个租户分页。若业务操作必须确认 TenantUser，调用方应暂时拒绝该操作或使用经过明确评审的受限替代流程，不能跳过身份校验。
+调用方必须使用单用户接口校验指定 TenantUser，不能为了校验一个用户遍历整个租户分页，也不能跳过身份校验。
 
 ## 配置与环境交付
 
