@@ -36,6 +36,7 @@ description: Heimdall 微服务身份集成与交付 skill。Use when designing,
 7. 下游结合短生命周期 JWT、Webhook 撤销水位、短 TTL 目录缓存和定时对账；授权依据不可确认时 Fail Closed。
 8. Client 停用或删除必须立即撤销其 Token、Authorization、Code 和活动 Session，并让 Token Endpoint 按 OAuth 标准返回 `invalid_client`。
 9. 身份失效 Webhook v1 对外固定使用 `version=1` 和 `reason=disabled|deleted|revoked`；数据库内部 `schema_version` 不得泄漏为 HTTP 字段。
+10. `sys_users.display_name` 与 `sys_users.is_built_in` 是正式业务字段：前者分离登录名与展示名，后者保护内置管理员；数据库清理或回滚时不得把它们当作遗留列删除。
 
 ## 文档与交付规则
 

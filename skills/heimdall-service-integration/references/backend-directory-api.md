@@ -113,7 +113,7 @@ GET /api/backend/directory/users/{tenantUserId}
 
 该路由返回与用户分页元素相同的对象，用于创建或重新启用业务 Profile 时确认用户存在且最终状态 Enabled，尤其适用于没有指定主目录组的场景。不存在、已删除或属于其他 Tenant 的用户统一返回 `404`。
 
-该路由已随 Heimdall `5.1.1` 和 OpenAPI `1.1.0` 正式交付。调用方应固定正式镜像 digest，不得通过遍历分页或跳过校验代替。
+该路由自 Heimdall `5.1.1` 和 OpenAPI `1.1.0` 起正式交付，并保留在 `5.1.2`。调用方应固定正式镜像 digest，不得通过遍历分页或跳过校验代替。
 
 ## 状态与时间字段
 
