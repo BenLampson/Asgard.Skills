@@ -92,7 +92,7 @@ Heimdall 身份事务
 | 目录组详情 | 已交付 | 返回组状态和更新时间 |
 | 目录组成员分页 | 已交付 | 可拉取组内候选人 |
 | 单成员有效性校验 | 已交付 | 适合自动路由逐候选人 Fail Closed |
-| 单 TenantUser 查询 | 待补 | 目标路由 `GET /api/backend/directory/users/{tenantUserId}` |
+| 单 TenantUser 查询 | 已实现待发布 | 目标路由 `GET /api/backend/directory/users/{tenantUserId}`；不属于 5.1.0 固定镜像 |
 | 身份失效 Webhook | 已交付 | Outbox、签名、防重放、重试 |
 | Client Secret 轮换 | 已交付 | 支持 0–1440 分钟旧 Secret 重叠窗口 |
 | Client 停用/删除即时撤销 | 已发布（5.1.0） | 阻止新 Token，并原子撤销已签发协议状态 |
