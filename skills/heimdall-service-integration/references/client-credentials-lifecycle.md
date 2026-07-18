@@ -92,4 +92,10 @@ POST   /api/TenantOidcClient/{id}/status
 DELETE /api/TenantOidcClient/{id}
 ```
 
-疑似泄露时先停用或立即轮换，再调查日志。删除用于确定不再使用的 Client，不应作为常规轮换手段。停用 Client 后还要根据安全策略处理已经签发但尚未过期的 Access Token。
+停用或删除 Client 后必须同时满足：
+
+1. Token Endpoint 不再解析该 Client，并按 OAuth 标准返回 `invalid_client`；
+2. 在同一数据库事务中撤销该 Client 的 Access/Refresh Token、Authorization、Authorization Code、Device Code 和活动 Session；
+3. 已撤销协议状态不得因重新启用 Client 而恢复；重新启用仅允许后续重新申请 Token。
+
+疑似泄露时优先停用 Client；如果仍要继续使用该 Client，再轮换 Secret、更新 Secret Manager 并重新启用。删除用于确定不再使用的 Client，不应作为常规轮换手段。

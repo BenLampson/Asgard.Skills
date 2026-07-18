@@ -39,6 +39,16 @@
 
 后台 Worker 投递稳定 `event_id` 的签名 Webhook。接收方验证签名与时间窗口、按 Event ID 幂等，并拒绝 `iat <= revoked_at` 的旧 JWT。
 
+Webhook v1 外部载荷固定使用 `version=1`，失效原因只允许 `disabled`、`deleted`、`revoked`。Outbox 表中的 `schema_version` 是内部持久化字段，不属于 HTTP 契约。
+
+## Client 失效
+
+Client 状态不是管理端展示字段，而是 Token Endpoint 的强制运行态边界：
+
+- 停用或删除 Client 后，协议运行态不得再解析出该 Client，新 Token 请求返回 OAuth `invalid_client`；
+- 同一事务撤销该 Client 已签发的 Access/Refresh Token、Authorization、Authorization Code、Device Code 和活动 Session；
+- 重新启用只恢复后续凭据申请，不恢复已经撤销的协议状态。
+
 ## 失败策略
 
 - 自动授权、路由或对账无法确认身份状态时 Fail Closed。

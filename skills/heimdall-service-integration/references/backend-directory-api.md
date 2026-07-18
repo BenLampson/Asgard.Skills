@@ -129,6 +129,10 @@ GET /api/backend/directory/users/{tenantUserId}
 - 缓存：仅使用短 TTL；状态敏感操作可绕过缓存或强制刷新。
 - 故障：401/403 视为配置或凭据错误，404 视为租户内不存在，429/5xx/超时可有限重试，但最终仍 Fail Closed。
 
+正式 Docker 配置默认使用宿主统一限流：每个限流分区 60 秒 300 个请求。部署调整 `host.rateLimiting.permitLimit` 或 `windowSeconds` 时，必须同步更新环境交付记录。
+
+Heimdall 仓库提供 `docs/scripts/provision-backend-directory-fixture.ps1`，用于通过管理 API 创建独立联调 Tenant、两个启用用户、目录组和 Tenant-bound BackendService Client。脚本生成的 Secret 只在结果中返回一次，不得写入仓库、日志或业务表。
+
 ## 禁止事项
 
 - 不调用前端管理员 API 代替 BackendService API。

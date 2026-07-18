@@ -36,6 +36,8 @@ Heimdall 是身份与访问管理系统，向业务微服务提供：
 
 部署时优先固定 `registry.cn-hangzhou.aliyuncs.com/benlampson/asgard.heimdall:5.0.0@sha256:392e1764591a1d05b7f3f635d308042877deb6cdfa3849713c649323b890bb65`，不要把可变的 `latest` 当作验收版本。镜像已发布不等于某个开发或生产环境已完成部署，环境状态需要单独记录。
 
+当前 Heimdall 工作树已实现但尚未形成新 commit/tag/镜像的契约修订：Client 停用/删除即时撤销全部协议状态；Webhook HTTP JSON 使用 `version=1` 和 `reason=disabled|deleted|revoked`；增加 JSON Schema 与联调数据准备脚本。这些内容在新版本发布前属于“源码已实现、正式交付待发布”，不得归入上表的 5.0.0 镜像能力。
+
 更新 Heimdall 外部契约或发布版本时，必须同步更新此表。
 
 ## 推荐接入架构
@@ -85,6 +87,9 @@ Heimdall 身份事务
 | 单 TenantUser 查询 | 待补 | 目标路由 `GET /api/backend/directory/users/{tenantUserId}` |
 | 身份失效 Webhook | 已交付 | Outbox、签名、防重放、重试 |
 | Client Secret 轮换 | 已交付 | 支持 0–1440 分钟旧 Secret 重叠窗口 |
+| Client 停用/删除即时撤销 | 已实现待发布 | 阻止新 Token，并原子撤销已签发协议状态 |
+| Webhook `version/revoked` 契约 | 已实现待发布 | 以 JSON Schema Draft 2020-12 固化 |
+| 联调 Fixture 脚本 | 已实现待发布 | 创建 Tenant、用户、组和 BackendService Client |
 
 单用户接口补齐前，不能为了校验一个用户遍历整个租户分页。若业务操作必须确认 TenantUser，调用方应暂时拒绝该操作或使用经过明确评审的受限替代流程，不能跳过身份校验。
 

@@ -17,7 +17,7 @@
 
 ```text
 identity.subject.invalidated
-schema_version = 1
+version = 1
 ```
 
 TenantUser 停用、软删除或管理员撤销时，Heimdall 在同一事务内推进主体撤销水位、撤销相关身份对象并写 Outbox。HTTP 请求由后台 Worker 投递，业务事务不直接依赖接收方在线。
@@ -30,17 +30,19 @@ TenantUser 停用、软删除或管理员撤销时，Heimdall 在同一事务内
 {
   "event_id": "stable-event-id",
   "event_type": "identity.subject.invalidated",
-  "schema_version": 1,
+  "version": 1,
   "occurred_at": "2026-07-18T10:00:00Z",
   "tenant_id": "tenant-id",
   "subject_id": "tenant-user-id",
   "revoked_at": "2026-07-18T10:00:00Z",
-  "reason": "disabled",
+  "reason": "disabled|deleted|revoked",
   "operator_id": "operator-subject-id"
 }
 ```
 
-消费者应容忍未来新增字段，但必须拒绝不支持的事件类型或 Schema 主版本语义。
+`reason` 只允许 `disabled`、`deleted`、`revoked`。消费者必须拒绝不支持的事件类型或版本；是否容忍新增字段应以当前 Heimdall JSON Schema 的 `additionalProperties` 约束为准，不得自行猜测兼容性。
+
+Heimdall 仓库中的机器可读标准为 `docs/schemas/identity-subject-invalidated.schema.json`，采用 JSON Schema Draft 2020-12。数据库 Outbox 的 `schema_version` 仅用于内部持久化，不属于 HTTP JSON。
 
 ## 请求头
 

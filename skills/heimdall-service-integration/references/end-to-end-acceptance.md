@@ -5,6 +5,7 @@
 - [真实 Token 与目录链路](#真实-token-与目录链路)
 - [身份失效链路](#身份失效链路)
 - [Client 轮换链路](#client-轮换链路)
+- [Client 停用与删除链路](#client-停用与删除链路)
 - [交付清单](#交付清单)
 - [不算正式交付的情况](#不算正式交付的情况)
 
@@ -50,6 +51,7 @@
 至少覆盖：
 
 - Event ID 稳定且重复消费幂等；
+- HTTP JSON 使用 `version=1`，且 `reason` 只允许 `disabled|deleted|revoked`；
 - 正确签名成功，正文篡改、错误 Key、过期 Timestamp 失败；
 - 网络错误和非 2xx 自动重试；
 - 手动重投保持 Event ID，更新时间戳和签名；
@@ -67,6 +69,17 @@
 6. 再以 0 分钟轮换，验证旧 Secret 立即失效。
 
 不要只检查管理接口返回 200；必须实际调用 Token Endpoint。
+
+## Client 停用与删除链路
+
+1. 使用 Client 获取 Access Token，并确认 Token 可调用目录 API。
+2. 停用 Client，确认后续 Token 请求返回 `invalid_client`。
+3. 使用停用前签发的 Access Token，确认 Heimdall 在线验证立即拒绝。
+4. 检查该 Client 的 Access/Refresh Token、Authorization、Code、Device Code 和活动 Session 均已撤销。
+5. 重新启用 Client，确认旧 Token 仍不可用，但新凭据申请恢复。
+6. 删除 Client，再次确认新旧 Token 均不可用。
+
+以上状态变更和协议撤销必须原子提交，不接受“状态已停用、旧 Token 稍后异步撤销”的窗口。
 
 ## 交付清单
 
