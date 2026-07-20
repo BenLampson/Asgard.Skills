@@ -1,0 +1,4 @@
+interface:
+  display_name: "Heimdall Application RBAC"
+  short_description: "设计和审查应用权限、Tenant 绑定及管理员授权范围"
+  default_prompt: "Use $heimdall-application-rbac to design or review Heimdall application permissions, Tenant bindings, Manifest synchronization, and administrator grant scopes."

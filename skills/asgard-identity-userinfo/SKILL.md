@@ -334,6 +334,7 @@ new Claim(ClaimTypes.Role, "Admin")
 
 ## 推荐协同 skill
 
+- 需要设计 Application Manifest、Tenant 绑定、应用管理员 Grant 与授权版本来源：结合 `$heimdall-application-rbac`
 - 需要统一 Heimdall 的 `TenantUser.Id`、JWT `sub`、Webhook `subject_id` 和目录 `tenant_user_id`：结合 `$heimdall-service-integration`
 - 需要读取运行时身份上下文时：使用 `$asgard-context-usage`
 - 需要写 Controller、增删改查接口、统一响应和当前用户读取示例时：结合 `$asgard-api-development`

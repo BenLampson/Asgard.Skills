@@ -32,6 +32,7 @@ description: Asgard 身份集成 skill。Use when designing or integrating login
 |------|--------------------|
 | Web / IDP / token / 登录流接线 | `$identity-integration` |
 | `AbsAsgardUserInfo`、标准 claim 字段、身份快照 | `$asgard-identity-userinfo` |
+| Application Manifest、Tenant 绑定、应用管理员授权与版本 | `$heimdall-application-rbac` |
 | `AsgardAuth*`、授权 DSL、`token_type` 授权表达式 | `$asgard-auth-authorization` |
 | 密码哈希、数据加密、密钥生成 | `$asgard-security` |
 | 宿主 `host.auth` / 中间件接线 | `$asgard-host-features` |
@@ -191,6 +192,7 @@ builder.Services
 ## 推荐协同 skill
 
 - 需要实现 Heimdall BackendService 只读目录、身份失效 Webhook 或身份对账：`$heimdall-service-integration`
+- 需要设计 Heimdall 应用权限模板、Tenant 绑定和应用管理员授权范围：`$heimdall-application-rbac`
 - 需要设计 Asgard 标准 claim、`AbsAsgardUserInfo`、测试身份构造：`$asgard-identity-userinfo`
 - 需要编写授权规则或调试 `AsgardAuthMatch(...)`：`$asgard-auth-authorization`
 - 需要配置宿主认证、CORS、Swagger、中间件顺序：`$asgard-host-features`

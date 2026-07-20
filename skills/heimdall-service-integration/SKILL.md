@@ -23,6 +23,7 @@ description: Heimdall 微服务身份集成与交付 skill。Use when designing,
 - Controller 和响应模型：`$asgard-api-development`
 - 授权表达式：`$asgard-auth-authorization`
 - Claim、`sub`、BackendService Token：`$asgard-identity-userinfo` 与 `$identity-integration`
+- Application Manifest、Tenant 绑定、应用管理员 Grant：`$heimdall-application-rbac`
 - Heimdall C#：`$asgard-dotnet-10-csharp-14`
 
 ## 实施规则

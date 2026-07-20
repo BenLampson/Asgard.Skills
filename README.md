@@ -44,6 +44,13 @@ Heimdall 与微服务集成时，使用 `heimdall-service-integration`：
 - `TenantUser.Id` 必须与 JWT `sub`、Webhook `subject_id` 和目录 `tenant_user_id` 保持一致
 - 停用与删除通过事务 Outbox 投递身份失效事件，下游使用短 Token、撤销水位、短缓存和对账 Fail Closed
 
+Heimdall 应用权限与 Tenant 绑定设计、实现和 review 时，使用 `heimdall-application-rbac`：
+
+- 固化 Application Manifest、权限模板、TenantApplication 和 SystemUser Application Grant 的关系
+- 区分全局平台权限与应用范围管理权限，应用管理员只能访问授权应用与 Tenant
+- 约束 Manifest/授权版本 Claim、停用而非解绑、稳定唯一键与软删除恢复
+- 同时覆盖完整版 Heimdall 和 mini JWT issuer 的应用 Claim 合约边界
+
 当前还需要重点了解的一条工具约定是：
 
 - TypeScript 客户端方案由项目自行选择；`Asgard.TsGen` 是可选的官方生成方案

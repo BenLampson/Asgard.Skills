@@ -87,6 +87,7 @@ mini issuer 不负责这些事：
 - refresh token、静默续期、撤销、黑名单
 - 用户同意页、授权码模式、PKCE、完整 OIDC Provider
 - 多租户密钥轮换、长期审计、风控策略
+- Application Manifest、Tenant 绑定、角色同步或授权版本的权威计算
 
 如果项目需要完整 Web 登录、Authorization Code + PKCE、refresh token、同意页、设备码等完整 IDP 能力，使用完整 Heimdall / OIDC 方案，不要把 mini issuer 硬扩成完整身份中心。
 
@@ -294,6 +295,15 @@ var token = issuer.Issue(new AsgardJwtSubject
 - `UserMetadatas`
 - `TenantMetadata`
 
+应用域 Token 还可提供：
+
+- `ApplicationId`
+- `ApplicationManifestVersion`
+- `ApplicationAuthorizationVersion`
+- `TenantAuthorizationVersion`
+
+这些字段必须来自权威授权快照。mini issuer 只负责原样签发，不能自行查询、推导或递增版本；需要设计其来源时使用 `$heimdall-application-rbac`。
+
 集合字段由签发器自动序列化为 JSON 数组字符串；字典字段自动序列化为 JSON 对象字符串。不要在调用前手动拼逗号字符串。
 
 ## 后端服务 token
@@ -423,6 +433,7 @@ host:
 | mini JWT 颁发、JWKS/discovery、签发端/资源端对接 | `$asgard-mini-jwt-issuer` |
 | 完整 Web 登录、PKCE、IDP/API/SPA 集成关系 | `$identity-integration` |
 | claim 字段、`AbsAsgardUserInfo`、身份快照 | `$asgard-identity-userinfo` |
+| Application Manifest、Tenant 绑定、管理员 Grant 与授权版本 | `$heimdall-application-rbac` |
 | `host.auth.jwt`、中间件顺序、宿主配置 | `$asgard-host-features` |
 | `AsgardAuthMatch`、角色权限和 `token_type` 授权 | `$asgard-auth-authorization` |
 | C# 代码规范和测试写法 | `$asgard-dotnet-10-csharp-14` |
