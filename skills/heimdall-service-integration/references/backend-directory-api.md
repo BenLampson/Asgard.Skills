@@ -6,6 +6,8 @@
 - [已交付路由](#已交付路由)
 - [响应模型](#响应模型)
 - [单用户查询](#单用户查询)
+- [用户权限查询](#用户权限查询)
+- [Custom Service 自动分派](#custom-service-自动分派)
 - [状态与时间字段](#状态与时间字段)
 - [调用策略](#调用策略)
 - [禁止事项](#禁止事项)
@@ -23,11 +25,31 @@
 
 接口不接受调用方通过 Route、Query 或 Body 指定 Tenant。ID 属于其他 Tenant 时按不存在处理，避免跨租户枚举。
 
+### 5.2.0 正式环境端点
+
+```text
+Issuer / API origin: https://idp.mudou.tech
+Token endpoint:       https://idp.mudou.tech/connect/token
+Directory base:       https://idp.mudou.tech/api/backend/directory
+```
+
+获取 Token：
+
+```http
+POST /connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials&client_id=<client-id>&client_secret=<secret>&scope=heimdall.directory.read
+```
+
+Client 必须由 Heimdall 绑定到单一 Tenant。Custom Service 只安全保存 Client ID/Secret 并申请上述 Scope，不提交 `tenant_id`。
+
 ## 已交付路由
 
 ```http
 GET /api/backend/directory/users?page=1&size=100
 GET /api/backend/directory/users/{tenantUserId}
+GET /api/backend/directory/users/{tenantUserId}/permissions
 GET /api/backend/directory/groups/{groupId}
 GET /api/backend/directory/groups/{groupId}/members?page=1&size=100
 GET /api/backend/directory/groups/{groupId}/members/{tenantUserId}
@@ -113,7 +135,81 @@ GET /api/backend/directory/users/{tenantUserId}
 
 该路由返回与用户分页元素相同的对象，用于创建或重新启用业务 Profile 时确认用户存在且最终状态 Enabled，尤其适用于没有指定主目录组的场景。不存在、已删除或属于其他 Tenant 的用户统一返回 `404`。
 
-该路由自 Heimdall `5.1.1` 和 OpenAPI `1.1.0` 起正式交付，并保留在 `5.1.2`。调用方应固定正式镜像 digest，不得通过遍历分页或跳过校验代替。
+该路由自 Heimdall `5.1.1` 和 OpenAPI `1.1.0` 起正式交付，当前 `5.2.0` 继续保留。调用方应固定正式镜像 digest，不得通过遍历分页或跳过校验代替。
+
+## 用户权限查询
+
+```http
+GET /api/backend/directory/users/{tenantUserId}/permissions
+Authorization: Bearer <backend-service-access-token>
+```
+
+该路由自 Heimdall `5.2.0` 和 OpenAPI `1.2.0` 起正式交付，用于按 Token Tenant 验证候选用户的最终状态和当前有效权限。不得传入或信任 Tenant 参数。
+
+成功响应使用 Heimdall 统一响应壳：
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "tenantUserId": "tenant-user-id",
+    "status": "Active",
+    "permissions": [
+      "custom_service.ticket.read_assigned",
+      "custom_service.ticket.reply"
+    ],
+    "updatedAt": "2026-07-20T00:00:00Z"
+  }
+}
+```
+
+语义固定为：
+
+- `Active`：TenantUser 存在、未删除，且至少一条未删除登录记录启用；
+- `Disabled`：用户存在但最终身份状态停用，此时 `permissions` 必须为空；
+- `permissions`：仅返回有效角色授予的已启用权限编码，不返回角色、组织树或用户资料；
+- `updatedAt`：覆盖用户/登录状态及所有影响权限结果的 RBAC 变化；
+- 不存在、已删除和跨租户用户统一返回 404；权限解析失败返回 5xx。
+
+## Custom Service 自动分派
+
+Custom Service 获取候选 `tenantUserId` 后调用权限接口。只有以下三个条件同时成立才可自动分派：
+
+```text
+response.code == 200
+data.status == "Active"
+data.permissions 同时包含：
+  custom_service.ticket.read_assigned
+  custom_service.ticket.reply
+```
+
+推荐判定伪代码：
+
+```text
+snapshot = GET permissions(candidate)
+required = {
+  "custom_service.ticket.read_assigned",
+  "custom_service.ticket.reply"
+}
+
+if snapshot.status != "Active" or not required.is_subset_of(snapshot.permissions):
+    keep_ticket_unassigned()
+    return
+
+assign_ticket(candidate)
+```
+
+以下任何情况都必须保留工单未分配，不得回退到“曾经有权限”的结果：
+
+- Token 获取失败或过期后刷新失败；
+- 401/403/404/429/5xx；
+- 连接失败、超时、取消或响应无法解析；
+- `status` 未知、缺字段或不是 `Active`；
+- 任一必需权限缺失；
+- 本地缓存已过期，且无法向 Heimdall 重新确认。
+
+对 429 和暂时性 5xx 可做有上限、带抖动的重试，但重试期间不能抢占或分派工单。Client Secret、Access Token 和完整响应不得写入普通日志。
 
 ## 状态与时间字段
 
@@ -125,6 +221,7 @@ GET /api/backend/directory/users/{tenantUserId}
 ## 调用策略
 
 - 自动路由：先确认组有效，再对最终候选人进行有效成员校验。
+- 权限门禁：对每个最终候选人查询用户权限快照；业务要求多个权限时使用“全部包含”，不能误用任一匹配。
 - Profile 创建/启用：使用单用户接口；调用失败或身份状态不确定时 Fail Closed。
 - 定时对账：分页拉取全部用户，处理分页期间的数据变化与重复项。
 - 缓存：仅使用短 TTL；状态敏感操作可绕过缓存或强制刷新。
@@ -132,7 +229,7 @@ GET /api/backend/directory/users/{tenantUserId}
 
 正式 Docker 配置默认使用宿主统一限流：每个限流分区 60 秒 300 个请求。部署调整 `host.rateLimiting.permitLimit` 或 `windowSeconds` 时，必须同步更新环境交付记录。
 
-Heimdall 仓库提供 `docs/scripts/provision-backend-directory-fixture.ps1`，用于通过管理 API 创建独立联调 Tenant、两个启用用户、目录组和 Tenant-bound BackendService Client。脚本生成的 Secret 只在结果中返回一次，不得写入仓库、日志或业务表。
+Heimdall 仓库提供 `scripts/provision-backend-directory-fixture.ps1`，用于通过管理 API 创建独立联调 Tenant、两个启用用户、目录组和 Tenant-bound BackendService Client。脚本生成的 Secret 只在结果中返回一次，不得写入仓库、日志或业务表。
 
 ## 禁止事项
 

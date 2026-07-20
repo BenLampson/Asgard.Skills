@@ -1,4 +1,4 @@
 interface:
   display_name: "Heimdall Service Integration"
-  short_description: "Secure Heimdall M2M, directory, revocation, and Webhooks"
-  default_prompt: "Use $heimdall-service-integration to implement and verify a tenant-scoped BackendService directory, Client lifecycle, and identity invalidation integration."
+  short_description: "Secure Heimdall M2M, permissions, and revocation"
+  default_prompt: "Use $heimdall-service-integration to integrate a tenant-bound BackendService with Heimdall directory, effective user permissions, and fail-closed identity lifecycle handling."

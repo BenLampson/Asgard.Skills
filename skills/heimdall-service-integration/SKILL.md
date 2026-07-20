@@ -1,6 +1,6 @@
 ---
 name: heimdall-service-integration
-description: Heimdall 微服务身份集成与交付 skill。Use when designing, implementing, documenting, reviewing, or accepting tenant-bound BackendService client_credentials, read-only directory APIs, TenantUser effective status, subject invalidation Webhooks, JWT revocation propagation, client secret rotation, or service-side identity reconciliation against Heimdall.
+description: Heimdall 微服务身份集成与交付 skill。Use when designing, implementing, documenting, reviewing, or accepting tenant-bound BackendService client_credentials, read-only directory and user-permission APIs, permission-gated ticket assignment, TenantUser effective status, subject invalidation Webhooks, JWT revocation propagation, client secret rotation, or service-side identity reconciliation against Heimdall.
 ---
 
 # Heimdall Service Integration
@@ -13,7 +13,7 @@ description: Heimdall 微服务身份集成与交付 skill。Use when designing,
 
 - 所有任务先读 `references/integration-guide.md`，确认当前已交付能力、待补能力和职责边界。
 - 涉及 Client 创建、`client_credentials`、Secret 保存或轮换时，读 `references/client-credentials-lifecycle.md`。
-- 涉及自动路由、目录组、成员校验或定时对账时，读 `references/backend-directory-api.md`。
+- 涉及自动路由、候选客服权限、目录组、成员校验或定时对账时，读 `references/backend-directory-api.md`。
 - 涉及停用、删除、撤销、JWT 失效或 Webhook 消费时，读 `references/identity-invalidation-webhook.md`。
 - 涉及上线、联调、版本声明或验收时，读 `references/end-to-end-acceptance.md`。
 - 评审底层设计不变量时，读 `references/service-contract.md`。
@@ -37,6 +37,8 @@ description: Heimdall 微服务身份集成与交付 skill。Use when designing,
 8. Client 停用或删除必须立即撤销其 Token、Authorization、Code 和活动 Session，并让 Token Endpoint 按 OAuth 标准返回 `invalid_client`。
 9. 身份失效 Webhook v1 对外固定使用 `version=1` 和 `reason=disabled|deleted|revoked`；数据库内部 `schema_version` 不得泄漏为 HTTP 字段。
 10. `sys_users.display_name` 与 `sys_users.is_built_in` 是正式业务字段：前者分离登录名与展示名，后者保护内置管理员；数据库清理或回滚时不得把它们当作遗留列删除。
+11. 自动分派候选人必须通过 `GET /api/backend/directory/users/{tenantUserId}/permissions` 获取最终状态和有效权限；只有 `status=Active` 且全部业务必需权限同时存在时才允许继续。
+12. 权限接口超时、网络错误、401/403/404/429、5xx、响应无法解析或权限状态不确定时必须 Fail Closed；不得把异常降级为空权限成功，也不得用过期的正向缓存继续自动分派。
 
 ## 文档与交付规则
 

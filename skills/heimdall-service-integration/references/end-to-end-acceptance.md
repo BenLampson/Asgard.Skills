@@ -22,7 +22,7 @@
 -> 授予 heimdall.directory.read
 -> POST /connect/token
 -> 验证 tenant_id/token_type/scope/aud
--> 调用户分页、组详情、成员分页和单成员校验
+-> 调用户分页、单用户、用户权限、组详情、成员分页和单成员校验
 -> 使用其他 Tenant 的资源 ID，确认不可读取
 ```
 
@@ -34,9 +34,38 @@
 - 跨租户 ID 返回 404，不泄露存在性；
 - 组停用、用户停用、关系删除后 `active=false`；
 - 分页边界、最大 size 和稳定 `updated_at`；
+- 用户权限接口返回稳定 `tenantUserId/status/permissions/updatedAt`，不包含角色、组织树或用户资料；
+- 启用用户只返回有效角色授予的启用权限，禁用用户返回 `Disabled` 和空权限；
+- 用户不存在、已删除或跨租户时权限接口返回 404；
+- 权限解析异常返回 5xx，不降级成空权限成功响应；
 - Heimdall 不可用或响应不确定时调用方 Fail Closed。
 
 单用户查询交付后，增加存在、停用、删除、跨租户和组为空时 Profile 创建/启用的验收。
+
+## Custom Service 工单自动分派
+
+Custom Service 一期对每个最终候选客服执行：
+
+```text
+GET /api/backend/directory/users/{tenantUserId}/permissions
+```
+
+仅当 `status=Active`，并且 `permissions` 同时包含以下两个编码时允许自动分派：
+
+```text
+custom_service.ticket.read_assigned
+custom_service.ticket.reply
+```
+
+至少覆盖：
+
+- 两个权限同时存在时允许进入分派事务；
+- 任一权限缺失、权限为空或用户 Disabled 时保持工单未分配；
+- 401/403/404/429/5xx、超时、网络错误和响应解析失败时保持工单未分配；
+- 权限查询失败时不消费过期正向缓存，不先占用客服、不写部分分派状态；
+- 重试使用上限和抖动，且幂等地重新读取仍处于未分配状态的工单；
+- Tenant 只来自 BackendService Token，Custom Service 不发送 Tenant 参数；
+- 日志记录请求关联 ID、候选用户 ID 和结果分类，但不记录 Client Secret、Access Token 或完整敏感响应。
 
 ## 身份失效链路
 
