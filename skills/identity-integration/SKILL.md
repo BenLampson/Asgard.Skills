@@ -31,6 +31,7 @@ description: Asgard 身份集成 skill。Use when designing or integrating login
 | 主题 | 应该使用哪个 skill |
 |------|--------------------|
 | Web / IDP / token / 登录流接线 | `$identity-integration` |
+| Heimdall `/mcp`、OAuth/AK-SK、工具与凭据治理 | `$heimdall-mcp-management` |
 | `AbsAsgardUserInfo`、标准 claim 字段、身份快照 | `$asgard-identity-userinfo` |
 | Application Manifest、Tenant 绑定、应用管理员授权与版本 | `$heimdall-application-rbac` |
 | `AsgardAuth*`、授权 DSL、`token_type` 授权表达式 | `$asgard-auth-authorization` |
@@ -144,6 +145,14 @@ OIDC 标准 `userinfo` 适合补充通用用户资料，例如：
 
 ## 后端校验模式
 
+### Heimdall MCP 远程客户端
+
+- 使用 Streamable HTTP `/mcp`。
+- OAuth 客户端先读取 `/.well-known/oauth-protected-resource/mcp`，再使用 Heimdall OIDC Authorization Code + PKCE 或适用的后端令牌流。
+- 自动化环境也可使用独立 MCP AK/SK，但必须配置工具、权限、网络、有效期和额度上限。
+- Bearer 与 AK/SK 最终都必须遵守实时用户权限、应用授权与租户边界。
+- 工具、Resources、Prompts、Tasks 和二阶段写确认的详细约束使用 `$heimdall-mcp-management`。
+
 ### 通用 ASP.NET Core / Asgard API
 
 后端资源服务器通常遵循这个模式：
@@ -197,6 +206,7 @@ builder.Services
 - 需要编写授权规则或调试 `AsgardAuthMatch(...)`：`$asgard-auth-authorization`
 - 需要配置宿主认证、CORS、Swagger、中间件顺序：`$asgard-host-features`
 - 需要写 Asgard C# 实现代码和测试：`$asgard-dotnet-10-csharp-14`
+- 需要开发、接入或审查 Heimdall MCP：`$heimdall-mcp-management`
 
 ## 参考资料
 
