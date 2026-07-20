@@ -26,6 +26,26 @@ public static class AsgardClaimTypes
     public const string ClientId = "client_id";
 
     /// <summary>
+    /// 应用标识 Claim。
+    /// </summary>
+    public const string ApplicationId = "application_id";
+
+    /// <summary>
+    /// 应用清单版本 Claim。
+    /// </summary>
+    public const string ApplicationManifestVersion = "application_manifest_version";
+
+    /// <summary>
+    /// 应用授权版本 Claim。
+    /// </summary>
+    public const string ApplicationAuthorizationVersion = "application_authorization_version";
+
+    /// <summary>
+    /// 租户授权版本 Claim。
+    /// </summary>
+    public const string TenantAuthorizationVersion = "tenant_authorization_version";
+
+    /// <summary>
     /// 角色列表 Claim。
     /// </summary>
     public const string Roles = "roles";

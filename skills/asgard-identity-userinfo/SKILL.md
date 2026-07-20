@@ -1,6 +1,6 @@
 ---
 name: asgard-identity-userinfo
-description: Asgard 身份用户信息 skill。Use when a task needs AbsAsgardUserInfo, IAsgardIdentityContext, standard claim contract mapping, tenant/user identity modeling, identity snapshot structure, or test/user-session construction in Asgard.
+description: Asgard 身份用户信息 skill。Use when a task needs AbsAsgardUserInfo, IAsgardIdentityContext, standard claim contract mapping, application/tenant authorization snapshot claims, identity modeling, or test/user-session construction in Asgard.
 ---
 
 # Asgard Identity UserInfo
@@ -34,7 +34,9 @@ description: Asgard 身份用户信息 skill。Use when a task needs AbsAsgardUs
 |------|------|
 | **统一基类** | 所有 Asgard 用户信息模型都必须以 `AbsAsgardUserInfo` 为基类，不要自己另起一套“用户上下文 DTO” |
 | **统一入口** | 运行时读取当前用户信息时，优先从 `IAsgardIdentityContext` / `AbsAsgardContext.IdentityContext` 获取 |
-| **统一 claim 名** | 框架内置识别的 claim 是 `sub`、`user_id`、`tenant_id`、`client_id`、`token_type`、`roles`、`permissions`、`scope`、`userMetadatas`、`tenantMetadata` |
+| **统一 claim 名** | 框架内置识别的 claim 包括 `sub`、`user_id`、`tenant_id`、`client_id`、`application_id`、`application_manifest_version`、`application_authorization_version`、`tenant_authorization_version`、`token_type`、`roles`、`permissions`、`scope`、`userMetadatas`、`tenantMetadata` |
+| **单应用上下文** | 一枚应用访问 Token 只能有一个 `application_id`，不要把多应用角色与权限混在同一 Token |
+| **版本字符串** | 三个版本 claim 都是不透明字符串，只做精确相等比较，不做数值大小或字典序比较 |
 | **集合编码** | `roles`、`permissions`、`scope` 必须是 JSON 数组字符串，不是逗号拼接字符串 |
 | **字典编码** | `userMetadatas`、`tenantMetadata` 必须是 JSON 对象字符串 |
 | **租户判定** | 默认解析器会把可解析的 `tenant_id` 视为租户用户；没有合法租户 ID 时会落到 `UserType.Platform` |
@@ -49,6 +51,10 @@ description: Asgard 身份用户信息 skill。Use when a task needs AbsAsgardUs
 | `UserId` | 业务用户 ID | 可选，映射 `user_id` |
 | `TenantId` | 租户 ID | 可选，映射 `tenant_id` |
 | `ClientId` | 后端服务调用方 ID | 可选，映射 `client_id` |
+| `ApplicationId` | Token 所属应用 | 映射 `application_id` |
+| `ApplicationManifestVersion` | 应用清单快照版本 | 映射 `application_manifest_version`，不透明字符串 |
+| `ApplicationAuthorizationVersion` | 应用级授权快照版本 | 映射 `application_authorization_version`，不透明字符串 |
+| `TenantAuthorizationVersion` | 租户级授权快照版本 | 映射 `tenant_authorization_version`，不透明字符串 |
 | `Roles` | 角色列表 | 映射 `roles`，JSON 数组 |
 | `Permissions` | 权限列表 | 映射 `permissions`，JSON 数组 |
 | `Scope` | 作用域列表 | 映射 `scope`，JSON 数组 |
@@ -56,6 +62,20 @@ description: Asgard 身份用户信息 skill。Use when a task needs AbsAsgardUs
 | `TenantMetadata` | 租户元数据 | 映射 `tenantMetadata`，JSON 对象 |
 
 ## 框架默认行为
+
+### 应用上下文契约
+
+对应用访问 Token：
+
+- `application_id`、`application_manifest_version`、`application_authorization_version` 必填
+- `tenant_authorization_version` 仅在租户上下文 Token 中必填
+- 租户上下文的 `application_manifest_version` 必须表示该租户实际成功应用的版本，不能直接使用应用最新发布版本
+- 非租户的应用级 Token 才使用应用当前发布版本
+- `roles` 和 `permissions` 必须已经按 `application_id` 与当前租户上下文裁剪；应用访问 Token 不得出现 `platform.*`
+- `application_id` 表示授权所属应用，不能代替 JWT 的签名、`iss`、`aud`、`exp` 等标准校验
+- 可管理多租户的身份不得把全部租户 ID 或 `all_tenants=true` 放入 JWT；具体租户范围由权威授权系统按请求上下文校验
+
+`AbsAsgardUserInfo` 为了通用性和存量兼容，对这些字段使用 `string?` 并只负责解析与输出。签发方负责产生权威版本，资源方的 Token Profile 负责执行必填与过期校验；不要在基类中绑定任何具体 IDP、数据库模型或业务系统。
 
 ### 解析行为
 
@@ -120,6 +140,10 @@ Asgard 授权表达式、元数据匹配会直接读取 `AbsAsgardUserInfo` 中�
   "sub": "user-sub-001",
   "user_id": "user-001",
   "tenant_id": "11111111-2222-3333-4444-555555555555",
+  "application_id": "application-001",
+  "application_manifest_version": "manifest-v12",
+  "application_authorization_version": "application-auth-v7",
+  "tenant_authorization_version": "tenant-auth-v35",
   "token_type": "UserLogin",
   "roles": ["user"],
   "permissions": ["profile.read"],
@@ -286,6 +310,10 @@ var userInfo = new DefaultAsgardUserInfo
     Sub = "user-sub-001",
     UserId = "user-001",
     TenantId = tenantId.ToString(),
+    ApplicationId = "application-001",
+    ApplicationManifestVersion = "manifest-v12",
+    ApplicationAuthorizationVersion = "application-auth-v7",
+    TenantAuthorizationVersion = "tenant-auth-v35",
     Roles = ["admin"],
     Permissions = ["users.read", "users.write"],
     Scope = ["api"]
@@ -346,4 +374,7 @@ new Claim(ClaimTypes.Role, "Admin")
 - ❌ 不要让 IDP 输出一份 JSON 字符串 claim 再让业务代码自己反序列化整个用户对象
 - ❌ 不要省略 `tenant_id` 却期待框架自动识别租户用户
 - ❌ 不要把 `roles`、`permissions`、`scope` 写成逗号拼接字符串
+- ❌ 不要把多个应用的角色、权限或应用 ID 塞入同一枚 Token
+- ❌ 不要把版本 claim 强制解析为数字，也不要使用大小关系判断是否过期
+- ❌ 不要用 `application_id` 替代 `aud` 或其他 JWT 标准校验
 - ❌ 不要在测试里使用与生产不一致的 claims 结构

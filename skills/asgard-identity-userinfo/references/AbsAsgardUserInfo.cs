@@ -13,6 +13,14 @@ public abstract class AbsAsgardUserInfo
 
     public string? ClientId { get; set; }
 
+    public string? ApplicationId { get; set; }
+
+    public string? ApplicationManifestVersion { get; set; }
+
+    public string? ApplicationAuthorizationVersion { get; set; }
+
+    public string? TenantAuthorizationVersion { get; set; }
+
     public List<string> Roles { get; set; } = new();
 
     public List<string> Permissions { get; set; } = new();
@@ -42,6 +50,18 @@ public abstract class AbsAsgardUserInfo
                     break;
                 case AsgardClaimTypes.ClientId:
                     ClientId = claim.Value;
+                    break;
+                case AsgardClaimTypes.ApplicationId:
+                    ApplicationId = claim.Value;
+                    break;
+                case AsgardClaimTypes.ApplicationManifestVersion:
+                    ApplicationManifestVersion = claim.Value;
+                    break;
+                case AsgardClaimTypes.ApplicationAuthorizationVersion:
+                    ApplicationAuthorizationVersion = claim.Value;
+                    break;
+                case AsgardClaimTypes.TenantAuthorizationVersion:
+                    TenantAuthorizationVersion = claim.Value;
                     break;
                 case AsgardClaimTypes.Roles:
                     Roles = DeserializeList(claim.Value) ?? new();
@@ -75,6 +95,14 @@ public abstract class AbsAsgardUserInfo
             claims.Add(new(AsgardClaimTypes.TenantId, TenantId));
         if (!string.IsNullOrEmpty(ClientId))
             claims.Add(new(AsgardClaimTypes.ClientId, ClientId));
+        if (!string.IsNullOrWhiteSpace(ApplicationId))
+            claims.Add(new(AsgardClaimTypes.ApplicationId, ApplicationId));
+        if (!string.IsNullOrWhiteSpace(ApplicationManifestVersion))
+            claims.Add(new(AsgardClaimTypes.ApplicationManifestVersion, ApplicationManifestVersion));
+        if (!string.IsNullOrWhiteSpace(ApplicationAuthorizationVersion))
+            claims.Add(new(AsgardClaimTypes.ApplicationAuthorizationVersion, ApplicationAuthorizationVersion));
+        if (!string.IsNullOrWhiteSpace(TenantAuthorizationVersion))
+            claims.Add(new(AsgardClaimTypes.TenantAuthorizationVersion, TenantAuthorizationVersion));
         if (Roles.Count > 0)
             claims.Add(new(AsgardClaimTypes.Roles, System.Text.Json.JsonSerializer.Serialize(Roles, JsonSerializerOptionsFactory.Default)));
         if (Permissions.Count > 0)

@@ -1,4 +1,4 @@
 interface:
   display_name: "Asgard Identity UserInfo"
-  short_description: "处理 AbsAsgardUserInfo、身份上下文、IDP claim 设计与测试登录态"
-  default_prompt: "Use $asgard-identity-userinfo to model AbsAsgardUserInfo, standardize claims, or implement identity-related user info handling in Asgard."
+  short_description: "处理 AbsAsgardUserInfo、应用/租户授权快照 Claim 与身份上下文"
+  default_prompt: "Use $asgard-identity-userinfo to model AbsAsgardUserInfo, standardize application and tenant identity claims, or implement identity-related user info handling in Asgard."
