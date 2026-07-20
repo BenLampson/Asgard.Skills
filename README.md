@@ -51,6 +51,13 @@ Heimdall 应用权限与 Tenant 绑定设计、实现和 review 时，使用 `he
 - 约束 Manifest/授权版本 Claim、停用而非解绑、稳定唯一键与软删除恢复
 - 同时覆盖完整版 Heimdall 和 mini JWT issuer 的应用 Claim 合约边界
 
+Heimdall MCP 管理能力开发、集成和 review 时，使用 `heimdall-mcp-management`：
+
+- 覆盖 `/mcp` Streamable HTTP、OAuth Bearer 与 AK/SK 双认证
+- 约束平台/租户工具、Resources、Prompts、Tasks 和二阶段写确认
+- 约束凭据工具/权限/CIDR/有效期/速率/并发策略、租户边界和安全审计
+- 强制薄封装已有 Service，禁止在 MCP 中复制业务逻辑
+
 当前还需要重点了解的一条工具约定是：
 
 - TypeScript 客户端方案由项目自行选择；`Asgard.TsGen` 是可选的官方生成方案

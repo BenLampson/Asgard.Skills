@@ -1,0 +1,4 @@
+interface:
+  display_name: "Heimdall MCP Management"
+  short_description: "Build and integrate Heimdall MCP management safely"
+  default_prompt: "Use $heimdall-mcp-management to design or review a secure Heimdall MCP management workflow."
