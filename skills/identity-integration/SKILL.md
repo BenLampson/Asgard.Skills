@@ -91,6 +91,9 @@ description: Asgard 身份集成 skill。Use when designing or integrating login
 - Web 前端默认走 `Authorization Code + PKCE`
 - 前端只负责发起登录、保存会话状态、携带 access token 调 API
 - 前端不要假设自己能从 `/userinfo` 还原完整 `AbsAsgardUserInfo`
+- 普通业务 SPA 获取姓名、邮箱、头像等登录用户展示资料时，必须优先读取 Discovery 的 `userinfo_endpoint`，或使用 ID Token 中按 scope 签发的标准 claim
+- 普通业务 SPA 不要为了显示当前用户而调用 Heimdall 的 `/api/account/me`；该路由属于 Heimdall 账号资料与安全管理 API，不是 OAuth/OIDC UserInfo
+- 需要 `name`、`preferred_username`、`email`、`phone_number` 时，显式申请对应的 `profile`、`email`、`phone` scope，不要改用管理 API 绕过 scope
 
 ### IDP
 
@@ -142,6 +145,25 @@ OIDC 标准 `userinfo` 适合补充通用用户资料，例如：
 - 不要假设 `/userinfo` 一定返回 `user_id`、`roles`、`permissions`、`scope`
 - 需要还原 Asgard 身份时，优先基于 access token / claims
 - 如果业务系统需要完整“当前用户详情”接口，应单独设计业务 API
+
+### 当前用户数据源决策
+
+| 需求 | 正确数据源 |
+|------|------------|
+| 业务 SPA 展示当前用户姓名、用户名、邮箱、头像 | Discovery 公布的 `userinfo_endpoint`，或 ID Token 标准 claim |
+| 前端读取租户、角色、权限并控制界面可见性 | Access Token claim；后端仍执行最终授权 |
+| 业务系统读取自己的用户偏好或业务资料 | 业务系统自己的 `/api/me` 或等价资源 API |
+| 修改 Heimdall 托管的个人资料、密码、MFA、恢复码、设备会话 | 跳转 Heimdall Account Center，或由 Heimdall 自有管理前端调用 `/api/account/me/**` |
+| 下游 Asgard API 构建完整运行时身份 | 校验 Access Token 后解析标准 Asgard claim |
+
+这里的 `/api/me` 只是业务资源 API 的示意名称，不是 OAuth/OIDC 固定端点。OAuth 2.x 不定义“当前用户”接口；OIDC 定义的是由 Discovery 发布实际地址的 UserInfo Endpoint，不要求路径名为 `/userinfo` 或 `/me`。
+
+### CORS 接入边界
+
+- 新 OIDC Web Client 的浏览器 Origin 应登记在该 Client 的 Allowed CORS Origins，并用于访问 Token、UserInfo、Revoke 等协议端点
+- 不要为了让业务 SPA 获取登录用户展示资料，把每个项目 Origin 追加到 Heimdall `host.cors.defaultPolicy.allowedOrigins`
+- `host.cors.defaultPolicy.allowedOrigins` 只服务宿主自身 `/api/**` 资源的明确调用方；它不是 OIDC Client 注册机制
+- 如果新增业务 SPA 必须修改 IDP 宿主 YAML 才能读取姓名或邮箱，先判定是否误用了 Heimdall 管理 API，而不是直接扩充白名单
 
 ## 后端校验模式
 
@@ -197,6 +219,8 @@ builder.Services
 - ❌ 只设计前端登录成功页面，不定义后端 token 校验方式
 - ❌ 只定义 JwtBearer 校验，不定义 IDP claim 契约
 - ❌ 把用户登录令牌和后端服务令牌混成同一套语义
+- ❌ 把任何名为“管理后台”的业务 SPA 都当成 Heimdall 身份管理前端，并直接调用 `/api/account/me`
+- ❌ 为每个 OIDC Client 在 Heimdall 宿主 YAML 中重复登记 Origin，只为读取标准用户资料
 
 ## 推荐协同 skill
 

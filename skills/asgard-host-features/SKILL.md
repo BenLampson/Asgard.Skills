@@ -106,6 +106,9 @@ cors:
 - `allowAnyOrigin: true` 与 `allowCredentials: true` 不能同时打开，启动会抛配置错误。
 - `allowAnyOrigin: false` 时必须至少配置一个 `allowedOrigins`（不能为空数组）。
 - `UseCors()` 位置固定在 `UseRouting()` 之后，`UseAuthorization()` 之前，由 `host` 中间件顺序模板统一承接。
+- `host.cors.defaultPolicy.allowedOrigins` 是宿主资源 API 的调用方策略，不是 OIDC Client 注册表；不要把每个业务 SPA 的 Origin 机械追加到 IDP 宿主 YAML。
+- OIDC Token、UserInfo、Revoke 等浏览器协议端点应优先使用 OIDC Client 自身登记的 Allowed CORS Origins，并由 IDP 的协议策略提供器处理。
+- 如果业务 SPA 只是读取姓名、邮箱、头像等标准资料，应使用 Discovery 的 `userinfo_endpoint`；不要为了调用 Heimdall `/api/account/me` 而扩充宿主 CORS。
 
 ### JWT 认证（host.auth）
 

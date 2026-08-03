@@ -18,6 +18,7 @@ For login-flow architecture and PKCE/OIDC protocol design, also use `$identity-i
 | API calls | Follow the API client strategy selected by the current project. If it uses TsGen, call generated `src/services/controller/*` methods and reuse `src/services/models/*` types; otherwise keep calls behind the project's shared request/client layer. |
 | Generated code | When TsGen is enabled, treat generated `services/common`, `services/controller`, and `services/models` as pure generated output. Do not patch business behavior into generated files. |
 | Request auth | All normal HTTP calls must go through the shared request instance that attaches Bearer tokens and handles 401 renew/login redirect. |
+| OIDC profile | Business admin SPAs must obtain display profile claims from the discovered `userinfo_endpoint` or ID Token. Do not call Heimdall `/api/account/me` merely to render the current user's name, email, avatar, username, or tenant. |
 | Response handling | Unwrap Asgard `Response<T>`, `PageResponse<T>`, and `CursorResponse<T>` with shared helpers; do not parse `code/message/data` ad hoc in every page. |
 | State ownership | Put reusable list/filter/pagination/load/mutation state in a DVA model. Keep pages focused on layout, table columns, forms, and user actions. |
 | Permissions | Frontend permission checks only control visibility/UX. Backend authorization and tenant/resource-boundary checks remain mandatory. |
@@ -104,6 +105,20 @@ If the project has chosen TsGen and a controller is missing from generated clien
 - Return types use Asgard response wrappers.
 - After route, parameter, DTO, or VO changes, rerun TsGen and update frontend imports.
 
+## OIDC Current-User Boundary
+
+Do not treat “admin frontend” as synonymous with “Heimdall identity-management frontend.” Brigitte, Bridge, and other business consoles are OIDC Relying Parties even when their UI is an admin console.
+
+Use this decision order:
+
+1. Read the provider metadata from the configured Authority and use its `userinfo_endpoint`; do not manually derive the endpoint from the Authority path.
+2. Request `profile`, `email`, or `phone` scopes when the UI needs their standard claims.
+3. Use Access Token claims for tenant, role, permission, and scope-aware UI behavior; keep final authorization on the backend.
+4. Keep application-specific preferences and business user records in the application's own API.
+5. Redirect users to Heimdall Account Center for Heimdall-managed profile, password, MFA, recovery-code, passkey, and session operations.
+
+Only Heimdall's own account-management surface, or another explicitly trusted account-management client, should call `/api/account/me/**`. Do not add each business project Origin to Heimdall host CORS merely to make its header user menu work.
+
 ## Review Checklist
 
 - If the project uses TsGen, does each generated API call reuse `services/controller` and generated model types without a parallel handwritten wrapper?
@@ -114,6 +129,9 @@ If the project has chosen TsGen and a controller is missing from generated clien
 - Are dangerous actions confirmed with `modal.confirm` and followed by a refresh?
 - Are tenant-scoped calls passing the current route tenant id explicitly?
 - Are UI permission checks mirrored by backend authorization?
+- Does a business SPA obtain basic current-user display data from OIDC UserInfo/ID Token instead of Heimdall `/api/account/me`?
+- Does OIDC code use Discovery's `userinfo_endpoint` and request the scopes required for the displayed claims?
+- Has the implementation avoided adding the project Origin to Heimdall host API CORS solely for current-user display data?
 - Did `npm run typecheck` pass after TypeScript changes?
 
 ## References
