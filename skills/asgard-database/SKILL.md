@@ -12,6 +12,7 @@ description: Asgard 数据库模块 skill。Use when configuring database.enable
 当前仓库的数据库访问有两条必须统一遵守的约定：
 
 - 仓储实现统一继承 `AbsAsgardRepositoryBase<TEntity, TKey>`，不要再自建另一套 FreeSql 仓储基类
+- 需要显式软删除审计的仓储可继承 `AbsAsgardSoftDeleteRepositoryBase<TEntity, TKey>`；它仍属于框架仓储基类体系，并保留物理删除入口
 - FreeSql 的租户隔离统一通过框架内置 `GlobalFilter` + 身份上下文完成，租户实体不要在每个查询里重复手写 `TenantId` 条件
 
 当前仓库的仓储构造函数还必须统一遵守以下规则：
@@ -31,7 +32,8 @@ description: Asgard 数据库模块 skill。Use when configuring database.enable
 - 表名、列名一律使用全小写 `snake_case` 命名，禁止使用 `PascalCase`、`camelCase` 或混合大小写
 - 主键列统一命名为 `id`
 - 多租户业务表默认包含 `tenant_id`
-- 审计与并发控制列统一使用 `create_time`、`update_time`、`create_by`、`update_by`、`deleted`、`version`
+- 基础审计与并发控制列统一使用 `create_time`、`update_time`、`create_by`、`update_by`、`deleted`、`version`
+- 只有实体显式继承软删除审计基类时，才增加可空的 `delete_time`、`delete_by`；不要给所有现有表统一追加这两列
 - 关联标识列统一使用 `{entity}_id` 风格，例如 `planet_id`、`faction_id`
 - 若无额外说明，Guid 字符串主键和关联标识优先按 `char(36)` 设计
 - 若无额外说明，时间列优先按 `datetime(3)` 设计
@@ -223,6 +225,47 @@ public class {EntityName}Repository : AbsAsgardRepositoryBase<{EntityName}, {Key
 - 仓储统一使用框架仓储基类，不要在每个方法里重复 `Where(x => x.TenantId == ...)`
 - 只有在明确需要跨租户或禁用过滤时，才在非常局部的位置做特殊处理，并补注释说明原因
 
+### 删除行为与可选软删除审计
+
+现有 `AbsAsgardRepositoryBase<TEntity, TKey>.Delete` / `DeleteAsync` 保持物理删除语义。框架不通过 AOP 拦截器把物理删除隐式改写为逻辑删除，也不为 `Deleted` 自动注册全局过滤。
+
+需要准确记录删除时间和删除人时，由业务显式选择对应实体基类：
+
+- 普通实体：`AbsAsgardSoftDeleteAuditedEntity`
+- 租户实体：`AbsAsgardTenantSoftDeleteAuditedEntity`
+- 租户用户实体：`AbsAsgardTenantUserDataSoftDeleteAuditedEntity`
+
+需要仓储直接提供显式操作时，继承：
+
+```csharp
+public class ArticleRepository
+    : AbsAsgardSoftDeleteRepositoryBase<Article, string>
+{
+    public ArticleRepository(
+        IFreeSql fsql,
+        IMultiLevelCache cache,
+        ILogger<ArticleRepository> logger,
+        IAsgardRepositoryContext repositoryContext)
+        : base(fsql, cache, logger, repositoryContext)
+    {
+    }
+}
+```
+
+操作语义：
+
+- `Delete` / `DeleteAsync`：物理删除，行为与既有仓储一致
+- `SoftDelete` / `SoftDeleteAsync`：设置 `Deleted`、`DeleteTime`、`DeleteBy` 后走乐观锁更新
+- `Restore` / `RestoreAsync`：清除删除状态和删除审计信息后走乐观锁更新
+- 未显式传入 `deleteBy` 时，软删除仓储优先读取当前身份的 `UserId`，再回退到 `Sub`
+
+硬边界：
+
+- 软删除审计是 opt-in 能力，不要批量修改已有实体继承关系
+- 修改实体继承关系前，必须为对应业务表安排 `delete_time`、`delete_by` 迁移
+- 框架不会默认过滤已删除数据；业务查询必须按自身语义显式过滤，或在业务明确授权的局部范围配置过滤器
+- 软删除与恢复仍是乐观锁更新，调用前必须先查询数据库当前实体，不能用 DTO 重建实体
+
 ### 乐观锁实体更新规范
 
 Asgard 项目的大多数实体基类默认带有 `Version` 和 `[Column(IsVersion = true)]`，因此更新代码必须把乐观锁当作默认前提，而不是可选项。
@@ -292,3 +335,5 @@ await repository.UpdateAsync(entity);
 - ❌ 不要对乐观锁实体使用 `dto.ToEntity()` 后直接 `UpdateAsync(entity)`，这会丢失数据库当前 `Version` 并覆盖持久化字段
 - ❌ 不要在建表脚本、迁移或实体映射中新增任何数据库外键
 - ❌ 不要把逻辑关联直接实现成 `FOREIGN KEY` / `REFERENCES` / 级联更新 / 级联删除
+- ❌ 不要用拦截器把既有 `Delete` / `DeleteAsync` 静默改成软删除
+- ❌ 不要假设 `Deleted` 字段或软删除审计基类会自动启用查询过滤

@@ -253,6 +253,7 @@ http://127.0.0.1:5000/asgard-tsgen
 - 只要实体继承 `AbsAsgardBaseEntity`
 - 或实体继承 `AbsAsgardTenantEntity`
 - 或实体继承 `AbsAsgardTenantUserDataEntity`
+- 或实体继承任一 `AbsAsgard*SoftDeleteAuditedEntity`
 - 或实体存在 `Version` 字段并标记 `[Column(IsVersion = true)]`
 
 以上任一条件成立，都必须视为启用了 FreeSql 乐观锁，更新路径必须采用“先查后改”。
