@@ -24,6 +24,7 @@ description: Asgard 后端代码复查与守卫 skill。Use when reviewing or se
 - 刚实现了 `Create / Update / Delete / Enable / Disable / Patch`
 - 代码里出现 `dto.ToEntity()`、`UpdateAsync(...)`、`GetByIdAsync(...)`
 - 代码涉及 `TenantId`、`CreateBy`、`CreateTime`、`Deleted`、`Version`
+- 代码涉及 `DeleteTime`、`DeleteBy`、`SoftDeleteAsync`、`RestoreAsync` 或删除行为迁移
 - 代码涉及统一响应壳、租户边界、仓储基类、实体基类
 - 代码新增或修改 Controller 路由、`[Route]`、`[HttpGet]` / `[HttpPost]` 等 HTTP 入口
 - 你准备生成或修改 Asgard 后端 CRUD 代码，但还不确定是否踩中了项目坑点
@@ -131,6 +132,11 @@ await repository.UpdateAsync(entity);
 - 租户默认依赖框架全局过滤与身份上下文，不要到处手写默认 `TenantId` 过滤
 - 不要让前端输入决定 `TenantId`、`CreateBy`、`CreateTime`、`Deleted`
 - 后台服务或平台级特例如果允许跨租户，必须在代码中写清楚边界和原因
+- 软删除审计基类必须由业务显式选择；不要批量修改现有实体继承关系
+- `Delete` / `DeleteAsync` 默认仍是物理删除；不要假设存在 AOP 软删除拦截器
+- 不要假设框架会自动添加 `Deleted == false` 全局过滤
+- `SoftDeleteAsync` / `RestoreAsync` 属于乐观锁更新，必须基于数据库已查询出的当前实体执行
+- 实体切换到软删除审计基类时，必须同步检查目标表是否已有可空的 `delete_time`、`delete_by`
 
 ## 输出要求
 
