@@ -1,6 +1,6 @@
 ---
 name: asgard-base-types
-description: Asgard 基类与基础模型 skill。Use when another AI needs the meaning, key fields, inheritance points, and correct usage timing of BaseController, Response models, PluginBase, AbsAsgardContext, AbsAsgardUserInfo, HostConfig, PluginConfig, or other framework base abstractions.
+description: Asgard 基类与基础模型 skill。Use when another AI needs the meaning, key fields, inheritance points, and correct usage timing of BaseController, Response models, PluginBase, AbsAsgardContext, AbsAsgardUserInfo, soft-delete audited entity bases, HostConfig, PluginConfig, or other framework base abstractions.
 ---
 
 # Asgard 核心基类与基础模型
@@ -24,6 +24,9 @@ description: Asgard 基类与基础模型 skill。Use when another AI needs the 
 | `PluginBase` | 插件基类 | 所有插件继承它 |
 | `AbsAsgardContext` | 框架统一上下文 | 注入它获取缓存、消息、分布式锁、作业等能力 |
 | `AbsAsgardUserInfo` | 框架统一用户信息基类 | IDP、身份上下文、授权链路都围绕它建模 |
+| `AbsAsgardSoftDeleteAuditedEntity` | 普通实体的可选软删除审计基类 | 需要 `delete_time`、`delete_by` 时使用 |
+| `AbsAsgardTenantSoftDeleteAuditedEntity` | 租户实体的可选软删除审计基类 | 同时需要租户隔离和删除审计时使用 |
+| `AbsAsgardTenantUserDataSoftDeleteAuditedEntity` | 租户用户实体的可选软删除审计基类 | 同时需要租户、用户归属和删除审计时使用 |
 | `Response<T>` | 统一 API 响应模型 | 所有非分页 API 默认返回此类型 |
 | `PageResponse<T>` | 页码分页响应 | 所有页码分页查询必须返回 |
 | `CursorResponse<T>` | 游标分页响应 | 所有游标分页/无限滚动查询必须返回 |
@@ -236,6 +239,42 @@ public class {ServiceName}Service : I{ServiceName}Service
 
 更完整的 IDP、claim 契约、测试写法请转到 `$asgard-identity-userinfo`。
 
+## 可选软删除审计实体基类
+
+只有业务表需要准确记录逻辑删除时间和删除人时，才选择对应的审计基类：
+
+```csharp
+public class Article : AbsAsgardTenantSoftDeleteAuditedEntity
+{
+    // 业务字段
+}
+```
+
+新增能力：
+
+- `DeleteTime` 映射 `delete_time`，使用可空 UTC 时间
+- `DeleteBy` 映射 `delete_by`，使用可空主体标识
+- `MarkAsDeleted(deleteBy)` 设置删除状态和审计信息；重复调用保留首次删除记录
+- `Restore()` 清除删除状态、`DeleteTime` 和 `DeleteBy`
+
+继承选择：
+
+| 业务边界 | 基类 |
+|----------|------|
+| 普通实体，不需要删除审计 | `AbsAsgardBaseEntity` |
+| 普通实体，需要删除审计 | `AbsAsgardSoftDeleteAuditedEntity` |
+| 租户实体，不需要删除审计 | `AbsAsgardTenantEntity` |
+| 租户实体，需要删除审计 | `AbsAsgardTenantSoftDeleteAuditedEntity` |
+| 租户用户实体，不需要删除审计 | `AbsAsgardTenantUserDataEntity` |
+| 租户用户实体，需要删除审计 | `AbsAsgardTenantUserDataSoftDeleteAuditedEntity` |
+
+硬边界：
+
+- 新审计基类是显式选择，不要修改已有实体的继承关系，除非同时安排对应表结构迁移
+- 继承审计基类不会改变现有 `Delete` / `DeleteAsync` 的物理删除行为
+- 继承审计基类不会自动注册 `Deleted == false` 全局过滤
+- 需要仓储级显式软删除时，配套继承 `AbsAsgardSoftDeleteRepositoryBase<TEntity, TKey>`
+
 ## 代码模板
 
 完整模板见 `templates/` 目录：
@@ -263,3 +302,5 @@ public class {ServiceName}Service : I{ServiceName}Service
 - ❌ 不要让 Controller 直接返回裸 `VO`、`DTO`、集合或基元值
 - ❌ 不要忘了检查 `AbsAsgardContext` 的属性是否为 `null`（因为模块可能未启用）
 - ❌ 不要绕开 `AbsAsgardUserInfo` 再单独造一套用户信息模型
+- ❌ 不要因为框架提供软删除审计基类，就批量修改现有实体继承关系或表结构
+- ❌ 不要假设软删除审计实体会自动过滤已删除数据
