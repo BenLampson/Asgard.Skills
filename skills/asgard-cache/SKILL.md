@@ -9,6 +9,8 @@ description: Asgard 缓存模块 skill。Use when configuring or using Asgard ca
 
 用于配置和使用 Asgard 多级缓存系统。Asgard 支持内存缓存（一级）+ Redis 分布式缓存（二级）的多级缓存策略，获取时先查内存缓存，未命中再查 Redis；写入时同时写入二级缓存。
 
+Redis 同时是 Asgard 分布式锁的基础设施入口。需要锁的注册、续租、所有权丢失通知或使用方式时，转到 `$asgard-distributed-lock`，不要在缓存 skill 中自行推导锁语义。
+
 ## 什么时候使用
 
 - **需要配置缓存模块时** - 在项目根目录 `app.yaml` 中配置缓存开关和选项
@@ -138,10 +140,13 @@ public async Task<bool> {MethodName}({ParameterType} {ParameterName})
 - 更新/删除数据后，及时移除相关缓存保持一致性
 - 内存缓存用于热点数据，Redis 用于分布式共享
 - 即使缓存模块关闭，Yggdrasil 也会为仓储构造函数提供可注入的空 `IMultiLevelCache`
+- 当 `caching.enabled` 与 `caching.redis.enabled` 同时开启时，Yggdrasil 会自动装配 `IDistributedLock` 并复用 Redis 连接
 
 ## 不要这样做
 
 ❌ 不要假设启用了缓存模块就一定启用了 Redis，始终做空检查
+
+❌ 不要因为业务需要分布式锁就在插件中重复调用 `AddDistributedLock()`；Yggdrasil 会在 Redis 可用时自动装配
 
 ❌ 不要忽略 `Cache` 可能为 `null` 的情况，缓存模块可以动态关闭
 

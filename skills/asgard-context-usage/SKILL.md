@@ -184,9 +184,15 @@ public async Task ExecuteOnceAsync(CancellationToken cancellationToken)
         return;
     }
 
-    await {BusinessLogic}(cancellationToken);
+    using var operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+        cancellationToken,
+        handle.LockLostToken);
+
+    await {BusinessLogic}(operationCancellation.Token);
 }
 ```
+
+分布式锁的自动装配、默认参数、自动续租和 `LockLostToken` 语义统一转到 `$asgard-distributed-lock`，不要在 Context skill 中重复定义锁契约。
 
 ### 注册服务（Program.cs）
 
@@ -222,6 +228,7 @@ public async Task<Guid> CreateOrderAsync(CreateOrderCommand command)
 - 访问任何能力**先判空**，支持模块动态启用禁用
 - 判空后**一定要降级**，不要因为模块未启用就直接抛出异常
 - 需要多实例互斥时，优先通过 `AsgardContext.DistributedLock` 获取锁能力
+- 长时间持锁时，把 `handle.LockLostToken` 与业务取消令牌合并，锁所有权丢失后立即停止受保护操作
 - 需要后台租户作用域时，优先使用 `TenantScopeFactory`
 - 需要后台租户数据库访问时，先进入 `TenantScopeFactory.CreateScope(tenantId)`，再调用仓储或 `IFreeSql`
 - 在其他模块都注册完成后，再调用 `AddAsgardContext()`

@@ -16,9 +16,9 @@ description: Asgard 框架总览与路由 skill。Use when working with the Asga
 
 ## 当前版本共识
 
-- 当前对外 NuGet 包线以 `5.0.1` 为最新基线。
+- 当前对外 NuGet 包线以 `5.2.0` 为最新基线。
 - 不要根据本地仓库目录名（例如 `AsgardV3`）推断框架版本。
-- 不要把已 unlist 的旧包版本当作最新可安装版本；生成依赖或升级建议时默认指向 `5.0.1`。
+- 不要把已 unlist 的旧包版本当作最新可安装版本；生成依赖或升级建议时默认指向 `5.2.0`。
 - 如果任务涉及发包、覆盖版本或确认真实版本，以源码根目录 `Directory.Build.props` 中的
   `MajorVersion`、`MinorVersion`、`PatchVersion` 和计算出的 `PackageVersion` 为准。
 
@@ -68,7 +68,7 @@ Asgard 当前更推荐：
 - `AbsAsgardUserInfo`、`IAsgardIdentityContext`、IDP claim 设计、测试身份构造：使用 `$asgard-identity-userinfo`。
 - 基类、响应模型、字段语义、什么时候继承：使用 `$asgard-base-types`。
 - 仓储扫描、服务注册、约定装配：使用 `$asgard-repository-service-registration`。
-- 缓存、数据库、消息、作业、安全：分别使用 `$asgard-cache`、`$asgard-database`、`$asgard-messaging`、`$asgard-job-scheduling`、`$asgard-security`。
+- 缓存、分布式锁、数据库、消息、作业、安全：分别使用 `$asgard-cache`、`$asgard-distributed-lock`、`$asgard-database`、`$asgard-messaging`、`$asgard-job-scheduling`、`$asgard-security`。
 
 ## 保持全局共识
 
