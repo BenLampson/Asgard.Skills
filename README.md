@@ -71,6 +71,13 @@ Heimdall MCP 管理能力开发、集成和 review 时，使用 `heimdall-mcp-ma
 - 该 skill 专门检查后端硬规则、分层边界、统一响应、租户与审计字段、乐观锁更新等高频踩坑点
 - 遇到 `UpdateAsync(string id, XxxDto dto, ...)`、`dto.ToEntity()`、`Version`、`TenantId` 等线索时，应主动启用该 skill 做风险排查
 
+Asgard Redis 分布式锁的配置、注册、自动续租和安全使用统一使用 `asgard-distributed-lock`：
+
+- Yggdrasil 在缓存与 Redis 同时启用时自动装配 `IDistributedLock`
+- `distributedLock` 配置节可省略，且没有独立启用开关
+- 长时间任务必须监听 `IDistributedLockHandle.LockLostToken`
+- 释放与续租必须保持 owner token 原子校验语义
+
 ## 仓库边界
 
 `Asgard Skills` 作为独立维护的 Git 仓库存在，日常可按 Asgard 主项目的子模块 / 子仓库方式接入。

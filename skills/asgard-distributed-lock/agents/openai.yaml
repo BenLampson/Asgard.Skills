@@ -1,0 +1,4 @@
+interface:
+  display_name: "Asgard Distributed Lock"
+  short_description: "配置并安全使用 Asgard Redis 分布式锁"
+  default_prompt: "Use $asgard-distributed-lock to configure and safely use distributed locking in an Asgard application."
