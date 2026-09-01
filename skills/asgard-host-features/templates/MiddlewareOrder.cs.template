@@ -1,5 +1,6 @@
 // 推荐的中间件注册顺序
 // 严格遵守此顺序，否则认证、授权、租户会出现问题
+// Nginx 场景由 IStartupFilter 在此管道之前插入 UseForwardedHeaders()。
 
 app.UseAsgardStaticFiles();
 app.UseRouting();
@@ -11,6 +12,7 @@ if (hostConfig.Cors?.Enabled == true)
 
 if (hostConfig.RateLimiting?.Enabled == true)
 {
+    // Yggdrasil 内部在同一个 GlobalLimiter 中串联实例桶与可选 IP 桶。
     app.UseRateLimiter();
 }
 
@@ -23,6 +25,9 @@ app.UseAsgardTenant();
 
 // 插件或外部扩展中间件
 configureMiddleware?.Invoke(app);
+
+// host.rateLimiting.user.enabled=true 时，Yggdrasil 在此处自动执行用户层。
+// 宿主应用不要自行再注册第二个 UseRateLimiter()。
 
 // 授权统一放在扩展链路之后
 app.UseAuthorization();

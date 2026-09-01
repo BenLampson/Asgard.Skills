@@ -105,6 +105,44 @@ host:
           password: "your-password"
 ```
 
+### 宿主分层限流配置
+
+`host.rateLimiting` 的兼容契约不能随意改名或重新解释：根级扁平字段是当前宿主实例共享的总量桶，`ip`、`user` 是可选子配置。旧 YAML 不包含两个子节点时，行为保持为单实例总量限流。
+
+```yaml
+host:
+  rateLimiting:
+    enabled: true
+    policy: FixedWindow
+    permitLimit: 600
+    windowSeconds: 60
+    queueLimit: 0
+
+    ip:
+      enabled: true
+      policy: FixedWindow
+      permitLimit: 100
+      windowSeconds: 60
+      queueLimit: 0
+
+    user:
+      enabled: true
+      policy: FixedWindow
+      permitLimit: 60
+      windowSeconds: 60
+      queueLimit: 0
+```
+
+强类型绑定约定：
+
+- `RateLimitingOptions` 的根级属性使用完整路径，例如 `[ConfigPath("host.rateLimiting.permitLimit")]`。
+- `Ip`、`User` 入口分别绑定 `[ConfigPath("host.rateLimiting.ip")]`、`[ConfigPath("host.rateLimiting.user")]`。
+- `RateLimitingPartitionOptions` 是嵌套对象，其属性使用相对路径，例如 `[ConfigPath("enabled")]`、`[ConfigPath("policy")]`。
+- 子层缺失应保持为 `null`，子层存在但 `enabled: false` 时不校验其算法参数；`host.rateLimiting.enabled` 仍是三层总开关。
+- 修改该配置契约时必须覆盖“旧版扁平 YAML 仍可加载”和“嵌套 IP/用户配置能递归绑定”两类测试。
+
+运行时分层语义和中间件顺序由 `$asgard-host-features` 定义；配置 skill 不应把根级字段描述为 IP 限流，也不要发明 `partitionBy` 等当前不存在的 YAML 键。
+
 ### 强类型配置类
 
 ```csharp
@@ -182,6 +220,7 @@ protected override Task OnConfigureServicesAsync(
 - 插件独立配置放 `plugin.yaml`，不要混进宿主 `app.yaml`
 - 为可选模块保留默认值与安全降级
 - 在 `Validate()` 中提前校验配置，不合法的配置尽早失败
+- 扩展现有配置时保留旧键语义，并添加旧 YAML 的兼容性测试
 
 ## 不要这样做
 
@@ -196,6 +235,8 @@ protected override Task OnConfigureServicesAsync(
 ❌ 不要忘记给属性标注 `[ConfigPath]` 特性，否则无法绑定
 
 ❌ 不要把宿主端口写成 `host.port`，当前实现不会读取这个键
+
+❌ 不要把 `host.rateLimiting` 根级字段改成 IP 或用户语义；实例总量、IP、用户是三层独立配置
 
 ## 参考资料
 

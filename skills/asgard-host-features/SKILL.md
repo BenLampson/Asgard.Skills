@@ -37,7 +37,7 @@ host:
   auth: ...         # JWT 认证
   swagger: ...      # Swagger 文档
   tsGen: ...        # 可选 TypeScript 客户端导出
-  rateLimiting: ... # 全局限流
+  rateLimiting: ... # 实例、IP、用户分层限流
   healthCheck: ...  # 健康检查
 ```
 
@@ -195,14 +195,66 @@ tsGen:
 - 每次生成会完整重建 `common/`、`controller/`、`models/` 纯生成目录
 - 不使用 TsGen 的项目可以选择 OpenAPI、共享手写客户端或其他契约方案
 
-### 全局限流（host.rateLimiting）
+### 分层限流（host.rateLimiting）
+
+`host.rateLimiting` 是宿主总开关。请求按以下顺序经过各层：
+
+```text
+实例总量 → IP → Authentication/Tenant/外部身份 → 用户 → Authorization
+```
+
+根节点现有扁平字段继续表示“当前后端实例共享的总量桶”，不是 IP 桶。`ip` 和 `user` 是可选增强层：未配置或 `enabled: false` 时不启用该层。
 
 ```yaml
-rateLimiting:
-  enabled: true
-  permitLimit: 100    # 一个窗口允许多少请求
-  windowSeconds: 60    # 窗口大小（秒）
+host:
+  rateLimiting:
+    enabled: true
+
+    # 兼容旧配置：当前实例内所有请求共享
+    policy: FixedWindow
+    permitLimit: 600
+    windowSeconds: 60
+    queueLimit: 0
+
+    # 可选：按连接 IP 独立分桶
+    ip:
+      enabled: true
+      policy: FixedWindow
+      permitLimit: 100
+      windowSeconds: 60
+      queueLimit: 0
+
+    # 可选：在身份建立后按稳定主体独立分桶
+    user:
+      enabled: true
+      policy: FixedWindow
+      permitLimit: 60
+      windowSeconds: 60
+      queueLimit: 0
 ```
+
+每一层都支持 `FixedWindow`、`SlidingWindow`、`TokenBucket`，并使用同一组算法参数：
+
+| 配置项 | 说明 |
+|--------|------|
+| `policy` | `FixedWindow`、`SlidingWindow` 或 `TokenBucket` |
+| `permitLimit` | 固定窗口/滑动窗口许可数 |
+| `windowSeconds` | 窗口秒数 |
+| `segmentsPerWindow` | 滑动窗口分段数 |
+| `tokenLimit` | 令牌桶容量 |
+| `tokensPerSecond` | 每秒补充令牌数 |
+| `queueLimit` | 等待队列长度，默认 `0` |
+
+关键语义：
+
+- 旧 YAML 无需迁移；没有 `ip`、`user` 时仍只运行原有实例总量桶。
+- 多实例部署时，每个实例各自维护实例、IP、用户桶；它不是 Redis 分布式限流。
+- IP 层使用 `HttpContext.Connection.RemoteIpAddress`，并规范化 IPv4-mapped IPv6 地址；反向代理场景必须保证可信转发头在限流前已经生效，否则多个客户端可能落入代理 IP 的同一个桶。
+- 用户层只处理已认证且有稳定身份声明的请求，身份键按 `tenant_id + user_id`、`sub`、`client_id`、`application_id` 的优先级选择。匿名请求或缺少稳定身份标识的请求跳过用户层，但仍受实例与 IP 层保护。
+- 任意一层超限都返回 HTTP `429`。端点标注 `[DisableRateLimiting]` 时跳过宿主限流；用户层不会重新解析业务端点上的 `[EnableRateLimiting("named-policy")]`，因此不会覆盖或破坏业务命名策略。
+- 宿主只调用一次官方 `UseRateLimiter()`：它承载认证前的实例与 IP 组合限流。认证后的用户层由 Yggdrasil 专用中间件承载。不要为了三层限流手工连续调用多个 `UseRateLimiter()`。
+
+使用 Nginx 或其他反向代理并开启 IP 层时，必须读取 [Nginx 后的 Asgard IP 限流](references/nginx-ip-rate-limiting.md)。该参考同时给出 Nginx 转发头、ASP.NET Core 可信代理、Yggdrasil 提前接线和防伪造验证方式；不要只复制 Nginx 的一半配置。
 
 ### 健康检查（host.healthCheck）
 
@@ -218,6 +270,7 @@ healthCheck:
 
 ```csharp
 // 推荐的中间件注册顺序
+// Nginx 场景由 IStartupFilter 在此管道之前插入 UseForwardedHeaders()。
 app.UseAsgardStaticFiles();
 app.UseRouting();
 
@@ -228,6 +281,7 @@ if (hostConfig.Cors?.Enabled == true)
 
 if (hostConfig.RateLimiting?.Enabled == true)
 {
+    // Yggdrasil 内部在同一个 GlobalLimiter 中串联实例桶与可选 IP 桶。
     app.UseRateLimiter();
 }
 
@@ -240,6 +294,9 @@ app.UseAsgardTenant();
 
 // 插件或外部中间件扩展点
 configureMiddleware?.Invoke(app);
+
+// host.rateLimiting.user.enabled=true 时，Yggdrasil 在此处自动执行用户层。
+// 宿主应用不要自行再注册第二个 UseRateLimiter()。
 
 // 插件中间件之后统一进入授权
 app.UseAuthorization();
@@ -262,7 +319,9 @@ app.MapControllers();
 - `UseRouting()` 必须在认证链路之前，确保终结点信息可被认证授权系统识别
 - `UseAuthentication()` 在启用宿主内置 JWT 时接入
 - `UseAsgardTenant()` 必须位于认证之后，这样才能基于身份建立租户上下文
+- 实例与 IP 层位于认证前；用户层位于认证、租户和外部身份扩展之后、授权之前
 - `UseAuthorization()` 需要在插件或外部中间件之后统一执行，避免扩展链路还没补充身份信息就提前鉴权
+- 三层宿主限流由框架自动接线，不要通过重复调用 `UseRateLimiter()` 模拟分层
 - 不要再用旧版“认证和授权一起包进同一个 if，然后再执行租户中间件”的写法
 
 **版本迁移提醒：**
@@ -275,6 +334,7 @@ app.MapControllers();
 完整模板见 `templates/` 目录：
 - `appyaml-host.yaml.template` - 完整宿主配置模板
 - `MiddlewareOrder.cs.template` - 中间件顺序模板
+- `nginx-asgard-ip-rate-limit.conf.template` - 单层边缘 Nginx 的安全转发头模板
 
 ## 参考源码
 
@@ -282,6 +342,7 @@ app.MapControllers();
 - `HostConfig.cs` - 宿主根配置类
 - `StaticFileHostOptions.cs` - 静态文件配置选项
 - `TsGenHostOptions.cs` - 可选 TypeScript 客户端导出配置
+- `nginx-ip-rate-limiting.md` - Nginx 转发头、可信代理接线与 IP 限流验证
 
 ## 源码锚点
 
@@ -290,6 +351,10 @@ app.MapControllers();
 - `Common/Asgard.AspNetCore.Core/ServiceCollectionExtensions.cs` - `AddAsgardAspNetCore()` 注册 `AsgardAuth` policy
 - `Host/Asgard.Yggdrasil.AspNetCore/YggdrasilHostBuilder.Services.cs` - `host.auth.enabled` 与默认 JWT 注册逻辑
 - `Host/Asgard.Yggdrasil.AspNetCore/YggdrasilHostBuilder.Configurator.cs` - 中间件顺序与统一 `UseAuthorization()`
+- `Host/Asgard.Yggdrasil.AspNetCore/YggdrasilRateLimiterFactory.cs` - 实例/IP 组合限流与用户身份分区键
+- `Host/Asgard.Yggdrasil.AspNetCore/YggdrasilUserRateLimitingMiddleware.cs` - 认证后的用户层限流
+- `Common/Asgard.Abstractions.AspNetCore/Host/RateLimitingOptions.cs` - 旧版实例字段及 `ip`、`user` 配置入口
+- `Common/Asgard.Abstractions.AspNetCore/Host/RateLimitingPartitionOptions.cs` - IP/用户层算法参数
 - `Common/Asgard.Abstractions.AspNetCore/Authorization/AsgardAuthAttributes.cs` - `AsgardAuth*` 特性统一使用 `AsgardAuth` policy
 - `Common/Asgard.Abstractions.AspNetCore/Host/AuthOptions.cs` - `host.auth.enabled` 配置语义
 
@@ -297,6 +362,10 @@ app.MapControllers();
 
 - ❌ 不要重复手动注册那些已经由 `host.*` 配置自动管理的能力
 - ❌ 不要把认证、限流、健康检查这些宿主级功能写成每个插件各自一套
+- ❌ 不要把根级 `host.rateLimiting` 扁平字段解释成 IP 限流；它始终是单实例共享总量桶
+- ❌ 不要为实例、IP、用户三层分别重复调用官方 `UseRateLimiter()`，框架已经按正确阶段接线
+- ❌ 不要只在 Nginx 写 `X-Forwarded-For` 就认为 IP 限流已经生效；Kestrel 必须在限流前消费可信转发头
+- ❌ 不要在生产环境无条件信任所有 `X-Forwarded-For` 来源，否则客户端可以伪造 IP 绕过分桶
 - ❌ 不要打乱中间件顺序，尤其不要把 `UseAuthorization()` 放在 `UseAuthentication()` 之前
 - ❌ 不要把租户中间件放在认证之前
 - ❌ 不要假设关闭 `host.auth.enabled` 就等于整个授权链路失效，它只表示宿主不再代你注册默认 JWT Bearer

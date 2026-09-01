@@ -40,11 +40,27 @@ host:
   # 可选 TypeScript 客户端导出，仅 Development 环境生效
   tsGen:
     enabled: false
-  # 全局限流
+  # 分层限流：根级字段是当前实例共享总量桶
   rateLimiting:
     enabled: {rate_limiting_enabled}
+    policy: FixedWindow
     permitLimit: {permit_limit}
     windowSeconds: {window_seconds}
+    queueLimit: 0
+    # 可选 IP 层；不需要时删除或保持 enabled: false
+    ip:
+      enabled: false
+      policy: FixedWindow
+      permitLimit: {ip_permit_limit}
+      windowSeconds: {ip_window_seconds}
+      queueLimit: 0
+    # 可选用户层；在认证和身份建立后执行
+    user:
+      enabled: false
+      policy: FixedWindow
+      permitLimit: {user_permit_limit}
+      windowSeconds: {user_window_seconds}
+      queueLimit: 0
   # 健康检查
   healthCheck:
     enabled: {health_check_enabled}

@@ -32,11 +32,27 @@ host:
     enabled: {swagger_enabled}
     title: {swagger_title}
     version: {swagger_version}
-  # 限流
+  # 分层限流：根级字段是当前实例共享总量桶
   rateLimiting:
     enabled: {rateLimiting_enabled}
+    policy: FixedWindow
     permitLimit: {permit_limit}
     windowSeconds: {window_seconds}
+    queueLimit: 0
+    # 可选 IP 层
+    ip:
+      enabled: false
+      policy: FixedWindow
+      permitLimit: {ip_permit_limit}
+      windowSeconds: {ip_window_seconds}
+      queueLimit: 0
+    # 可选认证用户层
+    user:
+      enabled: false
+      policy: FixedWindow
+      permitLimit: {user_permit_limit}
+      windowSeconds: {user_window_seconds}
+      queueLimit: 0
   # 健康检查
   healthCheck:
     enabled: {healthCheck_enabled}
