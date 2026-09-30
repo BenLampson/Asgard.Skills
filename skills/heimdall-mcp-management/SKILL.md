@@ -1,6 +1,6 @@
 ---
 name: heimdall-mcp-management
-description: Heimdall MCP 管理与集成 skill。Use when building, extending, reviewing, testing, or consuming Heimdall's `/mcp` Streamable HTTP server, management tools, Resources, Prompts, Tasks, OAuth Bearer or AK/SK authentication, credential policies, tenant boundaries, write confirmation, audit, rate limits, or MCP administration UI.
+description: "开发、集成或审查 Heimdall /mcp 管理能力，处理 OAuth/AK-SK、工具/资源/任务、二阶段写确认、凭据策略和租户审计。"
 ---
 
 # Heimdall MCP Management
@@ -59,4 +59,4 @@ description: Heimdall MCP 管理与集成 skill。Use when building, extending, 
 - 身份/OAuth 集成：`$identity-integration`、`$asgard-identity-userinfo`
 - 管理前端：`$asgard-admin-frontend`
 - Heimdall 应用 RBAC：`$heimdall-application-rbac`
-- 生产发布：`$heimdall-production-release`
+- 生产发布：仅当前环境提供外部 `$heimdall-production-release` 时使用；本仓库不分发生产发布技能，缺失时不能假定它可用。

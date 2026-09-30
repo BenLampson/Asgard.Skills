@@ -23,7 +23,31 @@ Asgard 框架的 AI 技能仓库。
 
 ## 使用方式
 
-本仓库作为 Asgard 主项目的子目录，由 AI 助手自动加载使用。技能定义会根据 Asgard 框架的演进持续更新。
+`skills/` 是维护与分发目录，放在主项目子目录中不会自动成为 Codex 可用技能。需安装到当前环境的技能发现目录，或通过插件分发。
+
+Windows 本机安装（默认链接到 `~/.agents/skills`，不复制文件，仓库更新即时反映）：
+
+```powershell
+./scripts/install-skills.ps1
+```
+
+已使用 `~/.codex/skills` 的环境可显式指定现有目录，避免安装两份同名技能：
+
+```powershell
+./scripts/install-skills.ps1 -Destination "$env:USERPROFILE/.codex/skills"
+```
+
+团队按项目使用时，可指定项目的 `.agents/skills` 目录。安装脚本会补齐全部技能，并拒绝覆盖其他来源的同名目录。安装后检查可用技能列表；更新没有出现时重启 Codex。
+
+提交前校验（需要 Python 和 PyYAML）：
+
+```powershell
+python -X utf8 scripts/validate_skills.py
+```
+
+description 的仓库维护上限为 180 字符，触发条件和边界前置。这个上限是本仓库约定，不是平台限制。长示例保存在 references，入口写明读取场景；静态校验通过不代表自动触发率已经验证。
+
+缓存入口与新模板面向 Asgard 5.3+；含旧缓存接口的源码快照显式标记历史版本。任务先核对目标项目依赖版本，不混用接口，也不自动升级项目。
 
 当前需要重点遵守的一条 API 硬规则是：
 

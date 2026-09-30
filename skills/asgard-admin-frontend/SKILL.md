@@ -1,6 +1,6 @@
 ---
 name: asgard-admin-frontend
-description: Use when building or refactoring Asgard or Heimdall management frontend pages, Umi Max admin routes, Ant Design Pro CRUD screens, DVA models, generated TsGen API clients, OIDC login wiring, tenant workspaces, or frontend calls to Asgard APIs.
+description: "构建或修改 Asgard/Heimdall 管理前端的 Umi、Ant Design Pro 页面、路由、DVA 和 API 调用。客户端方案由项目选择；OIDC 登录协议设计用 identity-integration。"
 ---
 
 # Asgard Admin Frontend
@@ -23,6 +23,7 @@ For login-flow architecture and PKCE/OIDC protocol design, also use `$identity-i
 | State ownership | Put reusable list/filter/pagination/load/mutation state in a DVA model. Keep pages focused on layout, table columns, forms, and user actions. |
 | Permissions | Frontend permission checks only control visibility/UX. Backend authorization and tenant/resource-boundary checks remain mandatory. |
 | Tenant context | Tenant pages must carry `tenantId` from the route and pass it explicitly through the selected API client when tenant scope is required. |
+| Heimdall page links | Use an explicitly configured Heimdall frontend base URL, independent of OIDC Authority and API base URL. Never infer it from Authority origin, the business app origin, or hostname substitution. Missing configuration must be visible; no silent Authority fallback. |
 | Verification | Run `npm run typecheck` for TypeScript changes. Run `npm run lint` when touching many files or shared patterns. Run `npm run build` before claiming release readiness. |
 
 ## Standard Call Chain
@@ -119,6 +120,14 @@ Use this decision order:
 
 Only Heimdall's own account-management surface, or another explicitly trusted account-management client, should call `/api/account/me/**`. Do not add each business project Origin to Heimdall host CORS merely to make its header user menu work.
 
+## Heimdall Account and Admin Navigation
+
+When adding or reusing account-center or user-management links, read [identity-integration's page URL contract](../identity-integration/SKILL.md#heimdall-页面跳转与地址契约). Verify the receiving project's current routes and deployment config before trusting an existing helper. OIDC Discovery does not define the management frontend URL.
+
+Use the explicit frontend base URL for `/account`, `/tenant/{tenantId}/admin/users`, and `/dashboard/system/users`, after confirming those routes in the target version. Preserve the selected tenant context and encode its path parameter; do not blindly extract the first Authority path segment as a tenant ID. In the mudou deployment verified on 2026-09-29, `idp.mudou.tech` serves authentication/API traffic and `heimdall.mudou.tech` serves these pages; treat these as deployment evidence, not universal defaults.
+
+Check both the generated URL and actual browser destination, including login return and tenant context when an authorized session is available. HTTP 200 may only be SPA fallback. Report link implementation, page verification, and successful user creation separately; creation requires an authorized operation and a verified result, not merely a working navigation button.
+
 ## Review Checklist
 
 - If the project uses TsGen, does each generated API call reuse `services/controller` and generated model types without a parallel handwritten wrapper?
@@ -132,6 +141,8 @@ Only Heimdall's own account-management surface, or another explicitly trusted ac
 - Does a business SPA obtain basic current-user display data from OIDC UserInfo/ID Token instead of Heimdall `/api/account/me`?
 - Does OIDC code use Discovery's `userinfo_endpoint` and request the scopes required for the displayed claims?
 - Has the implementation avoided adding the project Origin to Heimdall host API CORS solely for current-user display data?
+- Do Heimdall page links use explicit frontend configuration, verified target routes, and the intended tenant context, with no Authority-origin fallback?
+- Does the completion report distinguish navigation implementation, browser verification, and verified business operations?
 - Did `npm run typecheck` pass after TypeScript changes?
 
 ## References

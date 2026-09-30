@@ -18,7 +18,7 @@
 - [ ] **基类/响应模型/继承语义** → 使用 `$asgard-base-types`
 - [ ] **仓储扫描/服务注册** → 使用 `$asgard-repository-service-registration`
 - [ ] **数据库/EF Core/仓储模式** → 使用 `$asgard-database`
-- [ ] **缓存/多级缓存** → 使用 `$asgard-cache`
+- [ ] **Redis 业务缓存** → 使用 `$asgard-cache`
 - [ ] **消息队列/发布订阅** → 使用 `$asgard-messaging`
 - [ ] **作业调度/定时任务** → 使用 `$asgard-job-scheduling`
 - [ ] **Web 登录流/OIDC/PKCE/token 契约** → 使用 `$identity-integration`

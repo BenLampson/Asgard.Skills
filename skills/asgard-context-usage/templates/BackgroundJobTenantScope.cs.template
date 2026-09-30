@@ -13,7 +13,7 @@ public async Task ExecuteAsync(CancellationToken cancellationToken)
     }
     else
     {
-        // 租户作用域工厂未注册，降级处理
-        await {FallbackLogic}(cancellationToken);
+        // 租户隔离是本任务前提，缺少工厂时终止，不能脱离租户执行。
+        throw new InvalidOperationException("租户作用域工厂未注册。");
     }
 }

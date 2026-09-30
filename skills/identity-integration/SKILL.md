@@ -1,6 +1,6 @@
 ---
 name: identity-integration
-description: Asgard 身份集成 skill。Use when designing or integrating login flows, IDP/OIDC wiring, Web SPA PKCE, backend JWT Bearer validation, token claim contracts, `/userinfo` boundaries, or deciding how frontend, IDP, gateway, and Asgard APIs should cooperate.
+description: "设计或接入 Asgard/Heimdall 登录、OIDC/PKCE、JWT 验签、账号/后台地址和 /userinfo 边界。标准 claims 字段用 asgard-identity-userinfo。"
 ---
 
 # Identity Integration
@@ -164,6 +164,33 @@ OIDC 标准 `userinfo` 适合补充通用用户资料，例如：
 - 不要为了让业务 SPA 获取登录用户展示资料，把每个项目 Origin 追加到 Heimdall `host.cors.defaultPolicy.allowedOrigins`
 - `host.cors.defaultPolicy.allowedOrigins` 只服务宿主自身 `/api/**` 资源的明确调用方；它不是 OIDC Client 注册机制
 - 如果新增业务 SPA 必须修改 IDP 宿主 YAML 才能读取姓名或邮箱，先判定是否误用了 Heimdall 管理 API，而不是直接扩充白名单
+
+## Heimdall 页面跳转与地址契约
+
+对接“个人账号中心”“用户管理”等页面入口时，必须区分三种地址：OIDC Authority/Issuer、资源 API Base URL、Heimdall 管理前端 Base URL。它们可以同源，也可以分别部署；不能因为登录成功就认定页面也在 Authority 域名下。
+
+- 页面入口使用项目中显式配置的 Heimdall 前端地址（例如 `HEIMDALL_WEB_BASE_URL`；变量名遵守项目约定）。禁止用 `new URL(authority).origin`、当前业务站点 origin 或替换域名前缀的方式猜测。配置缺失时明确提示配置问题或禁用入口，不得静默回退到认证域名。
+- OIDC 协议端点读取 Discovery；标准 Discovery 不提供 Heimdall 管理前端地址。不要修改 Authority 来修复页面跳转，也不要臆造 Discovery 字段。
+- 租户管理入口使用当前明确选定的租户上下文，并编码路径参数；不要把任意 Authority 路径的第一段当作租户 ID。只有已核实的项目契约明确规定该结构时，才可按该契约解析。
+- 复用旧 helper 前，核对接收方当前路由、部署域名和登录回跳逻辑。函数已存在、历史提交日期早或另一个项目在用，都不是正确性证据。
+
+2026-09-29 已核实的 mudou 生产部署示例（其他环境及后续变更需重新核对，不应硬编码为通用默认值）：
+
+| 用途 | 地址或前端路径 |
+|------|----------------|
+| 认证及 API 服务 | `https://idp.mudou.tech` |
+| Heimdall 管理前端 | `https://heimdall.mudou.tech` |
+| 个人账号中心 | 前端地址 + `/account` |
+| 租户管理员的用户管理 | 前端地址 + `/tenant/{tenantId}/admin/users` |
+| 平台的系统用户管理 | 前端地址 + `/dashboard/system/users` |
+
+证据入口为 Heimdall 仓库的 `fe/config/routes.ts`、`fe/config/config.prod.ts` 与 `be/Docker/nginx/*.conf`。该次故障中，`idp.mudou.tech/tenant/{tenantId}/admin/users` 返回 404，而管理前端同路径返回 200；路径存在，错误在于将认证域名用作页面域名。
+
+验证与完成标准：
+
+1. 核对配置生成的完整 URL 与目标项目路由，实际请求目标环境的入口；HTTP 200 可能只是 SPA fallback，不能证明目标组件可用。
+2. 在可用的授权测试会话中验证跳转后目标页面、未登录时的登录回跳及租户上下文。权限不足与地址错误分别诊断，不通过放宽权限或改平台入口掩盖问题。
+3. 只有在获授权的环境中完成创建操作，并验证成功结果和列表/详情回读，才可声称“用户创建已完成”。只添加链接、通过编译或收到 HTTP 200，只能报告相应层级已验证。没有会话或无法执行写入时，明确列出未验证部分，不自行创建生产用户作为测试。
 
 ## 后端校验模式
 

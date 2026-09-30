@@ -1,26 +1,24 @@
 ---
 name: asgard-framework-overview
-description: Asgard 框架总览与路由 skill。Use when working with the Asgard framework but the request spans multiple modules, the correct entry point is unclear, or another AI needs a high-level map before choosing host, configuration, api, plugin, context, lifecycle, repository, infrastructure, identity, login, auth, or security skills.
+description: "为跨模块或入口不明确的 Asgard 框架任务选择专项 skill，说明宿主、插件和基础设施的职责。已明确模块的任务直接使用对应 skill。"
 ---
 
 # Asgard Framework Overview
 
 ## 先做路由判断
 
-- 先读取本 skill 的 `references/framework-architecture.md`；需要核对实现时，只读取本 skill `references/` 中的源码拷贝，不要要求访问外部 doc 或源码仓库。
+- 先读取本 skill 的 `references/framework-architecture.md`；需要核对实现时，优先读取本 skill `references/` 中与目标版本匹配的源码拷贝；历史快照不匹配时以可用的目标源码为准。
 - 先判断用户问题属于哪个模块，再决定是否继续读取专项 skill 或源码。
 - 先区分“插件入口类”和“启动入口 Program.cs”。
 - 先判断当前仓库是单项目快速验证，还是“插件实现 + starter 启动器”双项目分离。
 - 先记住推荐入口：`YggdrasilHost.CreateBuilder(...)`、`PluginWebAppDefaults.RunAsync<TPlugin>()`、`UseBuiltInPlugin<TPlugin>()`、`BaseController`、`AbsAsgardContext`。
 - 如果走 Yggdrasil 默认链路，通常不需要手写 `UseAuthorization()`；只有完全自定义或旁路默认链路时，才需要显式补齐认证授权中间件。
 
-## 当前版本共识
+## 版本判断
 
-- 当前对外 NuGet 包线以 `5.2.0` 为最新基线。
-- 不要根据本地仓库目录名（例如 `AsgardV3`）推断框架版本。
-- 不要把已 unlist 的旧包版本当作最新可安装版本；生成依赖或升级建议时默认指向 `5.2.0`。
-- 如果任务涉及发包、覆盖版本或确认真实版本，以源码根目录 `Directory.Build.props` 中的
-  `MajorVersion`、`MinorVersion`、`PatchVersion` 和计算出的 `PackageVersion` 为准。
+- 先读取目标项目的包引用、中央包版本或 `Directory.Build.props`，按实际目标版本选择 API；不要根据目录名推断版本。
+- 缓存 skill 与新缓存模板面向 5.3+；旧缓存源码快照只服务旧版本维护。升级任务按 `$asgard-cache` 迁移，不混用两代接口。
+- 不把某个固定版本称作“最新”。发包或升级时核对目标源码版本；缺少事实时明确版本假设，不擅自升级项目。
 
 ## 推荐项目组织方式
 
@@ -69,6 +67,11 @@ Asgard 当前更推荐：
 - 基类、响应模型、字段语义、什么时候继承：使用 `$asgard-base-types`。
 - 仓储扫描、服务注册、约定装配：使用 `$asgard-repository-service-registration`。
 - 缓存、分布式锁、数据库、消息、作业、安全：分别使用 `$asgard-cache`、`$asgard-distributed-lock`、`$asgard-database`、`$asgard-messaging`、`$asgard-job-scheduling`、`$asgard-security`。
+
+- Heimdall 微服务身份与撤销同步：使用 `$heimdall-service-integration`。
+- Heimdall 应用域权限与 Tenant 绑定：使用 `$heimdall-application-rbac`。
+- Heimdall MCP 管理能力：使用 `$heimdall-mcp-management`。
+- .NET 单元测试与 xUnit v3：使用 `$dotnet-unit-testing`。
 
 ## 保持全局共识
 

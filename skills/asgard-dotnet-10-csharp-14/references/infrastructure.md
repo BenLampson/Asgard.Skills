@@ -200,35 +200,7 @@ public class MyService(IOptions<MySettings> settings)
 
 ## Caching
 
-### In-memory caching
-
-```csharp
-builder.Services.AddMemoryCache();
-
-// Inject IMemoryCache
-public class MyService(IMemoryCache cache)
-{
-    public async Task<Data> GetDataAsync()
-    {
-        var cached = await cache.GetAsync<Data>("key");
-        if (cached != null) return cached;
-
-        var data = await LoadFromDb();
-        await cache.SetAsync("key", data, TimeSpan.FromMinutes(5));
-        return data;
-    }
-}
-```
-
-### Output caching
-
-```csharp
-builder.Services.AddOutputCache();
-
-app.UseOutputCache();
-
-app.MapGet("/products", [OutputCache(Duration = 300)] () => { ... });
-```
+Asgard 5.3+ business caching uses Redis through `IAsgardCache`, normally available as `AbsAsgardContext.Cache`. Read `$asgard-cache` for configuration, TTL, invalidation, disabled behavior, and migration. Default Yggdrasil already registers the cache; do not add an in-memory business cache or silently fall back to memory. Internal OIDC/JWKS `IMemoryCache` is a separate concern.
 
 ## Response Compression
 

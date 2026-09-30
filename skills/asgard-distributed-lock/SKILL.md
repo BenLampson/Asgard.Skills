@@ -1,6 +1,6 @@
 ---
 name: asgard-distributed-lock
-description: Asgard Redis 分布式锁 skill。Use when configuring, registering, using, or debugging IDistributedLock, DistributedLockOptions, DistributedLockAcquireOptions, automatic renewal, LockLostToken, owner-token-safe release, Yggdrasil automatic registration, or Redis-backed multi-instance mutual exclusion in Asgard.
+description: "配置、使用或排查 Asgard Redis 分布式锁 IDistributedLock，包括装配、续租、LockLostToken 和安全释放。适用于多实例互斥任务。"
 ---
 
 # Asgard Distributed Lock

@@ -1,6 +1,6 @@
 ---
 name: asgard-plugin-development
-description: Asgard 内建插件开发 skill。Use when implementing built-in plugin entrypoints, PluginBase lifecycle hooks, PluginWebAppDefaults.RunAsync for plugins, AddPluginConventions, plugin bootstrap logic, or plugin.yaml-driven startup behavior in Asgard.
+description: "实现 Asgard 内建插件入口、PluginBase、AddPluginConventions 和 plugin.yaml 装配。Program.cs 启动编排用 asgard-host-project。"
 ---
 
 # Asgard Plugin Development

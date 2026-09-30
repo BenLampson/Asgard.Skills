@@ -5,7 +5,7 @@ public class {EntityName}Repository : AbsAsgardRepositoryBase<{EntityName}, {Key
 {
     public {EntityName}Repository(
         IFreeSql fsql,
-        IMultiLevelCache cache,
+        IAsgardCache cache,
         ILogger<{EntityName}Repository> logger,
         IAsgardRepositoryContext repositoryContext)
         : base(fsql, cache, logger, repositoryContext)

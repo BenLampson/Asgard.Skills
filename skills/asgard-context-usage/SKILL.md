@@ -1,9 +1,14 @@
 ---
 name: asgard-context-usage
-description: AsgardContext 使用 skill。Use when a task needs AsgardContext, AbsAsgardContext, shared infrastructure access, null-safe capability usage, Trace note/tag usage, service lifetime reasoning, or guidance on whether to use context versus direct dependency injection in Asgard.
+description: "在 Asgard 中使用 AbsAsgardContext，处理公共能力获取、可空性、生命周期、租户作用域和 Trace 备注。缓存与锁的详细契约使用对应模块 skill。"
 ---
 
 # Asgard Context Usage
+
+## 缓存版本边界
+
+缓存示例面向 Asgard 5.3+，使用 `IAsgardCache`。默认 Yggdrasil 宿主自动装配缓存；关闭时提供 `NullAsgardCache`，自定义宿主仍需判空。升级与配置迁移读取 `$asgard-cache`。本目录中含旧缓存接口的源码拷贝是 5.3 前快照，只用于维护旧版；不能据此生成 5.3+ 缓存接线。
+
 
 ## 作用
 
@@ -13,14 +18,14 @@ description: AsgardContext 使用 skill。Use when a task needs AsgardContext, A
 
 - **需要访问公共基础设施能力时** - 通过 Context 获取缓存、消息队列、加密等服务
 - **在业务服务中需要跨模块能力** - 通过 Context 聚合入口避免直接依赖多个模块
-- **需要处理可选模块降级** - 未启用的模块返回 null，可以优雅降级
+- **需要处理可选模块降级** - 未装配的能力可能返回 null；默认宿主关闭缓存时提供 NullAsgardCache
 - **需要在后台任务中创建租户作用域** - 通过 `TenantScopeFactory` 创建隔离作用域
 
 ## Context 可获取的能力列表
 
 | 属性 | 能力说明 | 模块 |
 |------|----------|------|
-| `Cache` | 多级缓存（内存 + Redis） | 缓存模块 |
+| `Cache` | Redis 单层业务缓存（5.3+） | 缓存模块 |
 | `Compression` | 数据压缩（Brotli）| 压缩模块 |
 | `TenantScopeFactory` | 租户作用域工厂 | 租户模块 |
 | `IdentityContext` | 当前身份上下文 | 身份认证模块 |
@@ -47,9 +52,9 @@ description: AsgardContext 使用 skill。Use when a task needs AsgardContext, A
 | 规则 | 说明 |
 |------|------|
 | **生命周期** | `AbsAsgardContext` 是 **Scoped** 生命周期，每次请求创建新实例 |
-| **可空性** | 所有能力都是 `?` 可空，模块未启用时为 `null` |
+| **可空性** | 能力声明可空；自定义宿主未装配时可能为 `null`，默认宿主关闭缓存时提供 `NullAsgardCache` |
 | **调用方式** | 使用 `?.` 调用，必须做空检查 |
-| **降级策略** | 能力为 `null` 时，降级到直接查询/处理 |
+| **降级策略** | 缓存未装配或未命中时可回源；身份、租户隔离与分布式互斥不能静默跳过 |
 | **注册顺序** | 先注册其他模块，**最后**调用 `AddAsgardContext()` |
 | **身份模型** | `IdentityContext.UserInfo` 的统一模型是 `AbsAsgardUserInfo`，需要字段语义与 claim 契约时转到 `$asgard-identity-userinfo` |
 | **租户注入** | `TenantScopeFactory` 创建的作用域会把租户写入身份上下文，随后 FreeSql 仓储和全局过滤会自动读取 |
@@ -73,154 +78,7 @@ description: AsgardContext 使用 skill。Use when a task needs AsgardContext, A
 
 ## 代码示例
 
-### 业务服务注入
-
-```csharp
-/// <summary>
-/// {ServiceSummary}
-/// </summary>
-public class {ServiceName}
-{
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="asgardContext">Asgard 上下文</param>
-    public {ServiceName}(AbsAsgardContext asgardContext)
-    {
-        AsgardContext = asgardContext;
-    }
-
-    /// <summary>
-    /// Asgard 上下文
-    /// </summary>
-    protected AbsAsgardContext AsgardContext { get; }
-}
-```
-
-### 缓存读取（带优雅降级）
-
-```csharp
-/// <summary>
-/// {MethodSummary}
-/// </summary>
-/// <param name="{ParameterName}">{ParameterSummary}</param>
-/// <returns>查询结果</returns>
-public async Task<{ResultType}?> Get{ResultName}Async({ParameterType} {ParameterName})
-{
-    var cacheKey = $"{ModuleName}:{EntityName}:{ParameterName}";
-    
-    // 先尝试从缓存获取（空检查支持优雅降级）
-    if (AsgardContext.Cache != null)
-    {
-        var cached = await AsgardContext.Cache.GetAsync<{ResultType}>(cacheKey);
-        if (cached != null)
-        {
-            return cached;
-        }
-    }
-
-    // 缓存未命中或缓存未启用，降级到直接查询
-    var result = await _{repositoryName}.GetByIdAsync({ParameterName});
-    
-    // 写入缓存
-    if (result != null && AsgardContext.Cache != null)
-    {
-        await AsgardContext.Cache.SetAsync(cacheKey, result);
-    }
-
-    return result;
-}
-```
-
-### 后台作业创建租户作用域
-
-```csharp
-/// <summary>
-/// 后台作业执行
-/// </summary>
-/// <param name="cancellationToken">取消令牌</param>
-public async Task ExecuteAsync(CancellationToken cancellationToken)
-{
-    // 需要在后台任务中创建租户作用域时，使用 TenantScopeFactory
-    if (AsgardContext.TenantScopeFactory != null)
-    {
-        using var scope = AsgardContext.TenantScopeFactory.CreateScope({TenantId});
-        // 在作用域内执行业务逻辑时，FreeSql 全局过滤和 Asgard 仓储会自动读取当前租户
-        await {BusinessLogic}(cancellationToken);
-    }
-    else
-    {
-        // 租户作用域工厂未注册，降级处理
-        await {FallbackLogic}(cancellationToken);
-    }
-}
-```
-
-### 分布式锁使用（带优雅降级）
-
-```csharp
-/// <summary>
-/// 执行单实例任务
-/// </summary>
-/// <param name="cancellationToken">取消令牌</param>
-public async Task ExecuteOnceAsync(CancellationToken cancellationToken)
-{
-    if (AsgardContext.DistributedLock == null)
-    {
-        await {FallbackLogic}(cancellationToken);
-        return;
-    }
-
-    await using var handle = await AsgardContext.DistributedLock.TryAcquireAsync(
-        "jobs:{JobName}",
-        new DistributedLockAcquireOptions
-        {
-            LeaseTime = TimeSpan.FromMinutes(2)
-        },
-        cancellationToken);
-
-    if (handle == null)
-    {
-        return;
-    }
-
-    using var operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(
-        cancellationToken,
-        handle.LockLostToken);
-
-    await {BusinessLogic}(operationCancellation.Token);
-}
-```
-
-分布式锁的自动装配、默认参数、自动续租和 `LockLostToken` 语义统一转到 `$asgard-distributed-lock`，不要在 Context skill 中重复定义锁契约。
-
-### 注册服务（Program.cs）
-
-```csharp
-// 注册顺序：先注册其他模块，最后注册 Asgard Context
-builder.Services.AddMultiLevelCache(builder.Configuration);
-builder.Services.AddMessageQueue(builder.Configuration);
-builder.Services.AddJobScheduler(builder.Configuration);
-builder.Services.AddAsgardContext(); // 最后注入，确保所有服务都已注册
-```
-
-### 追加轻量追踪备注
-
-```csharp
-/// <summary>
-/// 创建订单
-/// </summary>
-/// <param name="command">订单命令</param>
-/// <returns>订单标识</returns>
-public async Task<Guid> CreateOrderAsync(CreateOrderCommand command)
-{
-    AsgardContext.Trace?.AddTag("OrderId", command.OrderId.ToString());
-    AsgardContext.Trace?.AddBranch("OrderCreate", "ValidateBeforePersist");
-    AsgardContext.Trace?.AddNote("该备注用于反推单元测试输入，不用于记录完整对象图。");
-
-    return await _orderRepository.InsertAsync(command.ToEntity());
-}
-```
+需要编写该模块代码时，按场景读取 [实现示例](references/implementation-examples.md)，只采用与当前任务和目标版本匹配的示例。
 
 ## 推荐做法
 

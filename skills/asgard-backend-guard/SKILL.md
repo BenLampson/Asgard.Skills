@@ -1,6 +1,6 @@
 ---
 name: asgard-backend-guard
-description: Asgard 后端代码复查与守卫 skill。Use when reviewing or self-checking Asgard backend changes, especially for Controller/Service/Repository/Entity code, route prefixes, DTO mapping, CRUD flows, tenant data, optimistic-lock updates, response wrappers, audit fields, or other places where generated code may violate Asgard hard rules or repeat known project pitfalls.
+description: "复查 Asgard 后端改动，检查分层、统一响应、租户隔离、审计和乐观锁。新增或修改 CRUD 后用于自查；开发规范由对应模块 skill 定义。"
 ---
 
 # Asgard Backend Guard

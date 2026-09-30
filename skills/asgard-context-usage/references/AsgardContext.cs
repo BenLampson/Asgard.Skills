@@ -1,3 +1,5 @@
+// 历史源码快照（Asgard 5.3 前）：缓存接口与装配不适用于 5.3+。
+// 当前业务缓存契约请读取 asgard-cache/SKILL.md；不要复制本文件的旧缓存调用。
 namespace Asgard.Core;
 
 /// <summary>

@@ -1,6 +1,6 @@
 ---
 name: asgard-host-features
-description: Asgard 宿主特性配置与用法 skill。Use when configuring or explaining host.staticFiles, host.cors, host.auth, host.swagger, host.tsGen, host.rateLimiting, host.healthCheck, middleware order, tenant middleware placement, or host-managed web features in Asgard. For host.auth, this skill covers host-side JWT Bearer registration, middleware wiring, and config semantics, not frontend login flows or PKCE design.
+description: "配置 Asgard host.* 的 JWT Bearer、中间件、CORS、Swagger、TsGen、限流和健康检查。前端登录、OIDC/PKCE 流程设计用 identity-integration。"
 ---
 
 # Asgard 宿主 Web 功能配置

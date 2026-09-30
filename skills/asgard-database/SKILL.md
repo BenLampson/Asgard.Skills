@@ -1,9 +1,14 @@
 ---
 name: asgard-database
-description: Asgard 数据库模块 skill。Use when configuring database.enabled, provider, connection strings, repositories, data-access structure, or explaining how Asgard database features integrate with repositories and services.
+description: "配置 Asgard 数据库或编写 FreeSql 实体、仓储和更新逻辑，处理租户过滤、审计、软删除与乐观锁。仓储注册用 asgard-repository-service-registration。"
 ---
 
 # Asgard 数据库模块
+
+## 缓存版本边界
+
+缓存示例面向 Asgard 5.3+，使用 `IAsgardCache`。默认 Yggdrasil 宿主自动装配缓存；关闭时提供 `NullAsgardCache`，自定义宿主仍需判空。升级与配置迁移读取 `$asgard-cache`。本目录中含旧缓存接口的源码拷贝是 5.3 前快照，只用于维护旧版；不能据此生成 5.3+ 缓存接线。
+
 
 ## 作用
 
@@ -17,10 +22,10 @@ description: Asgard 数据库模块 skill。Use when configuring database.enable
 
 当前仓库的仓储构造函数还必须统一遵守以下规则：
 
-- `AbsAsgardRepositoryBase<TEntity, TKey>` 构造函数依赖 `IMultiLevelCache`、`ILogger` 和
+- `AbsAsgardRepositoryBase<TEntity, TKey>` 构造函数依赖 `IAsgardCache`、`ILogger` 和
   `IAsgardRepositoryContext`
-- 新增或迁移仓储时必须注入 `IMultiLevelCache cache` 并传给 `base(...)`，不要因为业务代码没有显式使用缓存就省略
-- 即使 `caching.enabled: false`，Yggdrasil 也会注册可注入的空 `IMultiLevelCache`，仓储构造函数不需要为“禁用缓存”分支改写
+- 新增或迁移仓储时必须注入 `IAsgardCache cache` 并传给 `base(...)`，不要因为业务代码没有显式使用缓存就省略
+- 即使 `caching.enabled: false`，Yggdrasil 也会注册可注入的空 `IAsgardCache`，仓储构造函数不需要为“禁用缓存”分支改写
 - 新仓储默认使用 `IAsgardRepositoryContext`，旧的 `IAsgardIdentityContext` / `IAsgardTraceScopeFactory` 重载只作为兼容路径
 
 当前仓库的更新路径还必须统一遵守一条硬规则：
@@ -189,8 +194,8 @@ logging:
 | **业务服务层** | 跨仓储编排、事务、业务逻辑 | 注入多个仓储，处理业务流程 |
 | **控制器层** | API 入口 | 只调用业务服务，不直接访问仓储 |
 
-仓储构造函数固定包含 `IFreeSql`、`IMultiLevelCache`、`ILogger<TRepository>` 和
-`IAsgardRepositoryContext`。`IMultiLevelCache` 是仓储基类依赖，不代表业务服务必须直接注入缓存。
+仓储构造函数固定包含 `IFreeSql`、`IAsgardCache`、`ILogger<TRepository>` 和
+`IAsgardRepositoryContext`。`IAsgardCache` 是仓储基类依赖，不代表业务服务必须直接注入缓存。
 
 **仓储定义示例：**
 
@@ -202,7 +207,7 @@ public class {EntityName}Repository : AbsAsgardRepositoryBase<{EntityName}, {Key
 {
     public {EntityName}Repository(
         IFreeSql fsql,
-        IMultiLevelCache cache,
+        IAsgardCache cache,
         ILogger<{EntityName}Repository> logger,
         IAsgardRepositoryContext repositoryContext)
         : base(fsql, cache, logger, repositoryContext)
@@ -243,7 +248,7 @@ public class ArticleRepository
 {
     public ArticleRepository(
         IFreeSql fsql,
-        IMultiLevelCache cache,
+        IAsgardCache cache,
         ILogger<ArticleRepository> logger,
         IAsgardRepositoryContext repositoryContext)
         : base(fsql, cache, logger, repositoryContext)
@@ -329,7 +334,7 @@ await repository.UpdateAsync(entity);
 - ❌ 不要为同一模块建立多套不一致的数据访问入口
 - ❌ 不要把连接字符串硬编码在代码里，通过配置覆盖
 - ❌ 不要自行定义另一套实体或仓储目录结构
-- ❌ 不要省略仓储构造函数里的 `IMultiLevelCache`，否则无法正确继承 `AbsAsgardRepositoryBase<TEntity, TKey>`
+- ❌ 不要省略仓储构造函数里的 `IAsgardCache`，否则无法正确继承 `AbsAsgardRepositoryBase<TEntity, TKey>`
 - ❌ 不要为租户实体重复手写 `TenantId` 过滤作为默认路径，这会和框架全局过滤割裂
 - ❌ 不要省略仓储构造函数里的 `IAsgardRepositoryContext`，否则仓储无法统一获得租户回填、链路追踪与分布式锁入口
 - ❌ 不要对乐观锁实体使用 `dto.ToEntity()` 后直接 `UpdateAsync(entity)`，这会丢失数据库当前 `Version` 并覆盖持久化字段

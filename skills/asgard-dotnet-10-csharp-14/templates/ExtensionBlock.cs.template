@@ -1,29 +1,19 @@
 namespace {Namespace};
 
-public static extension {ExtensionName} on {TargetType}<{GenericParameter}>
+public static class {ExtensionName}
 {
-    /// <summary>
-    /// {MethodSummary}
-    /// </summary>
-    public async Task<List<TResult>> {MethodName}<TResult>(
-        this {TargetType}<{GenericParameter}> query,
-        int page,
-        int pageSize)
+    extension<T>(IQueryable<T> query)
     {
-        return await query
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
-    }
+        /// <summary>按条件追加查询过滤。</summary>
+        public IQueryable<T> WhereIf(bool condition, Expression<Func<T, bool>> predicate)
+            => condition ? query.Where(predicate) : query;
 
-    /// <summary>
-    /// Conditional where clause
-    /// </summary>
-    public static IQueryable<T> WhereIf<T>(
-        this IQueryable<T> query,
-        bool condition,
-        Expression<Func<T, bool>> predicate)
-    {
-        return condition ? query.Where(predicate) : query;
+        /// <summary>构建分页查询；异步执行使用项目 ORM 提供的 API。</summary>
+        public IQueryable<T> Page(int page, int pageSize)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(pageSize, 1);
+            return query.Skip((page - 1) * pageSize).Take(pageSize);
+        }
     }
 }

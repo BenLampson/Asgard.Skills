@@ -1,6 +1,6 @@
 ---
 name: asgard-messaging
-description: Asgard 消息队列模块 skill。Use when configuring or using messaging.enabled, MQConfig, RabbitMQ, tracing, retry, delayed messages, dead-letter handling, message publishing, subscription handlers, or message processing through AbsAsgardContext.
+description: "配置或使用 Asgard RabbitMQ 消息发布、订阅、重试、延迟、死信与追踪，处理 MQConfig 和 Context 消息能力。"
 ---
 
 # Asgard Messaging
@@ -68,92 +68,7 @@ messaging:
 
 ## 代码示例
 
-### 发布消息
-
-```csharp
-/// <summary>
-/// {MethodSummary}
-/// </summary>
-/// <param name="{ParameterName}">{ParameterSummary}</param>
-/// <param name="cancellationToken">取消令牌</param>
-/// <returns>异步任务</returns>
-public async Task {MethodName}Async(
-    {ParameterType} {ParameterName},
-    CancellationToken cancellationToken = default)
-{
-    if (AsgardContext.MessageQueue is null)
-    {
-        {FallbackCode}
-        return;
-    }
-
-    await AsgardContext.MessageQueue.PublishAsync(
-        "{Topic}",
-        {Message},
-        new PublishOptions
-        {
-            Key = {Key},
-            Headers = new Dictionary<string, string>
-            {
-                ["{HeaderKey}"] = "{HeaderValue}"
-            }
-        },
-        cancellationToken);
-}
-```
-
-### 订阅消息
-
-```csharp
-/// <summary>
-/// 初始化消息订阅。
-/// </summary>
-/// <param name="cancellationToken">取消令牌</param>
-/// <returns>异步任务</returns>
-public override async Task InitializeAsync(CancellationToken cancellationToken)
-{
-    await base.InitializeAsync(cancellationToken);
-
-    if (AsgardContext.MessageQueue is null)
-    {
-        return;
-    }
-
-    _ = await AsgardContext.MessageQueue.SubscribeAsync<{MessageType}>(
-        "{Topic}",
-        async (message, context) =>
-        {
-            await ProcessMessageAsync(message.Value!, cancellationToken);
-            await context.AcknowledgeAsync();
-        },
-        new SubscribeOptions
-        {
-            AutoAck = false
-        },
-        cancellationToken);
-}
-
-/// <summary>
-/// 处理接收的消息。
-/// </summary>
-/// <param name="message">消息实例</param>
-/// <param name="cancellationToken">取消令牌</param>
-/// <returns>异步任务</returns>
-private async Task ProcessMessageAsync(
-    {MessageType} message,
-    CancellationToken cancellationToken)
-{
-    try
-    {
-        {ProcessingLogic}
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "处理消息 {Topic} 发生异常", "{Topic}");
-        throw;
-    }
-}
-```
+需要编写该模块代码时，按场景读取 [实现示例](references/implementation-examples.md)，只采用与当前任务和目标版本匹配的示例。
 
 ## 推荐做法
 

@@ -1,6 +1,6 @@
 ---
 name: asgard-host-project
-description: Asgard ASP.NET Host 项目编写 skill。Use when creating, refactoring, or explaining an Asgard host project, including startup entry selection, YggdrasilHost usage, Program.cs layout, middleware registration, built-in plugin hosting, and host-level project structure.
+description: "创建或修改 Asgard host/starter、Program.cs、YggdrasilHost 启动入口、宿主钩子和内建插件承载。插件目录布局用 asgard-plugin-structure。"
 ---
 
 # Asgard Host Project

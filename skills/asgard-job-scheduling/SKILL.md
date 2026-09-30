@@ -1,6 +1,6 @@
 ---
 name: asgard-job-scheduling
-description: Asgard 作业调度 skill。Use when configuring JobConfig, scheduler options, cron or simple triggers, runtime job registration, plugin auto job loading from plugin.yaml, or job operations through AbsAsgardContext.JobScheduler in Asgard.
+description: "配置或实现 Asgard 作业调度，包括 JobConfig、cron/simple 触发器、运行时注册、plugin.yaml 自动装配和 Context 调用。"
 ---
 
 # Asgard Job Scheduling
@@ -76,87 +76,7 @@ job:
 
 ## 代码示例
 
-### 作业实现
-
-```csharp
-namespace {Namespace}.Jobs;
-
-/// <summary>
-/// {JobSummary}
-/// </summary>
-public class {JobName} : IJob
-{
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="asgardContext">Asgard 上下文</param>
-    public {JobName}(AbsAsgardContext asgardContext)
-    {
-        AsgardContext = asgardContext;
-    }
-
-    /// <summary>
-    /// Asgard 上下文
-    /// </summary>
-    protected AbsAsgardContext AsgardContext { get; }
-
-    /// <summary>
-    /// 执行作业
-    /// </summary>
-    /// <param name="context">作业执行上下文</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>表示异步操作的任务</returns>
-    public async Task Execute(IJobExecutionContext context, CancellationToken cancellationToken)
-    {
-        {ExecuteBody}
-    }
-}
-```
-
-### 插件动态注册
-
-```csharp
-/// <summary>
-/// 初始化完成后动态注册作业
-/// </summary>
-/// <param name="cancellationToken">取消令牌</param>
-public override async Task InitializeAsync(CancellationToken cancellationToken)
-{
-    await base.InitializeAsync(cancellationToken);
-
-    if (AsgardContext.JobScheduler != null)
-    {
-        await AsgardContext.JobScheduler.ScheduleJobAsync<{JobName}>(
-            new JobKey("{JobKey}"),
-            trigger =>
-            {
-                trigger.WithCronSchedule("{CronExpression}");
-            },
-            cancellationToken);
-    }
-}
-```
-
-### 通过 Context 操作作业
-
-```csharp
-/// <summary>
-/// {MethodSummary}
-/// </summary>
-/// <param name="{ParameterName}">{ParameterSummary}</param>
-/// <returns>操作结果</returns>
-public async Task<{ResultType}> {MethodName}({ParameterType} {ParameterName})
-{
-    if (AsgardContext.JobScheduler == null)
-    {
-        // 作业调度未启用，降级处理
-        return {FallbackResult};
-    }
-
-    var result = await AsgardContext.JobScheduler.{Operation}(jobKey, cancellationToken);
-    return result;
-}
-```
+需要编写该模块代码时，按场景读取 [实现示例](references/implementation-examples.md)，只采用与当前任务和目标版本匹配的示例。
 
 ## 推荐做法
 

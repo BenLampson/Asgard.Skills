@@ -1,6 +1,6 @@
 ---
 name: asgard-base-types
-description: Asgard 基类与基础模型 skill。Use when another AI needs the meaning, key fields, inheritance points, and correct usage timing of BaseController, Response models, PluginBase, AbsAsgardContext, AbsAsgardUserInfo, soft-delete audited entity bases, HostConfig, PluginConfig, or other framework base abstractions.
+description: "查询 Asgard 基类的继承条件和字段语义：BaseController、Response、PluginBase、AbsAsgardContext、用户信息与审计实体。实现具体功能时使用对应模块 skill。"
 ---
 
 # Asgard 核心基类与基础模型
@@ -155,6 +155,8 @@ public class {PluginName}Plugin : PluginBase
 
 ## AbsAsgardContext（框架统一上下文）
 
+缓存类型与行为按目标版本确认；5.3+ 使用 `IAsgardCache`，关闭时默认宿主提供 `NullAsgardCache`。本目录 `AbsAsgardContext.cs` 是含旧缓存接口的历史快照，不可用于生成 5.3+ 缓存接线。
+
 **作用：** 聚合所有可选模块能力，通过属性暴露。所有属性都是 `T?` 类型，未启用对应模块时返回 `null`。
 
 **用法：**
@@ -199,7 +201,7 @@ public class {ServiceName}Service : I{ServiceName}Service
 
 | 属性 | 能力 |
 |------|------|
-| `Cache` | 多级缓存 |
+| `Cache` | 5.3+ Redis 单层业务缓存 |
 | `JobScheduler` | 作业调度 |
 | `MessageQueue` | 消息队列 |
 | `DistributedLock` | 分布式锁 |

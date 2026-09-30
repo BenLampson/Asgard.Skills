@@ -6,7 +6,7 @@
 public async Task<bool> {MethodName}({ParameterType} {ParameterName})
 {
     var result = await _{repositoryName}.{UpdateMethod}({ParameterName});
-    
+
     // 更新后失效缓存
     if (result && AsgardContext.Cache != null)
     {

@@ -1,6 +1,6 @@
 ---
 name: asgard-plugin-lifecycle
-description: Asgard 插件生命周期 skill。Use when explaining or implementing host builder hooks, plugin lifecycle stages, PluginState transitions, service availability timing, startup order, shutdown behavior, or code that depends on lifecycle boundaries in Asgard.
+description: "实现或排查 Asgard 宿主钩子、插件生命周期、状态转换、启动关闭顺序和各阶段服务可用性。"
 ---
 
 # Asgard Plugin Lifecycle

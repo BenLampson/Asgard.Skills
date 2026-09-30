@@ -1,6 +1,6 @@
 ---
 name: dotnet-unit-testing
-description: .NET unit testing standards skill. Use when creating, updating, reviewing, or migrating .NET/C# unit tests, test projects, test package references, test fixtures, assertions, mocks, test data builders, or CI test commands. Requires xUnit v3 for new and updated tests; use when avoiding or replacing xUnit 2.x packages and APIs.
+description: "编写、修改、审查或迁移 .NET/C# 单元测试及测试项目。新建和更新测试使用 xUnit v3，覆盖 fixtures、断言、mock 和测试命令。"
 ---
 
 # .NET Unit Testing

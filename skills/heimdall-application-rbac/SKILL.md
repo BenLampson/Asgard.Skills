@@ -1,6 +1,6 @@
 ---
 name: heimdall-application-rbac
-description: Heimdall 应用域 RBAC skill。Use when designing, implementing, migrating, reviewing, or debugging Application Manifest permissions and roles, TenantApplication bindings, SystemUser application grants, application-scoped Tenant RBAC or OIDC Clients, application/version JWT claims, or multi-application tenant visibility and authorization boundaries in Heimdall.
+description: "设计或审查 Heimdall Application Manifest、TenantApplication、应用管理员授权、应用域 RBAC 与版本 claims。用于多应用租户权限边界。"
 ---
 
 # Heimdall Application RBAC

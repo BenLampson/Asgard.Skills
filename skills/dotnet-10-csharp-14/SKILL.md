@@ -1,6 +1,6 @@
 ---
 name: dotnet-10-csharp-14
-description: Generic .NET 10 / C# 14 reference skill. Use when building non-Asgard .NET 10 or C# 14 applications, especially minimal APIs, modular monolith patterns, feature folders, HTTP resilience, Options pattern, Channels, or validation. Do not use this skill as the coding-rules authority for Asgard; in Asgard repositories prefer $asgard-dotnet-10-csharp-14.
+description: "开发非 Asgard 的 .NET 10/C# 14 应用，参考 Minimal API、DI、弹性、Channels 和测试。Asgard 编码规范必须使用 asgard-dotnet-10-csharp-14。"
 ---
 
 # .NET 10 & C# 14 Best Practices

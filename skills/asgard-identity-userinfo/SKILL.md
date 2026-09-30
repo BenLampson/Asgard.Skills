@@ -1,6 +1,6 @@
 ---
 name: asgard-identity-userinfo
-description: Asgard 身份用户信息 skill。Use when a task needs AbsAsgardUserInfo, IAsgardIdentityContext, standard claim contract mapping, application/tenant authorization snapshot claims, identity modeling, or test/user-session construction in Asgard.
+description: "定义或排查 Asgard AbsAsgardUserInfo、标准 claims、身份快照和测试身份。包含应用/租户字段；登录协议接入用 identity-integration。"
 ---
 
 # Asgard Identity UserInfo

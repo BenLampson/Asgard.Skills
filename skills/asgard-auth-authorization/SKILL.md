@@ -1,6 +1,6 @@
 ---
 name: asgard-auth-authorization
-description: Asgard 授权与 AsgardAuth skill。Use when designing or debugging AsgardAuth attributes, authorization DSL expressions, role/permission/scope checks, token_type-based access rules, or understanding how identity snapshot fields participate in authorization.
+description: "编写或排查 AsgardAuth 授权特性、DSL、角色、权限、scope 和 token_type 条件。登录接入用 identity-integration；资源归属仍由业务校验。"
 ---
 
 # Asgard Auth Authorization

@@ -1,4 +1,4 @@
-# C# 14 (formerly C# 12) - Modern C# Features
+# C# 14 - Modern C# Features
 
 Use these patterns for modern .NET 10 / C# 14 code.
 
@@ -32,7 +32,7 @@ public class UserService
 // Good
 int[] numbers = [1, 2, 3, 4, 5];
 List<string> names = ["Alice", "Bob", "Charlie"];
-Dictionary<string, int> ages = 
+Dictionary<string, int> ages = new()
 {
     ["Alice"] = 30,
     ["Bob"] = 25
@@ -73,30 +73,24 @@ public class Person
 
 ## Extension Blocks (C# 14)
 
+Declare extension blocks inside a top-level, nongeneric static class. Traditional `this` extension methods remain valid.
+
 ```csharp
-// Good (extension blocks)
-public static extension IQueryableExtensions on IQueryable<T>
+public static class QueryableExtensions
 {
-    public async Task<List<T>> ToListAsyncPaged<T>(this IQueryable<T> query, int page, int pageSize)
+    extension<T>(IQueryable<T> query)
     {
-        return await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
-    }
+        /// <summary>按条件追加查询过滤。</summary>
+        public IQueryable<T> WhereIf(bool condition, Expression<Func<T, bool>> predicate)
+            => condition ? query.Where(predicate) : query;
 
-    public static IQueryable<T> WhereIf<T>(this IQueryable<T> query, bool condition, Expression<Func<T, bool>> predicate)
-    {
-        return condition ? query.Where(predicate) : query;
-    }
-}
-
-// Older - avoid (traditional extension method syntax)
-public static class IQueryableExtensions
-{
-    public static async Task<List<T>> ToListAsyncPaged<T>(
-        this IQueryable<T> query, 
-        int page, 
-        int pageSize)
-    {
-        return await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+        /// <summary>构建分页查询；异步执行使用项目 ORM 提供的 API。</summary>
+        public IQueryable<T> Page(int page, int pageSize)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(pageSize, 1);
+            return query.Skip((page - 1) * pageSize).Take(pageSize);
+        }
     }
 }
 ```
@@ -167,7 +161,7 @@ if (user != null)
 
 ## Interceptor Pattern (for advanced usage)
 
-C# 14 introduced interceptors. Use for metaprogramming, AOP, and cross-cutting concerns when appropriate.
+Interceptors are an experimental compiler feature, not a default C# 14 application pattern. Use only when a project explicitly requires the feature and its compiler configuration.
 
 ## Summary Table
 
@@ -176,7 +170,7 @@ C# 14 introduced interceptors. Use for metaprogramming, AOP, and cross-cutting c
 | Primary Constructors | DI, simple types | `public class Service(ILogger log)` |
 | Collection Expressions | Arrays, lists, dicts | `int[] x = [1, 2, 3];` |
 | `field` keyword | Auto-properties with logic | `set => field = value.Trim()` |
-| Extension Blocks | Organized extensions | `public static extension Ext on IQueryable<T>` |
+| Extension Blocks | Organized extensions | `extension<T>(IQueryable<T> query)` |
 | File-scoped Namespaces | Reduced nesting | `namespace Feature;` |
 | Nullable Reference Types | Safety | `string?`, `null!`, `ArgumentNullException.ThrowIfNull` |
 | Null Conditional Assignment | Shorter conditionals | `obj?.Prop = newValue` |

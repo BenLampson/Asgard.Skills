@@ -1,6 +1,6 @@
 ---
 name: asgard-dotnet-10-csharp-14
-description: Asgard .NET 10 / C# 14 coding conventions skill. This is the mandatory coding-rules authority for Asgard. Use when writing any C# code for Asgard framework, following required .NET 10 / C# 14 conventions, comments, file rules, dependency injection patterns, testing expectations, Serilog infrastructure, or FreeSql-backed database logging conventions.
+description: "编写、修改或审查 Asgard C# 代码时使用的编码规则权威：.NET 10/C# 14、文件规范、中文注释、DI 和乐观锁更新。API 与项目结构另用专项 skill。"
 ---
 
 # Asgard .NET 10 / C# 14 Coding Conventions
@@ -31,203 +31,6 @@ description: Asgard .NET 10 / C# 14 coding conventions skill. This is the mandat
 - Controller / VO 对外 API 契约、`long` / `ulong` 前端字符串输出规则：`$asgard-api-development`
 - `AbsAsgardUserInfo` 与 claim 契约：`$asgard-identity-userinfo`
 - `AsgardAuth` 授权 DSL：`$asgard-auth-authorization`
-
-## C# 14 语言特性使用指南
-
-### 优先使用新语法
-
-| 特性 | 使用场景 | 示例 |
-|------|----------|------|
-| **Primary Constructors** | 依赖注入注入、简单类型 | `public class UserService(IOptions<Settings> settings, ILogger<UserService> logger)` |
-| **Collection Expressions** | 数组、列表、字典初始化 | `int[] numbers = [1, 2, 3];` |
-| **`field` keyword** | 自动属性带逻辑 | `set => field = value.Trim();` |
-| **Extension Blocks** | 扩展方法组织 | `public static extension IQueryableExtensions on IQueryable<T>` |
-| **File-scoped Namespaces** | 减少嵌套 | `namespace MyFeature;` |
-| **Nullable Reference Types** | 空安全 | `string?`, `null!`, `ArgumentNullException.ThrowIfNull` |
-| **Null Conditional Assignment** | 简写条件赋值 | `user?.Name = "John";` |
-
-### 代码示例：主构造函数
-
-```csharp
-namespace {Namespace};
-
-/// <summary>
-/// {ServiceSummary}
-/// </summary>
-public class {ServiceName}(
-    IOptions<{SettingsName}> settings,
-    ILogger<{ServiceName}> logger,
-    AbsAsgardContext asgardContext)
-{
-    private readonly {SettingsType} _settings = settings.Value;
-    private readonly ILogger<{ServiceName}> _logger = logger;
-    protected readonly AbsAsgardContext AsgardContext = asgardContext;
-}
-```
-
-### 代码示例：扩展块
-
-```csharp
-namespace {Namespace};
-
-public static extension {ExtensionName} on {TargetType}<{GenericParameter}>
-{
-    /// <summary>
-    /// {MethodSummary}
-    /// </summary>
-    public async Task<List<TResult>> {MethodName}<TResult>(
-        this {TargetType}<{GenericParameter}> query,
-        int page,
-        int pageSize)
-    {
-        return await query
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
-    }
-
-    /// <summary>
-    /// 条件 where 子句
-    /// </summary>
-    public static IQueryable<T> WhereIf<T>(
-        this IQueryable<T> query,
-        bool condition,
-        Expression<Func<T, bool>> predicate)
-    {
-        return condition ? query.Where(predicate) : query;
-    }
-}
-```
-
-## 依赖注入与基础设施
-
-### 生命周期对照表
-
-| 生命周期 | 使用场景 |
-|----------|----------|
-| **Singleton** | 有状态对象，应用生命周期内存活 |
-| **Scoped** | 每个请求服务，数据库上下文 |
-| **Transient** | 轻量无状态服务，每次使用创建 |
-
-### 关键模式
-
-- 总是给选项配置加上 `.ValidateOnStart()`
-- 结构化日志使用占位符，不使用字符串插值
-- Asgard 数据库日志统一走 `LogConfig.Database` + Serilog + 独立 `IFreeSql` + `Channel` 批量写入，并在批量插入成功后按 `RetentionDays` + `CleanupIntervalMinutes` 节流清理旧日志
-- HttpClient 总是通过 `IHttpClientFactory` 注入
-- HttpClient 总是加上 `AddStandardResilienceHandler()`
-- 后台任务使用 `BackgroundService`
-- 生产者消费者队列使用 `System.Threading.Channels`
-
-## 安全最佳实践
-
-- 始终使用 HTTPS/HSTS
-- 从不把密钥提交到 Git
-- 总是参数化 SQL 查询避免注入
-- 使用 DTO 防止批量赋值
-- 配置 CORS 指定具体来源
-- 使用 ASP.NET Core 内置密码哈希
-- 添加安全响应头
-
-完整检查表见 `references/security.md`。
-
-## 测试最佳实践
-
-- 使用 `WebApplicationFactory<Program>` 做集成测试
-- 在测试中用内存数据库替换真实数据库
-- 自定义认证测试用 `TestAuthHandler`
-- 使用 FluentAssertions 做断言
-- 使用 `IAsyncLifetime` 做异步初始化/清理
-
-完整示例见 `references/testing.md`。
-
-## TS Gen 使用约定
-
-TsGen 是可选开发工具，不是 Asgard 前端的强制依赖。项目决定采用生成式 TypeScript 客户端时，优先使用官方 `Asgard.TsGen`；项目也可以明确选择 OpenAPI、共享手写客户端或其他契约方案。
-
-### 生成前提
-
-- 只有继承 `ControllerBase` 且显式标记 `[AsgardTsGen]` 的控制器才会被扫描和生成
-- 未选择 TsGen 的项目不需要添加 `[AsgardTsGen]`，也不需要保留生成目录
-- 未标记该特性的控制器不会进入生成结果
-- 控制器返回值仍应遵循 Asgard 统一包装约定，例如 `Response<T>`、`PageResponse<T>`、`CursorResponse<T>` 或 SSE
-- 在 Yggdrasil 宿主内通过 `/asgard-tsgen` 导出时，只会导出**当前宿主已经加载的插件程序集**中、且已被 MVC 真实发现到的控制器
-- 宿主不会导出未加载插件、宿主自身控制器，或虽在程序集里但未进入 MVC ApplicationPart 的控制器
-
-### 典型用法
-
-```powershell
-dotnet run --project Common/Asgard.TsGen/Asgard.TsGen.csproj -- --assembly ./Host/Asgard.Yggdrasil.AspNetCore/bin/Debug/net10.0/Asgard.Yggdrasil.AspNetCore.dll
-```
-
-也可以在安装为工具后执行：
-
-```powershell
-asgard-tsgen --assembly ./bin/Debug/net10.0/MyApi.dll
-```
-
-开发环境下，需要先显式启用 Yggdrasil 宿主导出端点：
-
-```yaml
-host:
-  tsGen:
-    enabled: true
-```
-
-然后访问：
-
-```text
-http://127.0.0.1:5000/asgard-tsgen
-```
-
-实际端口以宿主启动日志中的告警输出为准。宿主会在启动后打印完整访问地址，并在收到导出请求时输出当前插件程序集、MVC 已发现控制器以及最终命中的 TS 导出控制器，便于排查“只生成 common、不生成 controller/models”的问题。
-
-### 输出规则
-
-- 默认输出目录就是执行命令时所在的当前目录
-- 生成器会重建自己负责的产物目录，当前固定为 `common/`、`controller/`、`models/`
-- 这些目录应视为纯生成目录，不要手写或混入自定义代码
-- 如果需要隔离生成结果，请先进入专门的前端客户端目录，再执行生成命令
-
-### 团队约定
-
-- 先由项目明确选择是否使用 TsGen；不要仅因这是 Asgard 项目就强制引入
-- 项目选择 TsGen 后，想让某个 API 进入生成结果时再添加 `[AsgardTsGen]`
-- 使用 TsGen 的项目修改控制器路由、参数或返回模型后，应重新生成
-- 使用 TsGen 的前端应以最新生成结果为准，不要继续引用已删除的旧接口文件
-- 如果宿主导出结果只出现 `common/`，优先检查：插件是否真的已加载、控制器是否被 MVC 发现、控制器是否显式标记 `[AsgardTsGen]`
-
-## 推荐类库
-
-| 类库 | 用途 | NuGet |
-|------|------|------|
-| MediatR | CQRS / Mediator | `MediatR` |
-| FluentValidation | 验证规则 | `FluentValidation.DependencyInjectionExtensions` |
-| Mapster | 对象映射 | `Mapster.DependencyInjection` |
-| ErrorOr | Result 模式 | `ErrorOr` |
-| Polly | 弹性 | `Microsoft.Extensions.Http.Resilience` |
-| Serilog | 结构化日志 | `Serilog.AspNetCore` |
-| .NET Aspire | 云原生编排 | `Aspire.Hosting` |
-
-完整示例见 `references/libraries.md`。
-
-## 反模式对照表
-
-| ❌ 反模式 | ✅ 替代方案 |
-|-----------|------------|
-| `new HttpClient()` | 注入 `HttpClient` 或 `IHttpClientFactory` |
-| `Results.Ok()` | `TypedResults.Ok()` |
-| 手动 Polly 配置 | `AddStandardResilienceHandler()` |
-| `DateTime.Now` | `DateTime.UtcNow` |
-| `GetAsync().Result` | `await GetAsync()` |
-| 异常做流程控制 | `ErrorOr<T>` / Result 模式 |
-| 手动后备字段 | C# 14 `field` 关键字 |
-| 传统扩展方法类 | C# 14 扩展块 |
-| 缺失 `ValidateOnStart()` | 总是加上 `.ValidateOnStart()` |
-| Singleton 直接注入 Scoped | 使用 `IServiceScopeFactory` |
-| `_count++` 在 Singleton | `Interlocked.Increment(ref _count)` |
-
-完整反模式列表见 `references/anti-patterns.md`。
 
 ## Asgard 项目特定规则
 
@@ -300,6 +103,88 @@ await repository.UpdateAsync(entity);
 如果没有 `Update(...)` 行为方法，则改为先查询实体，再显式逐字段赋值，并在需要时调用 `MarkAsUpdated()`。
 
 完整规则见 `references/project_rules.md` 和 `references/never-do-this.md`。
+
+## C# 14 语言特性使用指南
+
+编写主构造函数或扩展块时，读取 [语言示例](references/language-examples.md)；其他语言细节按需读取 [C# 14 参考](references/csharp-14.md)。
+
+## 依赖注入与基础设施
+
+### 生命周期对照表
+
+| 生命周期 | 使用场景 |
+|----------|----------|
+| **Singleton** | 有状态对象，应用生命周期内存活 |
+| **Scoped** | 每个请求服务，数据库上下文 |
+| **Transient** | 轻量无状态服务，每次使用创建 |
+
+### 关键模式
+
+- 总是给选项配置加上 `.ValidateOnStart()`
+- 结构化日志使用占位符，不使用字符串插值
+- Asgard 数据库日志统一走 `LogConfig.Database` + Serilog + 独立 `IFreeSql` + `Channel` 批量写入，并在批量插入成功后按 `RetentionDays` + `CleanupIntervalMinutes` 节流清理旧日志
+- HttpClient 总是通过 `IHttpClientFactory` 注入
+- HttpClient 总是加上 `AddStandardResilienceHandler()`
+- 后台任务使用 `BackgroundService`
+- 生产者消费者队列使用 `System.Threading.Channels`
+
+## 安全最佳实践
+
+- 始终使用 HTTPS/HSTS
+- 从不把密钥提交到 Git
+- 总是参数化 SQL 查询避免注入
+- 使用 DTO 防止批量赋值
+- 配置 CORS 指定具体来源
+- 密码哈希使用 Asgard `PasswordHasher`，具体契约读取 `$asgard-security`
+- 添加安全响应头
+
+完整检查表见 `references/security.md`。
+
+## 测试最佳实践
+
+- 使用 `WebApplicationFactory<Program>` 做集成测试
+- 测试替身按被测行为选择；FreeSql 租户过滤、乐观锁和数据库方言需要匹配的数据库验证
+- 自定义认证测试用 `TestAuthHandler`
+- 使用 FluentAssertions 做断言
+- 使用 `IAsyncLifetime` 做异步初始化/清理
+
+新增或更新单元测试时读取 `$dotnet-unit-testing`，使用 xUnit v3；集成测试示例按需读取 `references/testing.md`，并对照当前测试 SDK。
+
+## TS Gen 使用约定
+
+仅项目选择 TsGen 且任务涉及客户端生成时，读取 [TsGen 使用约定](references/tsgen-usage.md)。
+
+## 推荐类库
+
+| 类库 | 用途 | NuGet |
+|------|------|------|
+| MediatR | CQRS / Mediator | `MediatR` |
+| FluentValidation | 验证规则 | `FluentValidation.DependencyInjectionExtensions` |
+| Mapster | 对象映射 | `Mapster.DependencyInjection` |
+| ErrorOr | Result 模式 | `ErrorOr` |
+| Polly | 弹性 | `Microsoft.Extensions.Http.Resilience` |
+| Serilog | 结构化日志 | `Serilog.AspNetCore` |
+| .NET Aspire | 云原生编排 | `Aspire.Hosting` |
+
+完整示例见 `references/libraries.md`。
+
+## 反模式对照表
+
+| ❌ 反模式 | ✅ 替代方案 |
+|-----------|------------|
+| `new HttpClient()` | 注入 `HttpClient` 或 `IHttpClientFactory` |
+| Controller 返回裸 DTO / VO | 使用统一 `Response<T>` / 分页响应 |
+| 手动 Polly 配置 | `AddStandardResilienceHandler()` |
+| `DateTime.Now` | `DateTime.UtcNow` |
+| `GetAsync().Result` | `await GetAsync()` |
+| 异常做流程控制 | `ErrorOr<T>` / Result 模式 |
+| 手动后备字段 | C# 14 `field` 关键字 |
+| `public static extension ... on ...` | `static class` 内声明 `extension<T>(...)` |
+| 缺失 `ValidateOnStart()` | 总是加上 `.ValidateOnStart()` |
+| Singleton 直接注入 Scoped | 使用 `IServiceScopeFactory` |
+| `_count++` 在 Singleton | `Interlocked.Increment(ref _count)` |
+
+完整反模式列表见 `references/anti-patterns.md`。
 
 ## 推荐参考资料
 

@@ -1,4 +1,4 @@
 interface:
   display_name: "Asgard .NET 10 C# 14"
-  short_description: "Asgard 项目级 .NET/C# 映射 skill"
-  default_prompt: "Use $asgard-dotnet-10-csharp-14 to work in the Asgard repository while reading rules from .trae."
+  short_description: "Asgard C# 编码规范、文件规则与乐观锁更新"
+  default_prompt: "Use $asgard-dotnet-10-csharp-14 to write or review Asgard C# code using this skill and its linked references."

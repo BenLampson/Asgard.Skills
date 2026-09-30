@@ -1,6 +1,6 @@
 ---
 name: heimdall-service-integration
-description: Heimdall 微服务身份集成与交付 skill。Use when designing, implementing, documenting, reviewing, or accepting tenant-bound BackendService client_credentials, read-only directory and user-permission APIs, permission-gated ticket assignment, TenantUser effective status, subject invalidation Webhooks, JWT revocation propagation, client secret rotation, or service-side identity reconciliation against Heimdall.
+description: "集成 Heimdall 微服务身份：租户 BackendService、client_credentials、只读目录与权限、身份失效 Webhook、撤销传播和对账。"
 ---
 
 # Heimdall Service Integration
