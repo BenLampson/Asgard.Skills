@@ -81,7 +81,7 @@ description: "复查 Asgard 后端改动，检查分层、统一响应、租户�
 - 更新时必须先从数据库读取当前实体，再在原实体上应用允许修改的字段
 - `Version` 只能来自数据库当前实体，不能信任 DTO 或前端
 - 不允许 DTO 覆盖 `CreateTime`、`CreateBy`、`Deleted`、`TenantId`、`ClientId` 等持久化字段
-- 对租户实体，不允许在更新时随 DTO 覆盖租户归属字段，除非业务明确允许且有中文注释说明
+- 对租户实体，不允许在更新时随 DTO 覆盖租户归属字段；按 `$asgard-dotnet-10-csharp-14` 执行，单实体共享缓存补丁禁止常规归属更新，不能仅凭注释放开
 - 如果实体有 `Update(...)`、`Enable()`、`Disable()` 等行为方法，优先调用实体方法
 - 如果实体没有行为方法，再显式逐字段赋值，并在约定需要时调用 `MarkAsUpdated()`
 
@@ -131,7 +131,7 @@ await repository.UpdateAsync(entity);
 
 - 租户默认依赖框架全局过滤与身份上下文，不要到处手写默认 `TenantId` 过滤
 - 不要让前端输入决定 `TenantId`、`CreateBy`、`CreateTime`、`Deleted`
-- 后台服务或平台级特例如果允许跨租户，必须在代码中写清楚边界和原因
+- 后台服务或平台级特例如果允许跨租户，必须由服务端 `ICrossTenantScopeAuthorizer` 授权后创建 `CreateCrossTenantScope()`；检查空范围拒绝、缓存命中归属校验和提交后失效，不能只靠用户类型、空租户或注释
 - 软删除审计基类必须由业务显式选择；不要批量修改现有实体继承关系
 - `Delete` / `DeleteAsync` 默认仍是物理删除；不要假设存在 AOP 软删除拦截器
 - 不要假设框架会自动添加 `Deleted == false` 全局过滤

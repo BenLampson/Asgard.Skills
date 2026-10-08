@@ -82,7 +82,8 @@ description: "定义或排查 Asgard AbsAsgardUserInfo、标准 claims、身份�
 - `DefaultAsgardIdentityContextResolver` 会从 `HttpContext.User.Claims` 创建 `DefaultAsgardUserInfo`
 - 然后调用 `InitFromClaims(...)` 还原基础字段
 - 如果 `TenantId` 能解析成 `Guid`，用户类型会被判定为 `UserType.Tenant`
-- 如果 `TenantId` 为空或不是合法 `Guid`，默认会判定为 `UserType.Platform`
+- 如果 `TenantId` 为空或不是合法 `Guid`，默认会判定为 `UserType.Platform`；用户类型只是身份分类，不代表跨租户权限
+- 单实体共享缓存补丁中，`AsgardIdentitySnapshot.TenantAccess` 区分 `Tenant` / `CrossTenant` / `Unset`；非空租户才建立单租户范围，空租户默认拒绝。服务端跨租户授权与迁移读取 [范围契约](../asgard-database/references/shared-entity-cache-tenant-scopes.md)，不能从 claim、JSON 或 DTO 提升权限
 - `token_type` 只识别官方值 `UserLogin` / `BackendService`
 - `client_id` 是后端服务令牌唯一认可的调用方标识
 

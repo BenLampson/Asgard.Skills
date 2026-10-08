@@ -17,7 +17,7 @@
 | `RefreshAsync<T>(key)` | 使用 `GetAsync<T>(key)`，直接读取 Redis |
 | `ClearAsync()` | 使用 `RemoveByPrefixAsync("业务前缀:")`；普通接口不再提供整库清空 |
 
-仓储构造参数改为 `IAsgardCache cache` 后继续传给基类。`AbsAsgardContext.Cache` 属性名不变，类型变为 `IAsgardCache?`。仓储自动缓存和租户键规则本次保留。
+仓储构造参数改为 `IAsgardCache cache` 后继续传给基类。`AbsAsgardContext.Cache` 属性名不变，类型变为 `IAsgardCache?`。5.3 Redis 单层迁移本身保留仓储自动缓存和旧租户键规则；后续单实体共享缓存补丁改变实体键和权限边界，目标包含该补丁时必须另外读取 [共享缓存迁移](../../asgard-database/references/shared-entity-cache-tenant-scopes.md)。
 
 ```csharp
 // 非 Yggdrasil 宿主的独立注册入口。

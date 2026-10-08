@@ -143,7 +143,7 @@ public async Task<ActionResult<Response<List<OrderVo>>>> GetOrdersAsync([FromRou
 
 ### 多租户接口安全示例（平台管理员例外）
 
-如果业务允许“平台管理员跨租户”，必须把例外条件写成显式权限分支：
+如果业务允许“平台管理员跨租户”，必须把例外条件写成显式权限分支。以下只展示 Controller 入口校验；包含单实体共享缓存补丁时，`GetByTenantAsync` 的服务实现还必须授权目标租户并创建单租户范围，或使用经 `ICrossTenantScopeAuthorizer` 授权的跨租户范围。传入 tenantId 和布尔权限检查本身不会改变 FreeSql 范围，不能以禁用过滤替代。读取 [范围契约](../../asgard-database/references/shared-entity-cache-tenant-scopes.md)：
 
 ```csharp
 [HttpGet("{tenantId}/orders")]

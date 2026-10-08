@@ -1,3 +1,4 @@
+// 历史构建器源码快照：不包含 Asgard 6.0.1 资源所有权修复；当前生命周期以 SKILL.md 和目标源码为准。
 namespace Asgard.Yggdrasil.AspNetCore;
 
 public partial class YggdrasilHostBuilder

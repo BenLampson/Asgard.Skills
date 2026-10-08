@@ -67,7 +67,7 @@ public class {EntityName}Repository : AbsAsgardRepositoryBase<{EntityName}, {Key
 - 仓储构造函数必须注入 `IAsgardCache cache` 并传给 `base(...)`，不要因为业务代码没有显式使用缓存就省略
 - 仓储构造函数里应注入 `IAsgardRepositoryContext`，让 `AbsAsgardRepositoryBase` 统一获取身份、追踪与分布式锁入口
 - 即使 `caching.enabled: false`，Yggdrasil 也会注册可注入的空 `IAsgardCache`，仓储构造函数不需要为“禁用缓存”分支改写
-- 业务服务和控制器不需要重复计算默认租户过滤，除非场景明确要求跨租户访问
+- 业务服务和控制器不需要重复计算默认租户过滤；跨租户场景必须通过服务端授权器和 `CreateCrossTenantScope()` 建立范围，空租户不授予权限。目标包含单实体共享缓存补丁时读取 [范围与缓存契约](../asgard-database/references/shared-entity-cache-tenant-scopes.md)
 
 **代码示例 - 手动注册（仅非插件或特殊扫描范围）：**
 

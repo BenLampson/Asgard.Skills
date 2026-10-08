@@ -66,6 +66,16 @@ messaging:
 | 取消订阅 | `UnsubscribeAsync(subscriptionId)` | 取消订阅并释放资源 |
 | 批量发布 | `PublishBatchAsync<T>(topic, messages)` | 批量发布消息 |
 
+## 确认与重试契约
+
+目标包含 Asgard 6.0.1 基础设施生命周期修复（2026-10-08 核对；发布状态另行确认）时，先读取 [确认、有限重试与故障恢复](references/settlement-and-retry.md)。不要仅凭旧包版本号假定已修复。
+
+- 默认 `AutoAck=false`、重试 3 次、启用死信均保持不变；默认成功路径仍由 handler 手动 ACK
+- `AutoAck=true` 是 broker 投递即确认；不能再发送手动 ACK/NACK，失败不自动重试
+- 自动重试精确回源队列，持久化计数并保留原始体/属性；confirmed + mandatory 转发成功后才 ACK 原消息
+- 转发结果不确定时原投递保留未确认，修复后需回收通道/连接恢复，取消订阅本身不足；可能重复投递，业务必须幂等
+- `AutoDeclare=false` 只检查现有拓扑，手动确认且启用死信时目的队列需要预建；`AutoAck=true` 仅检查源队列。broker TTL/长度死信另行配置 DLX
+
 ## 代码示例
 
 需要编写该模块代码时，按场景读取 [实现示例](references/implementation-examples.md)，只采用与当前任务和目标版本匹配的示例。
@@ -75,7 +85,7 @@ messaging:
 - 统一维护 `messaging.rabbitmq.*` 配置，不要再保留旧的 provider 切换思路
 - topic / queue 名称保持稳定，不要随机变化
 - 消费者逻辑保持简洁，复杂业务下沉到服务层
-- 总是调用 `context.AcknowledgeAsync()` 确认消息处理完成
+- 默认 `AutoAck=false` 时，业务成功后调用 `context.AcknowledgeAsync()`；`AutoAck=true` 的确认/拒绝无操作
 - 处理异常后正常抛出，让框架负责重试和死信路由
 - 访问 `AbsAsgardContext.MessageQueue` 前先做空检查，支持模块动态禁用
 
@@ -87,7 +97,7 @@ messaging:
 
 ❌ 不要在消费者 handler 中编写大段业务逻辑，委托给服务层保持简洁
 
-❌ 不要忘记确认消息处理，不确认会导致消息一直处于未完成状态
+❌ 默认手动确认模式不要遗漏成功 ACK；自动确认模式不要承诺失败后自动重试
 
 ❌ 不要吃掉异常不抛出，让框架无法进行重试和死信处理
 
@@ -97,6 +107,7 @@ messaging:
 - `MQConfig.cs` - 消息队列配置类
 - `MQManager.cs` - 消息队列管理器
 - `IMessageQueue.cs` - 消息队列核心接口
+- `SubscribeOptions.cs` - 默认值、确认与重试选项契约
 
 代码范本请参考 `templates/` 目录：
 - `app.yaml.template` - 配置片段范本，合并到项目根目录 `app.yaml`

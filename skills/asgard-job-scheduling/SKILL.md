@@ -74,6 +74,18 @@ job:
 | `GetJobStatusAsync(jobKey)` | 获取作业状态 |
 | `CheckJobExistsAsync(jobKey)` | 检查作业是否存在 |
 
+## 异步完成与启动失败清理
+
+目标包含 Asgard 6.0.1 基础设施生命周期修复（2026-10-08 核对；发布状态另行确认）时，运行中调度器的作业、触发器和全局 pause/resume 操作会等待 Quartz 实际完成后再返回/记录成功；异常和取消向调用者传播。先核对目标源码，不据此假定旧 NuGet 包已具备修复。
+
+- 始终 `await` 调度操作，不用 fire-and-forget，也不把“已调用”当成注册成功
+- 启动前操作仍遵循既有暂存队列与去重语义；返回只代表已暂存，不保证 Quartz 已开始执行
+- `TriggerJobAsync` 等待触发请求被调度器接受，不等于作业业务已执行完成
+- 配置式作业注册也等待底层 Quartz；`JobManager` 启动失败会释放已创建的调度器并保留原始失败，清理也失败时保留两者
+- 不用 `.Result` / `.Wait()` 代替 await；需要后台租户数据访问时按 `$asgard-context-usage` 建立授权范围
+
+实现锚点：Asgard 的 `QuartzJobScheduler.JobManagement.cs`、`QuartzJobScheduler.TriggerManagement.cs`、`QuartzJobRegistrar.cs`、`JobManager.cs`。验证 `QuartzJobSchedulerOperationTests`、`JobManagerLifecycleTests` 等目标测试后再升级。
+
 ## 代码示例
 
 需要编写该模块代码时，按场景读取 [实现示例](references/implementation-examples.md)，只采用与当前任务和目标版本匹配的示例。

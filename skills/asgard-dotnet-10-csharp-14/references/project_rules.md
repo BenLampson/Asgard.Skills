@@ -35,6 +35,6 @@
 4. Create 场景可以使用 `dto.ToEntity()`, 但 Update 场景默认不能这样持久化
 5. DTO 不是 `Version` 的可信来源, 乐观锁版本必须来自数据库当前实体
 6. 不允许让前端或 DTO 决定 `CreateTime`、`CreateBy`、`Deleted`、`TenantId`、`ClientId` 等持久化字段
-7. 对租户实体, 更新时不允许随 DTO 覆盖租户归属字段, 除非业务明确允许且代码中有中文注释说明
+7. 对租户实体，更新时不允许随 DTO 覆盖租户归属字段；单实体共享缓存补丁禁止常规归属更新，所有权迁移需单独设计授权、事务与缓存失效流程，不能仅凭注释放开
 8. 如果实体提供 `Update(...)`、`Enable()`、`Disable()` 等行为方法, 优先调用实体方法; 如果没有, 再显式逐字段赋值, 并在约定需要时调用 `MarkAsUpdated()`
 9. 遇到 `UpdateAsync(string id, XxxDto dto, ...)` 这类签名时, 必须优先检查是否存在乐观锁实体, 不要生成“DTO 重建实体后直接更新”的代码

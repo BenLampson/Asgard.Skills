@@ -218,17 +218,22 @@ public class {EntityName}Repository : AbsAsgardRepositoryBase<{EntityName}, {Key
 
 ### 多租户约定
 
+以下以单实体共享缓存补丁 `0abb1d959418c4b877ef3fc909abdee553e7b11f` 为基线；先确认目标版本包含该补丁。涉及租户范围、缓存键、写入或事务时读取 [完整契约与迁移示例](references/shared-entity-cache-tenant-scopes.md)，不要把本行为推定为所有已发布 5.3 包的契约。
+
 - 查询、更新、删除：只要实体继承 `AbsAsgardTenantEntity`，FreeSql 会通过框架注册的 `GlobalFilter` 自动带当前租户条件
 - 新增、更新：如果租户实体的 `TenantId` 为空，`AbsAsgardRepositoryBase` 会通过 `IAsgardRepositoryContext.IdentityContext` 自动回填当前租户
 - HTTP 请求：租户值来自 `UseAsgardTenant()` 写入的请求身份上下文
 - 后台任务：租户值来自 `ITenantScopeFactory.CreateScope(tenantId)` 创建的作用域
-- 平台级流程：当前租户为空时，不会附加租户过滤，也不会强行写入 `TenantId`
+- 平台级流程：空租户为 `Unset`，租户数据默认拒绝。注册真实服务端 `ICrossTenantScopeAuthorizer` 后使用 `CreateCrossTenantScope()`；`UserType.Platform` 不授予跨租户权限
+- 单租户写入拒绝其他租户归属；跨租户写入必须显式提供合法非空归属；常规更新不能修改 `TenantId`
+- 单租户禁止 upsert。共享实体缓存需要唯一单列主键、固定表映射；平台和所属租户读同一行使用同一缓存键
 
 推荐做法：
 
 - 租户实体统一继承 `AbsAsgardTenantEntity`
 - 仓储统一使用框架仓储基类，不要在每个方法里重复 `Where(x => x.TenantId == ...)`
-- 只有在明确需要跨租户或禁用过滤时，才在非常局部的位置做特殊处理，并补注释说明原因
+- 跨租户业务使用授权范围，不用 `DisableGlobalFilter` 代替授权；原始 SQL 等可信基础设施入口必须自行实现授权、事务和缓存失效
+- 手动构建 FreeSql 时调用 `AsgardTenantDataProtection.Configure(fsql, identityContext)`，数据库与仓储必须使用同一个环境身份访问器
 
 ### 删除行为与可选软删除审计
 
@@ -282,7 +287,7 @@ Asgard 项目的大多数实体基类默认带有 `Version` 和 `[Column(IsVersi
 - 更新时必须先查询数据库当前实体，再在原实体上应用允许修改的字段
 - `Version` 必须来自数据库当前实体，不能信任前端或 DTO 提供的值
 - `CreateBy`、`CreateTime`、`Deleted`、`TenantId`、`ClientId` 等持久化字段不能在更新时被 DTO 覆盖
-- 对租户实体，不允许在更新路径中随 DTO 改写租户归属字段；只有业务明确允许时，才能局部放开并补中文注释
+- 对租户实体，不允许在更新路径中改写租户归属字段；所有权迁移需单独设计授权、事务和缓存失效流程，不能用中文注释放开框架保护
 
 推荐模式：
 

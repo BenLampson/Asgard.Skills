@@ -1,3 +1,4 @@
+// 源码快照：Asgard 6.0.1 基础设施生命周期修复（2026-10-08 核对；发布状态另行确认）；使用时确认目标版本包含修复。
 namespace Asgard.Core.Caching;
 
 /// <summary>管理 Redis 缓存初始化及共享连接生命周期。</summary>
@@ -24,9 +25,6 @@ public sealed class CacheManager : ICacheManager
     public IDistributedCache? DistributedCache { get; private set; }
     /// <summary>供分布式锁和 DataProtection 复用的连接。</summary>
     public IConnectionMultiplexer? ConnectionMultiplexer { get; private set; }
-    /// <summary>旧本地缓存出口，已无运行行为。</summary>
-    [Obsolete("业务本地缓存已移除；认证内部缓存请独立使用 AddMemoryCache。参见 doc/29-缓存迁移-5.3.md；6.0 删除。", true)]
-    public IMemoryCache? MemoryCache => null;
 
     /// <inheritdoc />
     public async Task InitializeAsync(CancellationToken cancellationToken = default)

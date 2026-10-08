@@ -1,3 +1,5 @@
+// 历史源码快照：未包含单实体共享缓存/显式租户范围补丁。
+// 当前行为读取 shared-entity-cache-tenant-scopes.md；不要复制旧空租户放行逻辑。
 namespace Asgard.Core.Data;
 
 /// <summary>

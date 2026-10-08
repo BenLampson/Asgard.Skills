@@ -1,3 +1,4 @@
+// 源码快照：Asgard 6.0.1 基础设施生命周期修复（2026-10-08 核对；发布状态另行确认）；使用时确认目标版本包含修复。
 namespace Asgard.Core.Messaging;
 
 /// <summary>
@@ -13,7 +14,8 @@ public sealed class MQManager : IMQManager
 {
     private readonly MQConfig _config;
     private readonly ILogger<MQManager> _logger;
-    private MessageQueue? _messageQueue;
+    private IMessageQueue? _messageQueue;
+    private readonly Func<MQConfig, IMessageQueue> _queueFactory;
     private bool _disposed;
 
     /// <summary>
@@ -22,10 +24,18 @@ public sealed class MQManager : IMQManager
     /// <param name="config">消息队列配置。</param>
     /// <param name="logger">日志器。</param>
     public MQManager(MQConfig config, ILogger<MQManager> logger)
+        : this(config, logger, static options => new MessageQueue(options))
+    {
+    }
+
+    /// <summary>注入队列工厂供隔离生命周期测试使用，所有权仍由管理器持有。</summary>
+    internal MQManager(MQConfig config, ILogger<MQManager> logger, Func<MQConfig, IMessageQueue> queueFactory)
     {
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(logger);
 
+        ArgumentNullException.ThrowIfNull(queueFactory);
+        _queueFactory = queueFactory;
         _config = config;
         _logger = logger;
     }
@@ -44,7 +54,7 @@ public sealed class MQManager : IMQManager
         _config.Validate();
 
         // 创建消息队列实例（内部会创建 RabbitMQ 连接）
-        _messageQueue = new MessageQueue(_config);
+        _messageQueue = _queueFactory(_config);
 
         // 验证连接可用性
         _logger.LogDebug("正在验证消息队列连接...");
@@ -59,8 +69,30 @@ public sealed class MQManager : IMQManager
         catch (Exception ex)
         {
             _logger.LogError(ex, "消息队列连接验证失败（RabbitMQ）");
-            await _messageQueue.DisposeAsync();
+            // 先分离所有权，失败清理即使抛错也不会被宿主再次释放。
+            var failedQueue = _messageQueue;
             _messageQueue = null;
+            IsConnected = false;
+            try
+            {
+                await failedQueue.DisposeAsync();
+            }
+            catch (Exception cleanupException)
+            {
+                var failures = new AggregateException("消息队列初始化和失败清理均失败", ex, cleanupException);
+                if (ex is OperationCanceledException cancelled)
+                {
+                    throw new OperationCanceledException(cancelled.Message, failures, cancelled.CancellationToken);
+                }
+
+                throw failures;
+            }
+
+            if (ex is OperationCanceledException)
+            {
+                throw;
+            }
+
             throw new InvalidOperationException("消息队列连接验证失败（RabbitMQ）", ex);
         }
 
@@ -74,11 +106,12 @@ public sealed class MQManager : IMQManager
         if (_disposed) return;
         _disposed = true;
 
-        if (_messageQueue != null)
-        {
-            await _messageQueue.DisposeAsync();
-        }
-
+        var messageQueue = _messageQueue;
+        _messageQueue = null;
         IsConnected = false;
+        if (messageQueue is not null)
+        {
+            await messageQueue.DisposeAsync();
+        }
     }
 }
