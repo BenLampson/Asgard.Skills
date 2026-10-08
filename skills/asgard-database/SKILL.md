@@ -235,6 +235,12 @@ public class {EntityName}Repository : AbsAsgardRepositoryBase<{EntityName}, {Key
 - 跨租户业务使用授权范围，不用 `DisableGlobalFilter` 代替授权；原始 SQL 等可信基础设施入口必须自行实现授权、事务和缓存失效
 - 手动构建 FreeSql 时调用 `AsgardTenantDataProtection.Configure(fsql, identityContext)`，数据库与仓储必须使用同一个环境身份访问器
 
+### 6.0.2 批量缓存与字符串主键
+
+以下适用于 Asgard 6.0.2 运行时优化源码；发布状态需另行核对，不表示 NuGet 已完成发布。维护旧包时先确认包含对应实现，不把这些行为追溯到 6.0.1。
+
+默认批量写入去重实体键与当前/实体租户/平台列表前缀；工作单元内捕获前缀并在提交后失效。覆盖缓存清理虚方法的仓储保留逐实体兼容路径，不应假定自动获得去重或列表提交后失效。字符串主键只投影主键、分块查询并把不明确别名交给数据库比较，不可自行小写/Trim。修改批量写入或自定义仓储前读取 [完整边界](references/shared-entity-cache-tenant-scopes.md#602批量路径与扩展兼容)。
+
 ### 删除行为与可选软删除审计
 
 现有 `AbsAsgardRepositoryBase<TEntity, TKey>.Delete` / `DeleteAsync` 保持物理删除语义。框架不通过 AOP 拦截器把物理删除隐式改写为逻辑删除，也不为 `Deleted` 自动注册全局过滤。

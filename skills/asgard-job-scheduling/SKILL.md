@@ -86,6 +86,20 @@ job:
 
 实现锚点：Asgard 的 `QuartzJobScheduler.JobManagement.cs`、`QuartzJobScheduler.TriggerManagement.cs`、`QuartzJobRegistrar.cs`、`JobManager.cs`。验证 `QuartzJobSchedulerOperationTests`、`JobManagerLifecycleTests` 等目标测试后再升级。
 
+## 6.0.2：实现范围、启动与 DI 所有权
+
+以下适用于 Asgard 6.0.2 运行时优化源码；发布状态需另行核对，不表示 NuGet 已完成发布。维护旧包时先确认包含对应实现，不把这些行为追溯到 6.0.1。
+
+- 当前为单进程 `RAMJobStore`，动态作业重启即丢失；不提供持久化、集群协调或自定义工厂切换
+- `enableCluster` 只接受 `false`；`connectionString`、`dbProvider`、`jobFactoryType` 只允许省略或空字符串；`maxBatchSize` 只接受兼容默认值 `100`，不代表实际批量获取功能。启用/解析或直接启动时显式拒绝不支持值，不新增必填配置；`threadPoolSize` 必须大于零，`instanceId` 必须非空
+- Yggdrasil 构建阶段只 `PrepareAsync` 并注册作业；最终 DI、插件初始化/启动钩子和中间件就绪后，到宿主 `StartAsync` 的托管阶段才启动 Quartz。仅 Build 后 `IsStarted=false`，`StartNow` 也不能提前执行
+- 启动前注册仍按同键最后一次保留；排队注册失败、预先取消与进入管理器后的取消均传播并清理，不能只记录错误后继续启动
+- 独立 `JobManager.InitializeAsync` 仍一次准备并启动；独立 `IJobScheduler` 需显式 `StartAsync`，也可先准备管理器、设置最终服务提供者再初始化
+- 每次触发在提供者支持时创建独立作用域。已注册作业优先从容器解析；未注册作业使用标准 `ActivatorUtilities`，支持构造选择属性、可选参数及清晰的缺失依赖错误；已注册日志优先，手工激活时可回退 `ILogger`/`ILogger<T>`
+- 容器解析作业由容器释放，不额外 Dispose；手工激活作业由适配器单次释放，再释放作用域，优先异步释放。激活失败也清理作用域；不要让单例作业捕获 scoped 依赖
+
+`references/JobManager.cs` 是 6.0.1 快照，不用于复制上述新启动接线。核对目标源码的 `JobSchedulerOptionsValidator`、`QuartzJobFactory`、`JobManager`、`AsgardRuntimeHostedService` 和 `src/doc/19-作业调度.md`。
+
 ## 代码示例
 
 需要编写该模块代码时，按场景读取 [实现示例](references/implementation-examples.md)，只采用与当前任务和目标版本匹配的示例。

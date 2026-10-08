@@ -242,3 +242,11 @@ await app.RunAsync();
 - `Program-Minimal.cs.template` - starter 最简入口
 - `Program-Full.cs.template` - starter 完整入口
 - `Program-WithHooks.cs.template` - starter 带钩子入口
+
+## 6.0.2：作业延迟到托管启动
+
+以下适用于 Asgard 6.0.2 运行时优化源码；发布状态需另行核对，不表示 NuGet 已完成发布。维护旧包时先确认包含对应实现，不把这些行为追溯到 6.0.1。
+
+宿主 Build/BuildAsync 只通过 `JobManager.PrepareAsync` 准备调度器并注册配置作业，随后设置最终 DI 提供者，完成插件初始化/启动钩子及中间件配置。宿主 `StartAsync` 的运行时托管服务才调用管理器初始化并真正启动 Quartz，传递宿主取消令牌；仅 Build 后调度器 `IsStarted=false`，`StartNow` 不能提前执行。排队注册错误或启动取消传播并使用清理路径；未 Start 的宿主释放仍清理准备资源。
+
+独立 `JobManager.InitializeAsync` 保持立即准备并启动，不能把宿主延迟启动规则套用到独立用法。配置限制、每次触发的 DI 作用域与作业资源所有权见 `$asgard-job-scheduling`。本目录旧源码快照仍是历史参考，6.0.2 接线以目标 `YggdrasilHostBuilder`、`AsgardRuntimeHostedService`、`JobManager` 为准。
