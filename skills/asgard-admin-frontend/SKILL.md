@@ -7,9 +7,11 @@ description: "构建或修改 Asgard/Heimdall 管理前端的 Umi、Ant Design P
 
 ## Scope
 
-Use this for browser-based Asgard admin consoles, especially Heimdall-style management pages. The default stack is Umi Max, React, TypeScript, Ant Design, Ant Design Pro Components, DVA models, and `oidc-client-ts`. API clients may use optional Asgard.TsGen output or another project-selected shared client strategy.
+Use this for browser-based Asgard admin consoles, especially Heimdall-style management pages. The default UI stack is Umi Max, React, TypeScript, Ant Design, Ant Design Pro Components, and DVA models. New Heimdall business SPAs should reuse `@benlampson/heimdall-browser`; preserve existing OIDC adapters within the task's migration scope. API clients may use optional Asgard.TsGen output or another project-selected shared client strategy.
 
 For login-flow architecture and PKCE/OIDC protocol design, also use `$identity-integration`. For backend controllers that must be exposed to frontend generation, also use `$asgard-api-development` and `$asgard-dotnet-10-csharp-14`.
+
+For official SDK installation, initialization and lifecycle calls, read [Heimdall SDK usage](../identity-integration/references/heimdall-sdk.md#浏览器创建一个共享-client). Use one shared BrowserClient and its callback, renewal, fetch and logout methods. UI state and Asgard response unwrapping stay in the project's existing frontend layers; the SDK supplies no React hook or UI.
 
 ## Hard Rules
 
@@ -17,7 +19,7 @@ For login-flow architecture and PKCE/OIDC protocol design, also use `$identity-i
 |------|------|
 | API calls | Follow the API client strategy selected by the current project. If it uses TsGen, call generated `src/services/controller/*` methods and reuse `src/services/models/*` types; otherwise keep calls behind the project's shared request/client layer. |
 | Generated code | When TsGen is enabled, treat generated `services/common`, `services/controller`, and `services/models` as pure generated output. Do not patch business behavior into generated files. |
-| Request auth | All normal HTTP calls use the shared request/session layer for Bearer tokens and bounded 401 renewal. Match the captured session and credentials before clearing auth; do not let a stale 401 erase a newer login or cause an automatic SSO loop after logout. |
+| Request auth | All normal HTTP calls use the shared request/session layer. HeimdallBrowserClient.fetch obtains/renews tokens before sending, then ends the matching session on resource 401 without retrying. Custom adapters may implement bounded renewal with captured-session checks; stale results cannot clear a newer login or cause an SSO loop after logout. |
 | OIDC profile | Business admin SPAs must obtain display profile claims from the discovered `userinfo_endpoint` or ID Token. Do not call Heimdall `/api/account/me` merely to render the current user's name, email, avatar, username, or tenant. |
 | Response handling | Unwrap Asgard `Response<T>`, `PageResponse<T>`, and `CursorResponse<T>` with shared helpers; do not parse `code/message/data` ad hoc in every page. |
 | State ownership | Put reusable list/filter/pagination/load/mutation state in a DVA model. Keep pages focused on layout, table columns, forms, and user actions. |
