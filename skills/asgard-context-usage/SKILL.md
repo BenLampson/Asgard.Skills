@@ -84,11 +84,12 @@ description: "在 Asgard 中使用 AbsAsgardContext，处理公共能力获取�
 
 - 把 `AbsAsgardContext` 当作公共能力的统一入口，简化依赖注入
 - 访问任何能力**先判空**，支持模块动态启用禁用
-- 判空后**一定要降级**，不要因为模块未启用就直接抛出异常
+- 可选能力缺失时按业务契约降级；租户隔离、身份与分布式互斥是前提时，缺失必须终止，不能脱离保护继续执行
 - 需要多实例互斥时，优先通过 `AsgardContext.DistributedLock` 获取锁能力
 - 长时间持锁时，把 `handle.LockLostToken` 与业务取消令牌合并，锁所有权丢失后立即停止受保护操作
 - 需要后台租户作用域时，优先使用 `TenantScopeFactory`
-- 需要后台租户数据库访问时，先进入 `TenantScopeFactory.CreateScope(tenantId)`，再调用仓储或 `IFreeSql`
+- 需要后台租户数据库访问时，先授权目标租户，再进入 `TenantScopeFactory.CreateScope(tenantId)`，在同一作用域构造并执行仓储/FreeSql 操作；`Guid.Empty` 非法
+- 目标包含单实体共享缓存补丁时，空租户不代表平台权限；跨租户访问使用经服务端授权的 `CreateCrossTenantScope()`。读取 [范围与缓存契约](../asgard-database/references/shared-entity-cache-tenant-scopes.md)，不要用请求布尔值或用户类型代替授权
 - 在其他模块都注册完成后，再调用 `AddAsgardContext()`
 - 需要定位运行链路或补充测试线索时，优先用 `AsgardContext.Trace` 追加简明备注和标签
 

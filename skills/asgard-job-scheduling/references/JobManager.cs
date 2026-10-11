@@ -1,3 +1,4 @@
+// 源码快照：Asgard 6.0.1 基础设施生命周期修复（2026-10-08 核对；发布状态另行确认）；使用时确认目标版本包含修复。
 namespace Asgard.Core.Job;
 
 /// <summary>
@@ -52,12 +53,31 @@ public sealed class JobManager : IJobManager
 
         try
         {
-            await _scheduler.StartAsync();
+            await _scheduler.StartAsync(cancellationToken);
             _logger.LogDebug("作业调度系统初始化完成（调度器: {SchedulerName}）", _scheduler.SchedulerName);
         }
         catch (Exception ex)
         {
-            _scheduler = null;
+            try
+            {
+                await _scheduler.DisposeAsync();
+            }
+            catch (Exception cleanupException)
+            {
+                throw new InvalidOperationException(
+                    $"作业调度器启动失败且释放资源失败: {ex.Message}",
+                    new AggregateException(ex, cleanupException));
+            }
+            finally
+            {
+                _scheduler = null;
+            }
+
+            if (ex is OperationCanceledException && cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+
             throw new InvalidOperationException($"作业调度器启动失败: {ex.Message}", ex);
         }
     }

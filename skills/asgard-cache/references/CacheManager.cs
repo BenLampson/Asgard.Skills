@@ -1,3 +1,4 @@
+// 源码快照：Asgard 6.0.1 基础设施生命周期修复（2026-10-08 核对；发布状态另行确认）；使用时确认目标版本包含修复。
 namespace Asgard.Core.Caching;
 
 /// <summary>管理 Redis 缓存初始化及共享连接生命周期。</summary>

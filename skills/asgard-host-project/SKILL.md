@@ -189,6 +189,18 @@ await app.RunAsync();
 11. 返回构建完成的 WebApplication
 ```
 
+## 构建失败与资源所有权
+
+目标包含 Asgard 6.0.1 基础设施生命周期修复（2026-10-08 核对；发布状态另行确认）时，宿主统一拥有构建前创建的缓存、MQ、作业调度、追踪和引导日志资源；DI 中注入的相关实例是借用。不要在业务服务或插件里分别 Dispose 宿主提供的管理器/连接/调度器。
+
+- 宿主停止时先关闭作业、清理插件，期间 MQ/缓存/追踪仍可用；随后释放基础设施，最后排空追踪并关闭引导日志
+- 构建失败会回滚已创建资源；构建后即使未 Start，Dispose 也会清理；重复停止/释放复用同一清理过程
+- 清理失败不阻止继续释放其他资源，错误汇总返回；不能吞掉它们然后宣称全部关闭成功
+- 同一 builder 重复 Build 仍受支持，每次构建使用独立资源所有者，不要给用户新增“一次性 builder”限制
+- 由调用者自行创建的外部资源仍按其所有权契约处理；不要把宿主接管推及所有任意 DI 实例
+
+读取 `$asgard-plugin-lifecycle` 的关闭与重载契约，并核对 Asgard 的 `AsgardRuntimeLifetime.cs` 与 `YggdrasilHostBuilder*` 当前实现。旧参考源码未包含补丁的部分不能用于复制生命周期接线。
+
 ## 推荐做法
 
 - `Program.cs` 默认放在 starter / host 项目，而不是插件主体项目
@@ -230,3 +242,11 @@ await app.RunAsync();
 - `Program-Minimal.cs.template` - starter 最简入口
 - `Program-Full.cs.template` - starter 完整入口
 - `Program-WithHooks.cs.template` - starter 带钩子入口
+
+## 6.0.2：作业延迟到托管启动
+
+以下适用于 Asgard 6.0.2 运行时优化源码；发布状态需另行核对，不表示 NuGet 已完成发布。维护旧包时先确认包含对应实现，不把这些行为追溯到 6.0.1。
+
+宿主 Build/BuildAsync 只通过 `JobManager.PrepareAsync` 准备调度器并注册配置作业，随后设置最终 DI 提供者，完成插件初始化/启动钩子及中间件配置。宿主 `StartAsync` 的运行时托管服务才调用管理器初始化并真正启动 Quartz，传递宿主取消令牌；仅 Build 后调度器 `IsStarted=false`，`StartNow` 不能提前执行。排队注册错误或启动取消传播并使用清理路径；未 Start 的宿主释放仍清理准备资源。
+
+独立 `JobManager.InitializeAsync` 保持立即准备并启动，不能把宿主延迟启动规则套用到独立用法。配置限制、每次触发的 DI 作用域与作业资源所有权见 `$asgard-job-scheduling`。本目录旧源码快照仍是历史参考，6.0.2 接线以目标 `YggdrasilHostBuilder`、`AsgardRuntimeHostedService`、`JobManager` 为准。
