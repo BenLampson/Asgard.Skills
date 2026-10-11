@@ -1,6 +1,6 @@
 ---
 name: heimdall-service-integration
-description: "集成 Heimdall 微服务身份：租户 BackendService、client_credentials、只读目录与权限、身份失效 Webhook、撤销传播和对账。"
+description: "用 Heimdall C#/Node SDK 或现有协议集成微服务身份：BackendService、client_credentials、只读目录权限、身份失效 Webhook、撤销传播与对账。"
 ---
 
 # Heimdall Service Integration
@@ -13,6 +13,7 @@ description: "集成 Heimdall 微服务身份：租户 BackendService、client_c
 
 - 所有任务先读 `references/integration-guide.md`，确认当前已交付能力、待补能力和职责边界。
 - 涉及 Client 创建、`client_credentials`、Secret 保存或轮换时，读 `references/client-credentials-lifecycle.md`。
+- C#/Node 获取服务 Token 或只读目录时，优先复用 [官方 SDK 用法](../identity-integration/references/heimdall-sdk.md)。C# 命名服务的 ClientId/Secret/Version 来自 `IHeimdallCredentialProvider`；Node 使用异步 credentialProvider，不平行复制兑换与目录 HTTP 客户端。
 - 涉及自动路由、候选客服权限、目录组、成员校验或定时对账时，读 `references/backend-directory-api.md`。
 - 涉及停用、删除、撤销、JWT 失效或 Webhook 消费时，读 `references/identity-invalidation-webhook.md`。
 - 涉及上线、联调、版本声明或验收时，读 `references/end-to-end-acceptance.md`。
@@ -60,3 +61,4 @@ description: "集成 Heimdall 微服务身份：租户 BackendService、client_c
 - BackendService 不得获得目录写权限。
 - 下游不得直查 Heimdall 数据库，不得信任浏览器提交的成员关系。
 - OIDC `/userinfo` 不是完整目录或最终身份状态接口。
+- SDK 不接收身份失效 Webhook、不建立撤销水位/业务缓存或定时对账，也不注册资源认证中间件；这些仍按本 skill 的实际业务契约实现，不能因采用 SDK 就宣称失效传播已完成。

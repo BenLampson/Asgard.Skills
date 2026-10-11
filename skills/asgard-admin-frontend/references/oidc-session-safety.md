@@ -2,18 +2,24 @@
 
 Use this when changing the shared OIDC/request adapter, account switching, renewal, logout, multiple tabs, or page restoration. The concrete example is Heimdall 5.5.2; preserve each project's client and state-management conventions. Protocol behavior belongs to [identity-integration](../../identity-integration/references/heimdall-multi-account.md).
 
+## Choose the integration path
+
+New business SPAs should use [HeimdallBrowserClient](../../identity-integration/references/heimdall-sdk.md#浏览器创建一个共享-client), which owns candidate validation/commit, selected storage, refresh coordination and captured-response checks. Use its public methods; do not add a second SDK userStore, credential-version field, lock or refresh timer. Its fetch renews before sending when needed, but does not refresh/replay after a resource 401.
+
+The storage layout below describes custom adapters and the built-in Console reference, not the official SDK's persistence schema. BrowserClient stores its own versioned record; raw `oidc-client-ts` and the SDK's no-storage `/protocol` mode require different caller responsibilities. For redirect flows, SDK `storage:false` loses the old in-memory session/version across page reloads; use a supported persistent store when old-session recovery is required.
+
 ## State and commit boundaries
 
-- Keep one application session pointer containing the auth domain and a session version that changes when the application session is replaced or ended. Store credentials separately under the application's own key; do not share one SDK userStore across unrelated applications.
+- For a custom adapter, keep an application session pointer containing the auth domain and a version that changes when the session is replaced or ended. Store credentials under the application's own key; follow the chosen adapter's persistence schema rather than imposing this layout on BrowserClient.
 - Capture session version **and credentials version/token identity** when starting API calls or renewal. Renewal can change credentials without changing the selected account; checking only the account/session ID is insufficient for stale 401 cleanup.
-- Isolate a candidate callback until state, nonce, PKCE, issuer/client, ID Token and any UserInfo subject checks complete. SDK methods may write userStore before returning; use the project's candidate adapter/store rather than retroactively undoing a partial commit.
+- With raw `oidc-client-ts` or a custom adapter, isolate a candidate callback until state, nonce, PKCE, issuer/client, ID Token and any UserInfo subject checks complete. Raw SDK callbacks may write userStore before returning; use a candidate adapter/store rather than retroactively undoing a partial commit. Official BrowserClient performs this through handleLoginCallback; do not consume its transaction twice.
 - Commit a validated candidate under the session lock only if the captured source version still matches. Cancelled or failed switches leave the original valid session intact. A callback arriving after another login or logout is stale.
 - Coordinate refresh and commit across same-origin tabs, using the project's supported lock (Heimdall uses Web Locks). Re-read shared state inside the lock. Reject old successful renewals as well as old failures; localStorage writes and storage events alone are not a mutual-exclusion protocol.
 - Keep AT/RT out of URLs, and all tokens out of logs, Redux/DVA display state and retry queues. A standard `id_token_hint` sent to a trusted provider's authorization/End Session endpoint is a limited protocol exception; do not propagate it into generic return URLs, UI links or referrers. Expose only the identity and status the UI needs.
 
 ## Requests and renewal
 
-The shared request layer acquires an active session, captures its versions, attaches its AT, and performs only bounded renewal/retry. A page should not independently fetch a token or implement its own 401 handler.
+The shared request layer acquires an active session, captures its versions and attaches its AT. BrowserClient.fetch applies its own no-retry-on-401 contract; custom request adapters may implement bounded renewal/retry with these safeguards. A page should not implement its own 401 handler or duplicate SDK renewal.
 
 Before committing renewed credentials or clearing failed credentials, acquire the session lock and match both the captured session and captured credentials. A late request using AT1 must not clear a still-current account that already renewed to AT2. A request made as A must not replay a mutation under a newly selected B; if the captured account/session changed, return control to the caller instead of silently changing its identity.
 

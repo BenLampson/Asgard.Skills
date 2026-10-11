@@ -13,6 +13,7 @@ description: "开发、集成或审查 Heimdall /mcp 管理能力，处理 OAuth
 
 - 开发或审查 MCP 工具：读取 `references/mcp-contract.md` 的“服务复用”和“工具契约”。
 - 接入远程 MCP 客户端：读取“传输与认证”。
+- C#/Node 配置 MCP 认证头时，读取 [官方 SDK 的 MCP 适配](../identity-integration/references/heimdall-sdk.md#校验mcp-与未包含能力)，复用 `HeimdallMcpAuthentication` 或 `createMcpAuthenticationHeaders`，再交给标准 MCP 客户端。它们不封装工具/任务调用，不提供 HMAC 或 AK/SK 换 JWT，也不授予普通业务 Token 管理权限。
 - 配置 MCP 凭据：读取“凭据策略”。
 - 排查越权、跨租户、重复写入或审计：读取“安全边界”。
 - 发布 Heimdall MCP：读取“验证清单”，并同时使用 `$asgard-backend-guard`、`$asgard-admin-frontend`。

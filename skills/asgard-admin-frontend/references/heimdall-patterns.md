@@ -7,7 +7,7 @@ Use the Heimdall frontend as the reference implementation:
 - `@umijs/max` for app framework, routes, layout, DVA, model, initial state, and access support.
 - Ant Design and `@ant-design/pro-components` for operational admin UI.
 - `axios` through the shared request instance.
-- `oidc-client-ts` and `react-oidc-context` for browser OIDC session handling.
+- The built-in Heimdall 5.5.2 Console uses its existing `oidc-client-ts` adapter. New business SPAs integrating Heimdall should use [the official BrowserClient](../../identity-integration/references/heimdall-sdk.md#浏览器创建一个共享-client); it has no React/Vue hook, so connect its snapshot/subscribe data to the project's UI state.
 - An explicit project-selected API client strategy; Asgard.TsGen output under `src/services` is supported but optional.
 
 Read the target version's `fe/package.json` rather than replacing its scripts. In Heimdall 5.5.2, `npm run dev` calls `node ./scripts/dev.mjs`, which checks port 3000 and fails if occupied. Start from the existing `fe` directory with `npm run dev`; do not bypass the wrapper with direct `max dev` or let Umi choose another port. Identify an existing preview's process, command line and checkout before stopping it. Backend remains on 5000; callback/logout-complete and frontend development config remain on 3000.
@@ -129,7 +129,7 @@ Global app setup should:
 - Wrap the root with Ant Design `ConfigProvider`, `App`, and the auth provider.
 - Redirect unauthenticated users away from non-public routes.
 - Attach access tokens in the shared request interceptor.
-- On 401, match the captured session and credentials under the session lock before bounded renewal/retry or cleanup. Discard stale results; a late AT1 failure cannot erase AT2 or another login. Network failure keeps the session and blocks the current operation; confirmed invalidation clears only the matching credentials. After explicit logout, stay on a manual login/recovery surface rather than automatically entering SSO.
+- Preserve the selected adapter's 401 behavior: official BrowserClient.fetch ends the matching captured session without retrying; a custom adapter may implement bounded renewal after checking session/credentials. Discard stale results; AT1 failure cannot erase AT2 or another login. Network failure blocks the current operation while preserving the session; after explicit logout, stay on a manual login/recovery surface.
 
 UI permission helpers should read Asgard-compatible `permissions` and `roles` claims from the user profile or access token. For UI gating, use helpers such as `hasAnyPermission(user, ['platform.admin'])`.
 
