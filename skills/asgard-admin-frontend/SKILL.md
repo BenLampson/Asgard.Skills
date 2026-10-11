@@ -17,7 +17,7 @@ For login-flow architecture and PKCE/OIDC protocol design, also use `$identity-i
 |------|------|
 | API calls | Follow the API client strategy selected by the current project. If it uses TsGen, call generated `src/services/controller/*` methods and reuse `src/services/models/*` types; otherwise keep calls behind the project's shared request/client layer. |
 | Generated code | When TsGen is enabled, treat generated `services/common`, `services/controller`, and `services/models` as pure generated output. Do not patch business behavior into generated files. |
-| Request auth | All normal HTTP calls must go through the shared request instance that attaches Bearer tokens and handles 401 renew/login redirect. |
+| Request auth | All normal HTTP calls use the shared request/session layer for Bearer tokens and bounded 401 renewal. Match the captured session and credentials before clearing auth; do not let a stale 401 erase a newer login or cause an automatic SSO loop after logout. |
 | OIDC profile | Business admin SPAs must obtain display profile claims from the discovered `userinfo_endpoint` or ID Token. Do not call Heimdall `/api/account/me` merely to render the current user's name, email, avatar, username, or tenant. |
 | Response handling | Unwrap Asgard `Response<T>`, `PageResponse<T>`, and `CursorResponse<T>` with shared helpers; do not parse `code/message/data` ad hoc in every page. |
 | State ownership | Put reusable list/filter/pagination/load/mutation state in a DVA model. Keep pages focused on layout, table columns, forms, and user actions. |
@@ -108,6 +108,8 @@ If the project has chosen TsGen and a controller is missing from generated clien
 
 ## OIDC Current-User Boundary
 
+For account switching, refresh/logout races, multiple tabs, or page restoration, read [OIDC session safety](references/oidc-session-safety.md) and [Heimdall's versioned protocol contract](../identity-integration/references/heimdall-multi-account.md). Keep candidate login separate until validation and atomic commit; distinguish logout of this application from logout of an OP browser account.
+
 Do not treat “admin frontend” as synonymous with “Heimdall identity-management frontend.” Brigitte, Bridge, and other business consoles are OIDC Relying Parties even when their UI is an admin console.
 
 Use this decision order:
@@ -141,6 +143,8 @@ Check both the generated URL and actual browser destination, including login ret
 - Does a business SPA obtain basic current-user display data from OIDC UserInfo/ID Token instead of Heimdall `/api/account/me`?
 - Does OIDC code use Discovery's `userinfo_endpoint` and request the scopes required for the displayed claims?
 - Has the implementation avoided adding the project Origin to Heimdall host API CORS solely for current-user display data?
+- Do failed switches preserve the current login, and do late callbacks, renewals, and 401s check both session version and captured credentials?
+- Are local application logout, explicit OP logout, network failure, and confirmed credential invalidation handled separately?
 - Do Heimdall page links use explicit frontend configuration, verified target routes, and the intended tenant context, with no Authority-origin fallback?
 - Does the completion report distinguish navigation implementation, browser verification, and verified business operations?
 - Did `npm run typecheck` pass after TypeScript changes?
@@ -148,3 +152,5 @@ Check both the generated URL and actual browser destination, including login ret
 ## References
 
 Read `references/heimdall-patterns.md` when implementing or reviewing concrete Heimdall-style pages, models, auth wiring, or TsGen troubleshooting.
+
+For Heimdall local preview, follow its current `AGENTS.md`: frontend `http://localhost:3000`, backend `http://localhost:5000`, callbacks `/callback` and `/logout-complete` on port 3000. Start only with `cd fe` then `npm run dev`; identify the owner of port 3000 before stopping a verified old project preview. Do not let the tool fall through to another port. This is Heimdall's project contract, not a port requirement for all Asgard frontends.

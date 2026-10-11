@@ -10,16 +10,9 @@ Use the Heimdall frontend as the reference implementation:
 - `oidc-client-ts` and `react-oidc-context` for browser OIDC session handling.
 - An explicit project-selected API client strategy; Asgard.TsGen output under `src/services` is supported but optional.
 
-Expected scripts:
+Read the target version's `fe/package.json` rather than replacing its scripts. In Heimdall 5.5.2, `npm run dev` calls `node ./scripts/dev.mjs`, which checks port 3000 and fails if occupied. Start from the existing `fe` directory with `npm run dev`; do not bypass the wrapper with direct `max dev` or let Umi choose another port. Identify an existing preview's process, command line and checkout before stopping it. Backend remains on 5000; callback/logout-complete and frontend development config remain on 3000.
 
-```json
-{
-  "dev": "set PORT=3000&& max dev",
-  "build": "max build",
-  "lint": "eslint . --ext .ts,.tsx",
-  "typecheck": "tsc --noEmit"
-}
-```
+Use the project's `npm run typecheck`, `npm run lint` and `npm run build` commands for their corresponding checks. Account/session adapter changes also follow [OIDC session safety](oidc-session-safety.md).
 
 ## API Client Pattern
 
@@ -136,7 +129,7 @@ Global app setup should:
 - Wrap the root with Ant Design `ConfigProvider`, `App`, and the auth provider.
 - Redirect unauthenticated users away from non-public routes.
 - Attach access tokens in the shared request interceptor.
-- Attempt token renew once on 401 before redirecting to login.
+- On 401, match the captured session and credentials under the session lock before bounded renewal/retry or cleanup. Discard stale results; a late AT1 failure cannot erase AT2 or another login. Network failure keeps the session and blocks the current operation; confirmed invalidation clears only the matching credentials. After explicit logout, stay on a manual login/recovery surface rather than automatically entering SSO.
 
 UI permission helpers should read Asgard-compatible `permissions` and `roles` claims from the user profile or access token. For UI gating, use helpers such as `hasAnyPermission(user, ['platform.admin'])`.
 

@@ -1,6 +1,6 @@
 ---
 name: identity-integration
-description: "设计或接入 Asgard/Heimdall 登录、OIDC/PKCE、JWT 验签、账号/后台地址和 /userinfo 边界。标准 claims 字段用 asgard-identity-userinfo。"
+description: "设计或接入 Asgard/Heimdall OIDC/PKCE、多账号切换、刷新与退出、JWT 验签、页面地址和 UserInfo 边界。标准 claims 用 asgard-identity-userinfo。"
 ---
 
 # Identity Integration
@@ -16,6 +16,8 @@ description: "设计或接入 Asgard/Heimdall 登录、OIDC/PKCE、JWT 验签、
 - IDP 应该把哪些 claim 放进 access token
 - OIDC `/userinfo` 能做什么，不能做什么
 - 前端、后端、网关之间哪些职责该分开
+
+接入 Heimdall 多账号、调整刷新/退出或排查反向代理后的登录 Cookie 时，读取 [Heimdall 多账号与会话契约](references/heimdall-multi-account.md)。它以 5.5.2 已实现行为为基线；其他版本先核对实现，不从旧架构计划推定协议。
 
 ## 什么时候使用
 
@@ -85,6 +87,17 @@ description: "设计或接入 Asgard/Heimdall 登录、OIDC/PKCE、JWT 验签、
 - 需要 `client_id`，不要伪装成用户登录令牌
 
 ## Asgard Web 接入硬约束
+
+### Heimdall 多账号与会话
+
+- Heimdall 5.5.2 多账号与后通道退出直接可用，不新增 `multi_account.enabled`、`backchannel_logout.enabled` 或代理 Cookie 开关；可选策略配置块省略时使用产品默认值。
+- RP 使用标准 `prompt=select_account` 选择账号；当前版本没有公开 `account_id` 参数或 claim。内部浏览器交互、账号历史和控制台入口不能充当登录凭据。
+- 切换先完成候选身份校验，再原子提交。取消或失败保留原有效会话；刷新固定原 issuer/client/tenant/sub/sid，不能随 OP 最近账号改变身份。
+- 普通退出结束本应用授权并撤销捕获的 RT/AT，不调用 OP End Session；统一退出才结束明确选中的 OP `sid`。不要把两者绑定到同一个普通退出动作。
+- 迟到回调、刷新结果及 401 只能处理其捕获的会话版本和凭据，不能覆盖或删除较新的登录。网络失败与明确凭据失效分别处理。
+- 后通道通知不保证离线 JWT 资源 API 立即拒绝旧 AT；按业务要求选择短期限、在线校验或共享失效状态。第三方 SPA 不借用 Heimdall Console 管理接口来检查会话。
+
+参数、授权边界、Cookie、客户端迁移和验证场景见 [完整契约](references/heimdall-multi-account.md)。
 
 ### 前端
 
