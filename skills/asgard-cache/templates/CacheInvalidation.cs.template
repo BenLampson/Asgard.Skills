@@ -10,7 +10,7 @@ public async Task<bool> {MethodName}({ParameterType} {ParameterName})
     // 更新后失效缓存
     if (result && AsgardContext.Cache != null)
     {
-        var cacheKey = $" {ModuleName}:{EntityName}:{ParameterName}";
+        var cacheKey = string.Concat("{ModuleName}:{EntityName}:", {ParameterName});
         await AsgardContext.Cache.RemoveAsync(cacheKey);
     }
 

@@ -1,22 +1,15 @@
 ---
 name: asgard-cache
-description: "配置、使用或迁移 Asgard 5.3+ Redis 业务缓存 IAsgardCache，处理 TTL、失效和关闭行为。包含旧缓存 API 的迁移；不涉及 OIDC/JWKS 内部内存缓存。"
+description: Configure and use Asgard 6.0+ Redis business caching with IAsgardCache, TTL, invalidation and disabled-cache behavior. Excludes OIDC/JWKS internal memory caching.
 ---
 
 # Asgard Redis 缓存
 
-## 版本与强制迁移
+## 当前版本
 
-Asgard 5.3 起业务缓存仅支持 Redis；无本地层、两级回填、固定两秒 TTL 或内存回退。旧声明整个 5.x 保留并标记 `[Obsolete(..., error: true)]`，6.0 删除。不要生成旧 API 或建议压制错误；按提示迁移接口、配置并重新编译宿主和插件，不承诺二进制兼容。
+适用于 Asgard 6.0+，业务缓存仅支持 Redis。通过 `IAsgardCache` 使用，默认宿主自动装配；自定义宿主使用 `AddAsgardCache`，手动装配使用 `RedisAsgardCache` / `RedisCacheConfigurator`。
 
-- `IMultiLevelCache` → `IAsgardCache`。
-- `AddMultiLevelCache(...)` → `AddAsgardCache(...)`。Yggdrasil 已自动装配，不重复注册。
-- `MultiLevelCache` → 默认从 DI 获取 `IAsgardCache`；手动装配用 `RedisAsgardCache`。
-- `MultiLevelCacheConfigurator` → `RedisCacheConfigurator`。
-- `RefreshAsync<T>` → `GetAsync<T>`，已无本地副本可刷新。
-- `ClearAsync` → 选择业务前缀调用 `RemoveByPrefixAsync`；不引导业务执行 FLUSHDB。
-- 删除 `MemoryCacheOptions` / `CacheConfig.Memory` / `CacheManager.MemoryCache` 调用。
-- `RedisCacheOptions.Enabled` → `CacheConfig.Enabled`；删除 `FallbackToMemoryCache`。
+所有示例和实现只使用当前 API。业务缓存没有本地层、两级回填或内存回退。
 
 ## YAML
 
@@ -48,7 +41,6 @@ caching:
 
 ## 参考与分发
 
-- [迁移说明](references/migration-5.3.md)：发布期和 6.0 清理清单。
 - `references/CacheConfig.cs`、`references/CacheManager.cs`：当前配置与生命周期实现。
 - `templates/appsettings.yaml.template`：新配置模板。
 - 仓库 `doc/skills/asgard-cache` 提供同版 skill，团队升级时同步分发整个目录。

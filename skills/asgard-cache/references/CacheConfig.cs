@@ -1,16 +1,11 @@
 namespace Asgard.Abstractions.Caching;
 
-/// <summary>业务缓存配置；5.3 起仅支持 Redis。</summary>
+/// <summary>Redis 单层业务缓存配置。</summary>
 public class CacheConfig : ISystemConfig
 {
     /// <summary>是否启用 Redis 业务缓存；关闭时不建立连接。</summary>
     [ConfigPath("caching.enabled", DefaultValue = false)]
     public bool Enabled { get; set; }
-
-    /// <summary>旧本地缓存配置，仅保留迁移诊断声明。</summary>
-    [Obsolete("删除 Memory / caching.memory，改用 caching.redis 配置 Redis；参见 doc/29-缓存迁移-5.3.md。6.0 删除。", true)]
-    [ConfigPath("caching.memory")]
-    public MemoryCacheOptions Memory { get; set; } = new();
 
     /// <summary>Redis 连接、命名空间和默认 TTL。</summary>
     [ConfigPath("caching.redis")]

@@ -1,4 +1,4 @@
 interface:
   display_name: "Asgard Redis Cache"
-  short_description: "使用 Redis 单层缓存并迁移 5.x 废弃入口"
-  default_prompt: "Use $asgard-cache to configure Redis-only caching or migrate legacy Asgard cache APIs before 6.0."
+  short_description: "配置 Asgard 6.0 Redis 缓存、过期时间与业务失效行为"
+  default_prompt: "Use $asgard-cache to configure and use Asgard 6.0 Redis business caching."
