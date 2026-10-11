@@ -1,4 +1,4 @@
 interface:
   display_name: "Identity Integration"
-  short_description: "处理 Asgard/Heimdall PKCE、多账号切换、刷新与退出边界"
-  default_prompt: "Use $identity-integration to integrate Asgard/Heimdall login, account switching, refresh, logout, or backend JWT validation."
+  short_description: "使用 Heimdall C#/TS SDK，处理 PKCE、多账号、刷新与退出"
+  default_prompt: "Use $identity-integration to integrate the Heimdall C#, browser, or Node SDK for login, tokens, logout, or directory access."

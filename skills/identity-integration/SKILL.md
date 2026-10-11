@@ -1,6 +1,6 @@
 ---
 name: identity-integration
-description: "设计或接入 Asgard/Heimdall OIDC/PKCE、多账号切换、刷新与退出、JWT 验签、页面地址和 UserInfo 边界。标准 claims 用 asgard-identity-userinfo。"
+description: "使用 Heimdall 官方 C#/浏览器/Node SDK，或设计 Asgard OIDC/PKCE、多账号、刷新退出、JWT 验签与 UserInfo 接入。标准 claims 用 asgard-identity-userinfo。"
 ---
 
 # Identity Integration
@@ -18,6 +18,8 @@ description: "设计或接入 Asgard/Heimdall OIDC/PKCE、多账号切换、刷�
 - 前端、后端、网关之间哪些职责该分开
 
 接入 Heimdall 多账号、调整刷新/退出或排查反向代理后的登录 Cookie 时，读取 [Heimdall 多账号与会话契约](references/heimdall-multi-account.md)。它以 5.5.2 已实现行为为基线；其他版本先核对实现，不从旧架构计划推定协议。
+
+新项目使用 Heimdall 时，优先按 [官方 SDK 用法](references/heimdall-sdk.md) 选择浏览器、C# 或 Node 入口，复用已封装的兑换、校验、刷新、撤销与只读目录能力。先核对实际包版本及发布状态；已有集成按任务范围迁移，不自动改造无关项目。
 
 ## 什么时候使用
 
@@ -85,6 +87,13 @@ description: "设计或接入 Asgard/Heimdall OIDC/PKCE、多账号切换、刷�
 - 使用明确的 machine-to-machine / backend-service 令牌方案
 - 令牌里必须遵守 Asgard 的 `token_type=BackendService` 契约
 - 需要 `client_id`，不要伪装成用户登录令牌
+
+### 使用 Heimdall 官方 SDK
+
+- 浏览器 public SPA 使用 `@benlampson/heimdall-browser` 的 `HeimdallBrowserClient`；无存储协议层为 `/protocol`。服务端使用 `.NET 10` 的 `Asgard.Heimdall.Client` 或 Node 的 `@benlampson/heimdall-server`。
+- 浏览器便利层处理候选回调校验、可选保存、刷新协调与退出；用其公开方法，不再平行手写 PKCE、Token 存储和刷新锁。纯协议层及 C#/Node 用户流程的事务一次性消费、路由和凭据保存仍由接入方负责。
+- 官方 SDK 不提供 UI/Hook、资源认证中间件、会话门禁或通知接收端。Asgard API 继续使用现有 `host.auth.jwt` 和授权链路；用户 Token 与目录 BackendService Token 使用不同调用入口。
+- 安装、初始化、回调、设备登录、两种退出、服务凭据轮换及目录示例见 [SDK 接入用法](references/heimdall-sdk.md)。服务端支持的参数组合不等于 SDK 已支持，例如 5.5.2 SDK 的 `prompt` 只接受单值。
 
 ## Asgard Web 接入硬约束
 

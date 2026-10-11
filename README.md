@@ -64,6 +64,8 @@ description 的仓库维护上限为 180 字符，触发条件和边界前置。
 
 Heimdall 多账号接入、刷新与退出使用 `identity-integration`，前端实现同时使用 `asgard-admin-frontend`：
 
+- [官方 SDK 怎么用](skills/identity-integration/references/heimdall-sdk.md)：包选择与发布状态、浏览器初始化/回调/刷新/两种退出、C# 命名凭据与目录、Node 服务与 MCP 认证头；新接入优先复用 SDK
+
 - [5.5.2 会话契约](skills/identity-integration/references/heimdall-multi-account.md)：标准账号选择、固定身份刷新、本应用退出与指定 OP sid 统一退出；没有独立多账号启用开关
 - [前端会话并发](skills/asgard-admin-frontend/references/oidc-session-safety.md)：候选验证后提交、旧回调/刷新/401 防护、多标签页与页面恢复
 - 第三方 RP 读取标准 UserInfo，不调用 Heimdall Console 的管理会话接口；后通道与离线 AT 失效策略分别设计

@@ -25,7 +25,7 @@
 
 RP 保持 Code + **S256 PKCE**、一次性 state、请求 nonce 和登记回调。验证 ID Token 后再接纳身份；获取 UserInfo 时核对其 `sub` 与 ID Token 一致。
 
-切换应在独立候选存储中完成回调与身份校验，成功后在锁内检查原会话版本，再原子提交候选身份。`oidc-client-ts` 默认会写 userStore，仅调用 SDK 回调后才判断成功可能已覆盖原登录。取消、交互过期、`access_denied`、兑换或校验失败均保留原有效会话；迟到候选不能覆盖新登录。前端具体实现见 [会话并发与验证](../../asgard-admin-frontend/references/oidc-session-safety.md)。
+切换应在独立候选存储中完成回调与身份校验，成功后在锁内检查原会话版本，再原子提交候选身份。新 RP 可使用 [HeimdallBrowserClient](heimdall-sdk.md) 的 `switchAccount` 与 `handleLoginCallback`，复用其候选隔离和提交；跳转流程选能跨导航保留会话的 store。直接使用 `oidc-client-ts` 时，其默认回调会写 userStore，调用后才判断成功可能已覆盖原登录，需自建候选适配。取消、交互过期、`access_denied`、兑换或校验失败均保留原有效会话；迟到候选不能覆盖新登录。前端具体实现见 [会话并发与验证](../../asgard-admin-frontend/references/oidc-session-safety.md)。
 
 ## 刷新
 

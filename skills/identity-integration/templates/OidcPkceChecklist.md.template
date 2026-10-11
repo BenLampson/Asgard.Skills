@@ -10,6 +10,7 @@
 - Access token audience: `{Audience}`
 - Backend validation mode: `{ValidationMode}`
 - Asgard token profile: `{TokenProfile}`
+- Heimdall SDK package/version/entrypoint: `{SdkSelection}`（已有集成按任务范围保留或迁移）
 
 ## 会话行为
 
@@ -22,4 +23,4 @@
 - 网络失败与 invalid_grant 分开处理；退出后不自动重进 SSO。
 - 资源 API 的 AT 失效策略：`{AccessTokenInvalidationPolicy}`。
 
-Heimdall 的具体版本契约参见 identity-integration 的 references/heimdall-multi-account.md；不要为接入添加多账号启用开关或公开 account_id 字段。
+Heimdall 具体调用先读 identity-integration 的 references/heimdall-sdk.md，版本契约读 references/heimdall-multi-account.md。BrowserClient 已处理回调/保存/刷新协调，不重复消费事务或叠加401重放；纯协议及C#/Node接入方负责事务、路由与保存。不要为接入添加多账号启用开关或公开 account_id 字段。
