@@ -1,6 +1,6 @@
 ---
 name: asgard-tracing-observability
-description: "配置或排查 Asgard 请求 Trace、独立追踪持久化和数据库日志，使用查询服务、备注/标签及故障快照复现。"
+description: "按 TraceId 排查 Asgard 线上异常、步骤与身份快照，或配置请求追踪、独立持久化和数据库日志。业务故障定位与脱敏复现用此 skill。"
 ---
 
 # Asgard Tracing And Observability
@@ -30,6 +30,8 @@ description: "配置或排查 Asgard 请求 Trace、独立追踪持久化和数�
 - **需要解释 `AsyncLocal<T>` 在 Asgard 中如何承载请求追踪时**
 
 ## 核心结论
+
+拿到 TraceId 后，先按 [线上异常排查](references/incident-triage.md) 读取请求路径、状态和完整步骤。`ExceptionSummary` 为空或请求快照匿名，都不能单独证明没有异常或认证失败；成功请求是否落库取决于当前采集配置。
 
 | 主题 | 结论 |
 |------|------|
@@ -173,6 +175,8 @@ public sealed class ObservabilityController(
 ## 代码示例
 
 需要编写该模块代码时，按场景读取 [实现示例](references/implementation-examples.md)，只采用与当前任务和目标版本匹配的示例。
+
+已有线上 TraceId 或脱敏故障快照时，读取 [按链路定位并复现异常](references/incident-triage.md)。
 
 ## 推荐做法
 

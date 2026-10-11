@@ -62,6 +62,16 @@ description 的仓库维护上限为 180 字符，触发条件和边界前置。
 - IDP、认证测试、授权链路都必须复用同一套标准 claims 契约
 - 不允许在不同项目、不同插件、不同测试里各自发明“用户信息 JSON”或随意命名 claims
 
+Heimdall 多账号接入、刷新与退出使用 `identity-integration`，前端实现同时使用 `asgard-admin-frontend`：
+
+- [5.5.2 会话契约](skills/identity-integration/references/heimdall-multi-account.md)：标准账号选择、固定身份刷新、本应用退出与指定 OP sid 统一退出；没有独立多账号启用开关
+- [前端会话并发](skills/asgard-admin-frontend/references/oidc-session-safety.md)：候选验证后提交、旧回调/刷新/401 防护、多标签页与页面恢复
+- 第三方 RP 读取标准 UserInfo，不调用 Heimdall Console 的管理会话接口；后通道与离线 AT 失效策略分别设计
+
+线上 TraceId 排查使用 `asgard-tracing-observability` 的 [链路定位流程](skills/asgard-tracing-observability/references/incident-triage.md)。列表后单实体读取故障同时核对 `asgard-database` 的 [查询快照边界](skills/asgard-database/references/shared-entity-cache-tenant-scopes.md#列表与单实体读取的边界)，不得用放宽租户保护或删除合法数据消除错误。
+
+具体生产环境的部署清单由独立发布技能维护；本仓库的开发技能不携带服务器凭据或私有机器路径。
+
 Heimdall 与微服务集成时，使用 `heimdall-service-integration`：
 
 - BackendService 目录读取必须同时限制 Audience、`token_type`、Scope 和 Token 租户

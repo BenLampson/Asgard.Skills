@@ -221,12 +221,13 @@ public class {EntityName}Repository : AbsAsgardRepositoryBase<{EntityName}, {Key
 以下以单实体共享缓存补丁 `0abb1d959418c4b877ef3fc909abdee553e7b11f` 为基线；先确认目标版本包含该补丁。涉及租户范围、缓存键、写入或事务时读取 [完整契约与迁移示例](references/shared-entity-cache-tenant-scopes.md)，不要把本行为推定为所有已发布 5.3 包的契约。
 
 - 查询、更新、删除：只要实体继承 `AbsAsgardTenantEntity`，FreeSql 会通过框架注册的 `GlobalFilter` 自动带当前租户条件
-- 新增、更新：如果租户实体的 `TenantId` 为空，`AbsAsgardRepositoryBase` 会通过 `IAsgardRepositoryContext.IdentityContext` 自动回填当前租户
+- 单租户范围写入：框架通过 `IAsgardRepositoryContext.IdentityContext` 对允许的空 `TenantId` 回填当前租户；跨租户写入必须显式提供合法归属。该机制不得用于修复合法应用/平台直属历史行
 - HTTP 请求：租户值来自 `UseAsgardTenant()` 写入的请求身份上下文
 - 后台任务：租户值来自 `ITenantScopeFactory.CreateScope(tenantId)` 创建的作用域
 - 平台级流程：空租户为 `Unset`，租户数据默认拒绝。注册真实服务端 `ICrossTenantScopeAuthorizer` 后使用 `CreateCrossTenantScope()`；`UserType.Platform` 不授予跨租户权限
 - 单租户写入拒绝其他租户归属；跨租户写入必须显式提供合法非空归属；常规更新不能修改 `TenantId`
 - 单租户禁止 upsert。共享实体缓存需要唯一单列主键、固定表映射；平台和所属租户读同一行使用同一缓存键
+- 已授权列表返回某个 ID，不保证随后的 `Get/GetAsync` 能返回该实体：列表过滤与单实体归属复核是不同边界。只读汇总、空归属实体或列表后逐项查详情时，读取 [查询快照契约](references/shared-entity-cache-tenant-scopes.md#列表与单实体读取的边界)。
 
 推荐做法：
 

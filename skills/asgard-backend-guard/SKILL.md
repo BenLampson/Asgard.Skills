@@ -132,6 +132,8 @@ await repository.UpdateAsync(entity);
 - 租户默认依赖框架全局过滤与身份上下文，不要到处手写默认 `TenantId` 过滤
 - 不要让前端输入决定 `TenantId`、`CreateBy`、`CreateTime`、`Deleted`
 - 后台服务或平台级特例如果允许跨租户，必须由服务端 `ICrossTenantScopeAuthorizer` 授权后创建 `CreateCrossTenantScope()`；检查空范围拒绝、缓存命中归属校验和提交后失效，不能只靠用户类型、空租户或注释
+- 列表后逐项 `GetById/GetAsync` 是否引入不同归属复核、重复查询或并发删除窗口？合法直属空 TenantId 不得自动“修复”为某个租户。只读汇总可在已授权查询快照上共享纯评估器，详情与写入仍走正常授权；参见 [查询边界](../asgard-database/references/shared-entity-cache-tenant-scopes.md#列表与单实体读取的边界)。
+- 租户边界修复的回归是否使用真实全局过滤与仓储，覆盖直属空归属、单租户隔离和 `Unset` 拒绝？涉及缓存或并发时覆盖相应真实路径，不能仅靠 mock 返回值证明隔离。
 - 软删除审计基类必须由业务显式选择；不要批量修改现有实体继承关系
 - `Delete` / `DeleteAsync` 默认仍是物理删除；不要假设存在 AOP 软删除拦截器
 - 不要假设框架会自动添加 `Deleted == false` 全局过滤
