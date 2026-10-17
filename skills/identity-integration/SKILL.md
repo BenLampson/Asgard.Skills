@@ -90,6 +90,8 @@ description: "使用 Heimdall 官方 C#/浏览器/Node SDK，或设计 Asgard OI
 
 ### 使用 Heimdall 官方 SDK
 
+- SDK 5.5.4 起 JWT 时钟容差默认 30 秒，由客户配置：C# `ClockSkewSeconds`，浏览器/协议/Node `clockSkewSeconds`；支持非负整数秒，`0` 为严格校验。几秒偏差导致刚签发 Token 被拒时，优先核对 SDK 版本和容差，详见 [SDK 时间容差](references/heimdall-sdk.md#jwt-时间容差与升级)。SDK 配置不替代资源服务器自己的寿命校验设置。
+
 - 浏览器 public SPA 使用 `@benlampson/heimdall-browser` 的 `HeimdallBrowserClient`；无存储协议层为 `/protocol`。服务端使用 `.NET 10` 的 `Asgard.Heimdall.Client` 或 Node 的 `@benlampson/heimdall-server`。
 - 浏览器便利层处理候选回调校验、可选保存、刷新协调与退出；用其公开方法，不再平行手写 PKCE、Token 存储和刷新锁。纯协议层及 C#/Node 用户流程的事务一次性消费、路由和凭据保存仍由接入方负责。
 - 官方 SDK 不提供 UI/Hook、资源认证中间件、会话门禁或通知接收端。Asgard API 继续使用现有 `host.auth.jwt` 和授权链路；用户 Token 与目录 BackendService Token 使用不同调用入口。

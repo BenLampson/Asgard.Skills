@@ -26,6 +26,21 @@ dotnet add package Asgard.Heimdall.Client --version {已发布SDK版本}
 
 三个 SDK 版本跟随 Heimdall 产品 Release。跨版本接入先核对方法签名和协议，不因示例自动升级已有依赖。完整构建/打包方法见 [SDK README](https://github.com/BenLampson/Asgard.Heimdall/blob/v5.6.0/sdk/README.md)。
 
+## JWT 时间容差与升级
+
+SDK 5.5.4 的 .NET、浏览器和 Node 包支持客户选择 JWT 时间容差，默认 **30 秒**。5.5.3 的协议客户端虽允许 `iat` 超前 30 秒，`nbf`/`exp` 却采用零容差，本机比 IDP 慢约 7 秒即可拒绝刚签发的令牌；升级 5.5.4 优先解决这个不一致，无需为几秒偏差额外实现 HTTPS Date 认证时钟校准。
+
+| 入口 | 参数 |
+| --- | --- |
+| C# `HeimdallOAuthOptions`、命名服务 `HeimdallClientOptions` | `ClockSkewSeconds = 30` |
+| 浏览器 `HeimdallBrowserOptions`、纯协议 `HeimdallProtocolOptions`、Node `HeimdallServerOptions` | `clockSkewSeconds: 30` |
+
+省略参数即默认 30；客户可设置其他非负整数秒数，`0` 恢复零容差。TS 拒绝非有限值、非安全整数及负数，C# 拒绝负数。示例：`new HeimdallOAuthOptions { Authority = authority, ClientId = clientId, Audience = audience, ClockSkewSeconds = 60 }`；TS 在现有 Client 配置中增加 `clockSkewSeconds: 60`。
+
+`nbf` 最多允许超前容差秒数（含边界）；`exp` 必须晚于当前时间减去容差（宽限终点不包含）；协议客户端的未来 `iat` 同用该参数。容差不修改机器时间、不跳过签名/issuer/audience/nonce/身份边界、不延长 JWT 真实寿命和缓存/刷新计划。命名 C# 服务收紧参数会使旧配置的缓存失效。资源 API 的 `host.auth.jwt`、外部 OIDC 和后通道登出有自己的配置，此参数不会修改它们。
+
+升级时先分别核对 NuGet/npm 的 5.5.4 包及 [发布记录](https://github.com/BenLampson/Asgard.Heimdall/releases/tag/v5.5.4)，再更新实际项目依赖并保留用户已有更改。不要把仅设置 `ClockSkew` 当作 C# 修复完成：自定义 `LifetimeValidator` 必须实际使用相同容差。客户端系统时间仍应正常同步；容差之外的显著偏差应诊断时钟。
+
 ## 登记与可信配置
 
 先取得已登记的 issuer、clientId、tenantId、applicationId、资源 audience 和 scopes。Authority、API 根地址与 Heimdall 管理前端地址分别配置；端点由 Discovery 获取，不从待验 Token 或当前 URL 猜发行者。

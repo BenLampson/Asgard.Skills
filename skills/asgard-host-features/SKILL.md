@@ -18,6 +18,8 @@ description: "配置 Asgard host.* 的 JWT Bearer、中间件、CORS、Swagger�
 
 如果问题重点是“前端怎么登录”“Web 为什么要走 PKCE”“IDP、前端、Asgard API 之间怎么协作”，优先切到 `$identity-integration`；本 skill 主要负责宿主 `host.*` 配置和默认 Bearer JWT 接线。
 
+若报错来自 Heimdall SDK 的登录/Token 兑换而非宿主 Bearer 中间件，先按 [SDK 时间容差与升级](../identity-integration/references/heimdall-sdk.md#jwt-时间容差与升级) 核对版本：SDK 5.5.4 默认允许 30 秒偏差，客户用 `ClockSkewSeconds` / `clockSkewSeconds` 配置。该 SDK 参数不是 `host.auth` YAML 配置，不能通过调整资源 API 的配置修复旧 SDK 的零容差。
+
 ## 配置结构
 
 所有功能都在项目根目录 `app.yaml` 的 `host.*` 节点下统一配置：

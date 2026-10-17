@@ -28,6 +28,8 @@ description: "用 Heimdall C#/Node SDK 或现有协议集成微服务身份：Ba
 - Application Manifest、Tenant 绑定、应用管理员 Grant：`$heimdall-application-rbac`
 - Heimdall C#：`$asgard-dotnet-10-csharp-14`
 
+服务 SDK 的 JWT 时间容差自 5.5.4 起默认 30 秒；C# `HeimdallOAuthOptions`/`HeimdallClientOptions.ClockSkewSeconds` 和 Node `clockSkewSeconds` 可由客户设置非负整数秒，`0` 为严格校验。刚签发 Token 因数秒时差失败时，先核对 SDK 版本和该参数，详见 [SDK 时间容差与升级](../identity-integration/references/heimdall-sdk.md#jwt-时间容差与升级)；不要因此关闭验签或复制 Token 校验器。
+
 ## 实施规则
 
 1. 固定主体标识：`TenantUser.Id = JWT sub = Webhook subject_id = 用户资源 id = 成员资源 tenant_user_id`。
