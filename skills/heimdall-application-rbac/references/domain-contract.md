@@ -107,3 +107,9 @@ mini issuer 可以输出同一 Claim 合约，但它不是授权中心。调用�
 7. 只有在回滚窗口结束后才清理过渡字段。
 
 迁移必须幂等、可审计，并为 precheck、postcheck、cleanup 分阶段执行。
+
+## 5.6.0 普通用户默认角色
+
+`ApplicationRole` / `TenantApplicationRole` 增加 `is_user_default`；Manifest DTO、现有租户应用自定义角色保存接口和角色视图使用 `isUserDefault`。该标记仅用于当前应用的普通新用户默认授权，与新租户管理员默认标记 `isDefault` 互斥。普通默认模板必须属于 Tenant 层级。策略变更参与 Manifest 定义版本、租户同步、乐观锁及租户授权版本。
+
+外部服务通过显式授予的 `heimdall.users.create` 创建本租户普通用户，授权仅来自 Token 所属应用的当前默认角色；不得按具体租户、应用、Client、角色编码或权限组合硬编码。新增列迁移默认 false，不能从历史 `is_default` 自动回填。5.6.0 已按正式版本发布和部署，后端及 SDK 的验收证据见 [Release](https://github.com/BenLampson/Asgard.Heimdall/releases/tag/v5.6.0)。普通供给的开通步骤见 [用户供给契约](../../heimdall-service-integration/references/user-provisioning.md)。

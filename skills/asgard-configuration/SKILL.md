@@ -36,6 +36,8 @@ Asgard 使用强类型配置系统，从 YAML 文件、环境变量、命令行�
 
 **记住**：后加入的数据覆盖先加入的数据。修复配置问题时先确认覆盖链路，不要只看单个文件。
 
+**先区分实际加载入口**：上表的环境变量合并优先级适用于显式调用 `AsgardConfigurationBuilder.AddEnvironmentVariables(...)` 的配置链。`AddPluginConventions` / `LoadPluginConfig` 直接走 `YamlConfigLoader.LoadFromFile<T>(plugin.yaml)` 时，不会自动将进程环境变量按 `__` 路径合并进插件配置。此时应在 YAML 中使用 `${env:变量名}` 读取部署变量，或使用目标框架版本支持的统一配置构建链。Docker Compose 的 `.env` 仅负责变量替换；还必须将变量传入容器，并由插件实际加载入口读取，不能仅凭容器存在该变量就判断配置已生效。
+
 ## 占位符解析
 
 Asgard 支持在 YAML 标量字符串中使用占位符。`app.yaml` 走 `AsgardConfigurationBuilder` 合并配置图时解析，`plugin.yaml` 等直接通过 `YamlConfigLoader.Load/LoadFromFile` 读取的配置也会在绑定前解析。
