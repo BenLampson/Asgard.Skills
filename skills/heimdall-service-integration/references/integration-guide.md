@@ -28,14 +28,20 @@ Heimdall 是身份与访问管理系统，向业务微服务提供：
 
 | 项目 | 正式值 |
 |---|---|
-| Heimdall 版本 | `5.2.0` |
-| Git commit | `fdd1158e11a346cca3940e18e416acf1cc07b834` |
-| Git tag | `v5.2.0` |
-| Docker | `registry.cn-hangzhou.aliyuncs.com/benlampson/asgard.heimdall:5.2.0` |
-| Image digest | `sha256:ae1fc20b3ca4e1832f3b207a5a9e64ee5f00c6a4f0d3ebd435e8c194e85c1685` |
-| 正式站部署 | 2026-07-20 12:04（Asia/Shanghai），后端固定上述 digest，前端来自同一 commit |
+| Heimdall / SDK 版本 | `5.6.0` |
+| Git commit | `28b10855d48417657553a1066c5148d855cda541` |
+| Git tag / PR | `v5.6.0` / [#65](https://github.com/BenLampson/Asgard.Heimdall/pull/65) |
+| Backend | `registry.cn-hangzhou.aliyuncs.com/benlampson/asgard.heimdall:5.6.0` |
+| Backend digest | `sha256:ee3d88196dea474a6b4cfa7d00f77769bc4b2c7df4aaa0de02241af7a4e5c703` |
+| Web | `registry.cn-hangzhou.aliyuncs.com/benlampson/asgard.heimdall.web:5.6.0` |
+| Web digest | `sha256:9b549837af2ed703e4289b209bc2044fdfa7799fc49e3c0689bcfc2591a4140f` |
+| 正式站部署 | 2026-10-17（Asia/Shanghai）；两容器固定 5.6.0、重启 0；Nginx 未重启 |
 
-部署时优先固定 `registry.cn-hangzhou.aliyuncs.com/benlampson/asgard.heimdall:5.2.0@sha256:ae1fc20b3ca4e1832f3b207a5a9e64ee5f00c6a4f0d3ebd435e8c194e85c1685`，不要把可变的 `latest` 当作验收版本。镜像已发布不等于某个开发或生产环境已完成部署，环境状态需要单独记录。
+交付记录见 [v5.6.0 Release](https://github.com/BenLampson/Asgard.Heimdall/releases/tag/v5.6.0)。新增普通用户供给已发布到现有 C#/Node SDK；浏览器实现及用户 OIDC 登录不变。生产 PostgreSQL 已增加普通角色标记，既有值全部 false，不自动扩权。后端 1,404、C# SDK 66、TS 38 项通过，零失败/跳过；正式镜像与公开 Node 包在本地隔离 PostgreSQL/Redis 完成真实 Client→Token→连续创建用户、冲突、角色注入和数据库回读验收。特定业务租户仍须通过受支持的管理渠道配置 Scope 和普通角色，不能据此声称其目标 Client 已开通；历史目录/Webhook 接收方联调范围保持独立。
+
+### 5.2.0 历史目录与 Webhook 验收
+
+以下保留 5.2.0 的历史记录，不作为当前部署版本。
 
 `5.2.0` 正式镜像已包含以下能力：
 
@@ -50,7 +56,7 @@ Heimdall 是身份与访问管理系统，向业务微服务提供：
 
 正式站部署后已确认：Heimdall 容器运行上述不可变 digest 且重启次数为 0；前端 `index.html` 的构建、服务器文件和公网响应 SHA-256 一致；Issuer Discovery 返回 HTTP 200；Backend Directory 用户权限路由在无 Token 时返回 HTTP 401，证明路由已加载且认证边界生效。该冒烟验证仍不替代带真实 Tenant Client 的端到端验收。
 
-当前发布已交付 OpenAPI `1.2.0` 静态契约 `docs/openapi/backend-directory-api.openapi.yaml`，但尚未完成目标接入环境的真实 `Client -> Token -> Directory API -> identity.subject.invalidated Webhook` 联调。接入方应固定上述 digest，并按 `end-to-end-acceptance.md` 执行联调；记录完成前只能声明“发布制品已交付”，不能声明“目标环境验收完成”。
+5.2.0 历史发布交付 OpenAPI `1.2.0` 静态契约 `docs/openapi/backend-directory-api.openapi.yaml`，但尚未完成目标接入环境的真实 `Client -> Token -> Directory API -> identity.subject.invalidated Webhook` 联调。历史接入验收应核对实际版本，并按 `end-to-end-acceptance.md` 执行联调；记录完成前只能声明“发布制品已交付”，不能声明“目标环境验收完成”。
 
 更新 Heimdall 外部契约或发布版本时，必须同步更新此表。
 
@@ -132,3 +138,11 @@ Secret 与 Webhook HMAC Key 只能通过安全渠道或 Secret Manager 交付，
 - Webhook 事件、签名、消费策略：`identity-invalidation-webhook.md`
 - 真实端到端和发布验收：`end-to-end-acceptance.md`
 - 稳定设计不变量：`service-contract.md`
+
+## 5.6.0：服务端创建普通用户
+
+Heimdall 5.6.0 提供 `POST /api/backend/users`，要求标准 `client_credentials`、`token_type=BackendService`、显式授予 Client 的 `heimdall.users.create` 和 `heimdall-users-api` Audience。租户、应用与客户端只从可信 Token 读取，并实时校验注册和应用状态。
+
+普通默认角色由当前应用 Manifest 或租户应用 RBAC 的 `isUserDefault` 配置；与用于新租户管理员的 `isDefault` 互斥。不得维护具体应用、租户、Client 或角色编码的业务分支及部署白名单。创建请求不接受归属、角色、状态或审计字段。用户、凭据和当前应用角色在同一事务提交，不返回用户 Token。浏览器包及 OIDC 登录流程不变。
+
+现有 C# `Asgard.Heimdall.Client` 和 Node `@benlampson/heimdall-server` 新增独立 `HeimdallUserProvisioningClient`，只读 Directory Client 保持读取职责。部署前执行仓库迁移 `be/Database/Migrations/20261017_user_provisioning_default_roles.postgresql.sql`；完整接入与 OpenAPI 位于 `docs/backend-user-provisioning.md` 和 `docs/openapi/backend-user-provisioning.openapi.yaml`。接口和 SDK 已按上方交付基线发布，配置与错误行为见 [用户供给契约](user-provisioning.md)。各业务租户的开通与端到端验收仍须单独记录。

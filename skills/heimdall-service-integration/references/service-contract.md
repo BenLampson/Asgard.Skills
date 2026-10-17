@@ -20,7 +20,7 @@
 | Scope | `heimdall.directory.read` |
 | Audience | `heimdall-directory-api` |
 
-必须同时验证签名、Issuer、Audience、Token Type、Scope 和 Tenant。BackendService 只读，不授予组织或目录写权限。
+必须同时验证签名、Issuer、Audience、Token Type、Scope 和 Tenant。目录读取授权只读，不授予组织或目录写权限；独立用户供给能力见下方用户供给契约。
 
 ## 最终身份状态
 
@@ -70,3 +70,7 @@ Client 状态不是管理端展示字段，而是 Token Endpoint 的强制运行
 - 目录缓存只允许短 TTL，并使用稳定 `updated_at` 判断变化。
 - Webhook 网络错误、超时和非 2xx 必须持久化重试。
 - 手动重投保持原 Event ID，但生成新的 Timestamp 和签名。
+
+## 5.6.0 普通用户供给
+
+独立的用户创建 API 使用 `heimdall.users.create` / `heimdall-users-api`，不扩大目录读取 Scope。Scope 决定服务资格，Token 决定租户和应用边界，当前应用 RBAC 的 `isUserDefault` 决定普通用户默认授权；不存在具体业务对象白名单。`isDefault` 仍为新租户管理员默认角色，禁止普通供给使用。创建身份、登录凭据、应用授权和授权版本必须原子提交；新账号继续经现有 OIDC 登录，不允许以服务 Token 换任意用户 Token。新增角色列迁移默认 false，不自动转换历史管理员角色。5.6.0 已正式部署并发布 SDK，制品证据见 integration-guide.md；业务租户配置与自身接入验收须单独确认，详见 user-provisioning.md。

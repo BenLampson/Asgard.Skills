@@ -1,6 +1,6 @@
 # Heimdall 官方 SDK 用法
 
-以 SDK **5.5.3**、源码提交 `800fd65ad552f0aafe800adf6ba73dc3fe330e50` 为接口基线。协议与能力清单见 [SDK API](https://github.com/BenLampson/Asgard.Heimdall/blob/800fd65ad552f0aafe800adf6ba73dc3fe330e50/sdk/API.md)。下面按使用环境选入口，不另写一套 Token 协议。
+以 SDK **5.6.0**、源码标签 `v5.6.0` 为接口基线。协议与能力清单见 [SDK API](https://github.com/BenLampson/Asgard.Heimdall/blob/v5.6.0/sdk/API.md)。下面按使用环境选入口，不另写一套 Token 协议。
 
 ## 选择与安装
 
@@ -24,7 +24,7 @@ dotnet add package Asgard.Heimdall.Client --version {已发布SDK版本}
 
 源码合并与产品 tag 不等于三个包已发布，安装前分别核对 npm、NuGet 与 Release 记录；不把仅包含服务端的旧 tag 当 SDK 源码链接。若目标包尚未发布，可引用上述提交的 SDK 项目，或消费按该源码构建的本地 nupkg，并明确其来源；不自动触发生产发布。
 
-三个 SDK 版本跟随 Heimdall 产品 Release。跨版本接入先核对方法签名和协议，不因示例自动升级已有依赖。完整构建/打包方法见 [SDK README](https://github.com/BenLampson/Asgard.Heimdall/blob/800fd65ad552f0aafe800adf6ba73dc3fe330e50/sdk/README.md)。
+三个 SDK 版本跟随 Heimdall 产品 Release。跨版本接入先核对方法签名和协议，不因示例自动升级已有依赖。完整构建/打包方法见 [SDK README](https://github.com/BenLampson/Asgard.Heimdall/blob/v5.6.0/sdk/README.md)。
 
 ## 登记与可信配置
 
@@ -222,3 +222,9 @@ Node 继承无存储协议方法 `createLoginRequest`、`exchangeCode`、`refres
 - 密码、MFA、Passkey、LDAP、SAML、社交登录由 Heimdall 托管页面完成；SDK 不提供 password grant、OP 账号枚举/审批接口、React/Vue UI/Hook、SCIM CRUD 或通知接收中间件。
 
 用 SDK 不代表真实登记 Client 已验收。编译和模拟 HTTP 测试之外，按修改范围验证回调、切换、刷新、两种退出及真实目录结果；原生多标签页/BFCache 与生产联调分别报告，不能借其他 session 的服务端验收替代。
+
+## 服务端创建普通租户用户（5.6.0）
+
+现有 .NET / Node 服务端包提供独立的 `HeimdallUserProvisioningClient`：C# 从 `HeimdallClientFactory.CreateUserProvisioning(name)` 获取，Node 从 server 包导入并调用 `createUser`。显式配置 `heimdall.users.create` 和 `heimdall-users-api`，凭据来自服务端注入。Scope 必须由管理员授予 Client，角色来自当前应用 RBAC 的 `isUserDefault`，不得用具体业务对象或部署白名单决定权限。`isDefault` 仍用于新租户管理员，禁止复用为普通用户默认角色。
+
+接口只接收用户名、邮箱、初始密码及可选展示名/手机号，拒绝归属与角色字段；归属来自已验证 Token。不返回用户 Token，不改 OIDC 登录，不向浏览器包添加创建接口。创建 POST 不自动重试。安装 5.6.0 的现有服务端包即可，无新包。开通、迁移、错误契约与完整示例见 [用户供给契约](../../heimdall-service-integration/references/user-provisioning.md) 和 [仓库接入指南](https://github.com/BenLampson/Asgard.Heimdall/blob/v5.6.0/docs/backend-user-provisioning.md)。
