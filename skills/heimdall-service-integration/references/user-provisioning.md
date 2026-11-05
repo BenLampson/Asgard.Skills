@@ -34,15 +34,15 @@
 ## 现有 SDK
 
 ```shell
-dotnet add package Asgard.Heimdall.Client --version 5.9.1
-npm install @benlampson/heimdall-server@5.9.1
+dotnet add package Asgard.Heimdall.Client --version 5.9.3
+npm install @benlampson/heimdall-server@5.9.3
 ```
 
 - C#：命名 `HeimdallClientOptions` 配置实际 Authority/API 根地址、预期 TenantId/ApplicationId、`Scope="heimdall.users.create"`、`Audience="heimdall-users-api"`；`IHeimdallCredentialProvider` 提供 ClientId/Secret/Version。`HeimdallClientFactory.CreateUserProvisioning(name).CreateUserAsync(new HeimdallUserCreateRequest { ... })`。
 - Node：`HeimdallServerClient` 配置同样边界、`authenticationMethod` 和异步 `credentialProvider`；`new HeimdallUserProvisioningClient(server, apiBaseUrl, tenantId, applicationId).createUser(request)`。只在服务器导入 server 包。
 - Directory Client 保持读取职责。浏览器包的实现与 OIDC 登录没有改变；共享版本策略会同步包元数据。
 
-完整可运行配置示例与 OpenAPI 以 [5.9.1 接入指南](https://github.com/BenLampson/Asgard.Heimdall/blob/v5.9.1/docs/backend-user-provisioning.md) 及 [OpenAPI](https://github.com/BenLampson/Asgard.Heimdall/blob/v5.9.1/docs/openapi/backend-user-provisioning.openapi.yaml) 为准。
+完整可运行配置示例与 OpenAPI 以 [5.9.3 接入指南](https://github.com/BenLampson/Asgard.Heimdall/blob/v5.9.3/docs/backend-user-provisioning.md) 及 [OpenAPI](https://github.com/BenLampson/Asgard.Heimdall/blob/v5.9.3/docs/openapi/backend-user-provisioning.openapi.yaml) 为准。
 
 ## 迁移与交付证据
 
