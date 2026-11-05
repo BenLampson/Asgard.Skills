@@ -28,17 +28,17 @@ Heimdall 是身份与访问管理系统，向业务微服务提供：
 
 | 项目 | 正式值 |
 |---|---|
-| Heimdall / Node SDK | `5.9.0` / `5.9.0` |
-| C# NuGet 5.9.0 | 已公开发布并通过隔离缓存安装和构建验证 |
-| Git commit | `51c4ced039704be39580951a9bd9733960577c91` |
-| Git tag / PR | `v5.9.0` / [#69](https://github.com/BenLampson/Asgard.Heimdall/pull/69) |
-| Backend | `registry.cn-hangzhou.aliyuncs.com/benlampson/asgard.heimdall:5.9.0` |
-| Backend digest | `sha256:3f72055b547d4a256aaeaaf6ecbfa28ebcbf69ca1d4b553925907d43be261ba3` |
-| Web | `registry.cn-hangzhou.aliyuncs.com/benlampson/asgard.heimdall.web:5.9.0` |
-| Web digest | `sha256:77982a6023662ea5058b05c0c3111f800af35651a3771e2dcadb6ca49132e5b2` |
-| 正式站部署 | 2026-11-05（Asia/Shanghai）；两容器固定 5.9.0、重启 0；Nginx 未重启 |
+| Heimdall / Node SDK | `5.9.1` / `5.9.1` |
+| C# NuGet 5.9.1 | 已通过 GitHub Actions Trusted Publishing 发布，并通过公开源隔离缓存还原和运行验证 |
+| Git commit | `17dfb3eea7124927f416e6b6372808d71038453f` |
+| Git tag / PR | `v5.9.1` / [#71](https://github.com/BenLampson/Asgard.Heimdall/pull/71) |
+| Backend | `registry.cn-hangzhou.aliyuncs.com/benlampson/asgard.heimdall:5.9.1` |
+| Backend digest | `sha256:67b75c2a571dc2a549d1e7bb69340f2e01e55819c8b349e5430dc9c506437fb1` |
+| Web | `registry.cn-hangzhou.aliyuncs.com/benlampson/asgard.heimdall.web:5.9.1` |
+| Web digest | `sha256:18e4a38f4f42e141f02a6d39df24b7ff275969de7a5c7d13578d524e4773b1a5` |
+| 正式站部署 | 2026-11-05（Asia/Shanghai）；两容器固定 5.9.1、重启 0；Nginx 未重启 |
 
-5.9.0 区分可选登录号码与共享联系号码，并在 PostgreSQL 中按租户统一约束用户名、邮箱和登录号码；详见[用户供给契约](user-provisioning.md)及[目录契约](backend-directory-api.md)。生产两项迁移已执行。npm 5.9.0 经公开注册表安装验证，三个 NuGet 5.9.0 包经 Trusted Publishing 发布，并通过公开注册表隔离缓存安装和构建验证。后端完整 Release 套件 1,479 项通过，最终旧数据删除守卫追加 19 项定向测试通过；C# SDK 68、TypeScript SDK 39 项通过。前端检查、生产构建和公开健康检查通过。具体业务租户的 Client/Scope/角色仍需独立配置与验收。
+5.9.0 区分可选登录号码与共享联系号码，并在 PostgreSQL 中按租户统一约束用户名、邮箱和登录号码；详见[用户供给契约](user-provisioning.md)及[目录契约](backend-directory-api.md)。5.9.1 修复用户删除时遗留角色关联以及 TOTP 永久删除未清除历史密钥的问题，不新增结构迁移。npm 和三个 NuGet 5.9.1 包均已通过公开注册表隔离缓存安装及运行验证；后端 Release 套件 1,487 项、C# SDK 68 项和 TypeScript SDK 39 项通过。前端检查、生产构建和公开健康检查通过。具体业务租户的 Client/Scope/角色仍需独立配置与验收。
 
 ### 5.2.0 历史目录与 Webhook 验收
 
