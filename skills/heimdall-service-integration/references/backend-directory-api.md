@@ -1,5 +1,7 @@
 # BackendService 只读目录 API
 
+> 5.9.0 已部署：用户目录返回 `login_phone` 和 `contact_phone`；既有 `phone` 仍表示登录手机号，`contact_phone` 是可共享联系方式。完整契约见仓库 `docs/backend-directory-api.md`。
+
 ## 目录
 
 - [安全契约](#安全契约)
@@ -97,6 +99,8 @@ GET /api/backend/directory/groups/{groupId}/members/{tenantUserId}
       "display_name": "Agent 01",
       "email": "agent01@example.com",
       "phone": null,
+      "login_phone": null,
+      "contact_phone": null,
       "avatar_url": null,
       "status": 1,
       "updated_at": "2026-07-18T10:00:00Z"
