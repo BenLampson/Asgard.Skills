@@ -12,6 +12,8 @@ Use the Heimdall frontend as the reference implementation:
 
 Read the target version's `fe/package.json` rather than replacing its scripts. In Heimdall 5.5.2, `npm run dev` calls `node ./scripts/dev.mjs`, which checks port 3000 and fails if occupied. Start from the existing `fe` directory with `npm run dev`; do not bypass the wrapper with direct `max dev` or let Umi choose another port. Identify an existing preview's process, command line and checkout before stopping it. Backend remains on 5000; callback/logout-complete and frontend development config remain on 3000.
 
+In Heimdall 5.9.4, frontend development requires Node.js 22.12 or later. Preserve the installed dependency compatibility patches and run `npm run test:dependency-compat` when changing the lockfile; verify clean installation on Linux and Windows and audit at the high threshold. Avoid forcing incompatible major versions onto Express or glob. The built-in Console navigates to its configured identity service for account selection, even when management API requests use a development proxy; verify the browser reaches the real selection and login pages.
+
 Use the project's `npm run typecheck`, `npm run lint` and `npm run build` commands for their corresponding checks. Account/session adapter changes also follow [OIDC session safety](oidc-session-safety.md).
 
 ## API Client Pattern

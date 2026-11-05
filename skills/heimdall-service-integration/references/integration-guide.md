@@ -28,17 +28,17 @@ Heimdall 是身份与访问管理系统，向业务微服务提供：
 
 | 项目 | 正式值 |
 |---|---|
-| Heimdall / Node SDK | `5.9.3` / `5.9.3` |
-| C# NuGet 5.9.3 | 已通过 GitHub Actions Trusted Publishing 发布，并通过公开源隔离缓存还原和运行验证 |
-| Git commit | `a5707b729e06ebfe8da2dd70f493c8c823d1d992` |
-| Git tag / PR | `v5.9.3` / [#73](https://github.com/BenLampson/Asgard.Heimdall/pull/73) |
-| Backend | `registry.cn-hangzhou.aliyuncs.com/benlampson/asgard.heimdall:5.9.3` |
-| Backend digest | `sha256:a02054a0f2eaf2a3c7477b667a0ed43866cc55fb6e5db7084676dc1bcd93a2c5` |
-| Web | `registry.cn-hangzhou.aliyuncs.com/benlampson/asgard.heimdall.web:5.9.3` |
-| Web digest | `sha256:07beb3c77f9862f0e5715608972b95d43976ee92d07130232a1724a115b1c1d2` |
-| 正式站部署 | 2026-11-05（Asia/Shanghai）；两容器固定 5.9.3、重启 0；Nginx 未重启 |
+| Heimdall / Node SDK | `5.9.4` / `5.9.4` |
+| C# NuGet 5.9.4 | 已通过 GitHub Actions Trusted Publishing 发布，并通过公开源隔离缓存还原和运行验证 |
+| Git commit | `32fc26e6bc65424bbfbc044dc0b3b493c6d78bae` |
+| Git tag / PR | `v5.9.4` / [#74](https://github.com/BenLampson/Asgard.Heimdall/pull/74) |
+| Backend | `registry.cn-hangzhou.aliyuncs.com/benlampson/asgard.heimdall:5.9.4` |
+| Backend digest | `sha256:f21e46f20ea4ef66ca9b4e7f47e7738000ed8f5dc4a27503b72a19208803a023` |
+| Web | `registry.cn-hangzhou.aliyuncs.com/benlampson/asgard.heimdall.web:5.9.4` |
+| Web digest | `sha256:c152e457f68da5a7c16824985eb81d9406dd43d3a702d7452984d76b15bdc9ff` |
+| 正式站部署 | 2026-11-05（Asia/Shanghai）；两容器固定 5.9.4、重启 0；Nginx 未重启 |
 
-5.9.0 区分可选登录号码与共享联系号码，并在 PostgreSQL 中按租户统一约束用户名、邮箱和登录号码；详见[用户供给契约](user-provisioning.md)及[目录契约](backend-directory-api.md)。5.9.1 修复用户删除时遗留角色关联以及 TOTP 永久删除未清除历史密钥的问题。5.9.2 将前端构建依赖 Piscina 和 proxy-addr 升级到已修复 critical 告警的兼容版本，并增加 CI critical 审计；完整审计仍有其他级别告警。5.9.3 修复 OIDC 密钥生成在同毫秒碰撞时重复重试同一标识的问题。5.9.2 和 5.9.3 没有新结构迁移；后端 Release 套件 1,490 项、C# SDK 68 项和 TypeScript SDK 39 项通过。npm 和三个 NuGet 5.9.3 包均已通过公开源隔离缓存安装和运行验证。前端检查、生产构建和公开健康检查通过。具体业务租户的 Client/Scope/角色仍需独立配置与验收。
+5.9.0 区分可选登录号码与共享联系号码，并在 PostgreSQL 中按租户统一约束用户名、邮箱和登录号码；详见[用户供给契约](user-provisioning.md)及[目录契约](backend-directory-api.md)。5.9.1 修复用户删除时遗留角色关联以及 TOTP 永久删除未清除历史密钥的问题。5.9.2 将前端构建依赖 Piscina 和 proxy-addr 升级到已修复 critical 告警的兼容版本，并增加 CI critical 审计；完整审计仍有其他级别告警。5.9.3 修复 OIDC 密钥生成在同毫秒碰撞时重复重试同一标识的问题。5.9.4 升级前端高危依赖，将审计门槛提高到 high，并修复本地 API 代理下的账号选择跳转；发布时 npm 审计 high 和 critical 均为 0，另有 23 项 moderate 和 12 项 low。5.9.2 至 5.9.4 没有新结构迁移；后端 Release 套件 1,490 项、C# SDK 68 项和 TypeScript SDK 39 项通过。npm 和三个 NuGet 5.9.4 包均已通过公开源隔离缓存安装和运行验证。前端检查、生产构建和公开健康检查通过。具体业务租户的 Client/Scope/角色仍需独立配置与验收。
 
 ### 5.2.0 历史目录与 Webhook 验收
 
