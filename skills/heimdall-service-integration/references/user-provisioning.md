@@ -1,4 +1,6 @@
-# 服务端普通用户供给（Heimdall 5.6.0）
+# 服务端普通用户供给（Heimdall 5.9.0）
+
+> 5.9.0 已部署：`phone` 是可选登录手机号，填写后创建手机号登录凭据；`contactPhone` 是可共享联系方式。响应明确返回 `loginPhone` 和 `contactPhone`。同租户不同用户的用户名、邮箱和登录手机号跨类型不能冲突；停用仍占用，软删除且资料与凭据均释放后才可复用。号码不代表已验证归属。Node 与 NuGet 5.9.0 均已公开发布并通过隔离缓存安装验证。
 
 适用于业务系统希望在自己的页面添加本租户普通用户，并由业务后端调用 Heimdall。用户随后仍通过现有 OIDC 授权码/PKCE 登录。服务 Token 不兑换或代发用户 Token。
 
@@ -19,28 +21,32 @@
   "username": "alice",
   "email": "alice@example.test",
   "password": "<12–128 字符的初始密码>",
-  "displayName": "Alice"
+  "displayName": "Alice",
+  "phone": "13800138000",
+  "contactPhone": "13900139000"
 }
 ```
 
-`username/email/password` 必填，`displayName/phone` 可选。拒绝任何未知字段，包括租户、应用、角色、状态、ID 和审计字段。Query 也不能覆盖归属。用户、密码登录标识、当前应用普通角色和授权版本在同一事务提交，复用现有哈希、重复检查及审计。
+`username/email/password` 必填，`displayName/phone/contactPhone` 可选。`phone` 为空时不做手机号校验或创建手机号凭据；填写时创建 `LoginType.Phone` 凭据。`contactPhone` 不参与登录且可供多人共用。拒绝任何未知字段，包括租户、应用、角色、状态、ID 和审计字段。Query 也不能覆盖归属。用户、密码登录标识、当前应用普通角色和授权版本在同一事务提交，复用现有哈希、重复检查及审计。
 
-成功 HTTP 200，统一 `code/message/data`，data 包含 `id/tenantId/applicationId/username/displayName/email/phone/roleCodes`，不含密码或用户 Token。未认证 401、授权/归属/策略无效 403、输入无效 400、重复账号或并发冲突 409。未知服务错误按标准错误处理，不回传凭据。SDK 不自动重试创建 POST；网络结果不确定时先查询确认，不能盲目重复创建。
+成功 HTTP 200，统一 `code/message/data`，data 包含 `id/tenantId/applicationId/username/displayName/email/phone/loginPhone/contactPhone/roleCodes`，不含密码或用户 Token。未认证 401、授权/归属/策略无效 403、输入无效 400、重复账号或并发冲突 409；可确定字段时以 `X-Heimdall-Conflict-Field` 返回 `username|email|phone|identifier`。未知服务错误按标准错误处理，不回传凭据。SDK 不自动重试创建 POST；网络结果不确定时先查询确认，不能盲目重复创建。
 
 ## 现有 SDK
 
 ```shell
-dotnet add package Asgard.Heimdall.Client --version 5.6.0
-npm install @benlampson/heimdall-server@5.6.0
+dotnet add package Asgard.Heimdall.Client --version 5.9.0
+npm install @benlampson/heimdall-server@5.9.0
 ```
 
 - C#：命名 `HeimdallClientOptions` 配置实际 Authority/API 根地址、预期 TenantId/ApplicationId、`Scope="heimdall.users.create"`、`Audience="heimdall-users-api"`；`IHeimdallCredentialProvider` 提供 ClientId/Secret/Version。`HeimdallClientFactory.CreateUserProvisioning(name).CreateUserAsync(new HeimdallUserCreateRequest { ... })`。
 - Node：`HeimdallServerClient` 配置同样边界、`authenticationMethod` 和异步 `credentialProvider`；`new HeimdallUserProvisioningClient(server, apiBaseUrl, tenantId, applicationId).createUser(request)`。只在服务器导入 server 包。
 - Directory Client 保持读取职责。浏览器包的实现与 OIDC 登录没有改变；共享版本策略会同步包元数据。
 
-完整可运行配置示例与 OpenAPI 以 [5.6.0 接入指南](https://github.com/BenLampson/Asgard.Heimdall/blob/v5.6.0/docs/backend-user-provisioning.md) 及 [OpenAPI](https://github.com/BenLampson/Asgard.Heimdall/blob/v5.6.0/docs/openapi/backend-user-provisioning.openapi.yaml) 为准。
+完整可运行配置示例与 OpenAPI 以 [5.9.0 接入指南](https://github.com/BenLampson/Asgard.Heimdall/blob/v5.9.0/docs/backend-user-provisioning.md) 及 [OpenAPI](https://github.com/BenLampson/Asgard.Heimdall/blob/v5.9.0/docs/openapi/backend-user-provisioning.openapi.yaml) 为准。
 
 ## 迁移与交付证据
+
+5.9.0 生产已按顺序事务执行 `20261105_contact_phones.postgresql.sql` 和 `20261105_tenant_phone_uniqueness.postgresql.sql`。旧 `phone` 只在首次新增列时复制为联系号码；登录标识迁移遇到历史冲突会终止，须审计确认后处理，不自动合并。SCIM 仍将首个 `phoneNumbers` 视为登录号码，不提供联系号码。
 
 部署前用 `psql -v ON_ERROR_STOP=1 -1` 执行 `be/Database/Migrations/20261017_user_provisioning_default_roles.postgresql.sql`。仅给 `application_role` 和 `tenant_application_role` 新增 `is_user_default boolean NOT NULL DEFAULT false`；不回填管理员角色，不自动为已有 Client 授权。5.6.0 生产迁移已执行。回滚旧镜像保留新增列即可。
 

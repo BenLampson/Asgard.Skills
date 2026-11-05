@@ -28,16 +28,17 @@ Heimdall 是身份与访问管理系统，向业务微服务提供：
 
 | 项目 | 正式值 |
 |---|---|
-| Heimdall / SDK 版本 | `5.6.0` |
-| Git commit | `28b10855d48417657553a1066c5148d855cda541` |
-| Git tag / PR | `v5.6.0` / [#65](https://github.com/BenLampson/Asgard.Heimdall/pull/65) |
-| Backend | `registry.cn-hangzhou.aliyuncs.com/benlampson/asgard.heimdall:5.6.0` |
-| Backend digest | `sha256:ee3d88196dea474a6b4cfa7d00f77769bc4b2c7df4aaa0de02241af7a4e5c703` |
-| Web | `registry.cn-hangzhou.aliyuncs.com/benlampson/asgard.heimdall.web:5.6.0` |
-| Web digest | `sha256:9b549837af2ed703e4289b209bc2044fdfa7799fc49e3c0689bcfc2591a4140f` |
-| 正式站部署 | 2026-10-17（Asia/Shanghai）；两容器固定 5.6.0、重启 0；Nginx 未重启 |
+| Heimdall / Node SDK | `5.9.0` / `5.9.0` |
+| C# NuGet 5.9.0 | 已公开发布并通过隔离缓存安装和构建验证 |
+| Git commit | `51c4ced039704be39580951a9bd9733960577c91` |
+| Git tag / PR | `v5.9.0` / [#69](https://github.com/BenLampson/Asgard.Heimdall/pull/69) |
+| Backend | `registry.cn-hangzhou.aliyuncs.com/benlampson/asgard.heimdall:5.9.0` |
+| Backend digest | `sha256:3f72055b547d4a256aaeaaf6ecbfa28ebcbf69ca1d4b553925907d43be261ba3` |
+| Web | `registry.cn-hangzhou.aliyuncs.com/benlampson/asgard.heimdall.web:5.9.0` |
+| Web digest | `sha256:77982a6023662ea5058b05c0c3111f800af35651a3771e2dcadb6ca49132e5b2` |
+| 正式站部署 | 2026-11-05（Asia/Shanghai）；两容器固定 5.9.0、重启 0；Nginx 未重启 |
 
-交付记录见 [v5.6.0 Release](https://github.com/BenLampson/Asgard.Heimdall/releases/tag/v5.6.0)。新增普通用户供给已发布到现有 C#/Node SDK；浏览器实现及用户 OIDC 登录不变。生产 PostgreSQL 已增加普通角色标记，既有值全部 false，不自动扩权。后端 1,404、C# SDK 66、TS 38 项通过，零失败/跳过；正式镜像与公开 Node 包在本地隔离 PostgreSQL/Redis 完成真实 Client→Token→连续创建用户、冲突、角色注入和数据库回读验收。特定业务租户仍须通过受支持的管理渠道配置 Scope 和普通角色，不能据此声称其目标 Client 已开通；历史目录/Webhook 接收方联调范围保持独立。
+5.9.0 区分可选登录号码与共享联系号码，并在 PostgreSQL 中按租户统一约束用户名、邮箱和登录号码；详见[用户供给契约](user-provisioning.md)及[目录契约](backend-directory-api.md)。生产两项迁移已执行。npm 5.9.0 经公开注册表安装验证，三个 NuGet 5.9.0 包经 Trusted Publishing 发布，并通过公开注册表隔离缓存安装和构建验证。后端完整 Release 套件 1,479 项通过，最终旧数据删除守卫追加 19 项定向测试通过；C# SDK 68、TypeScript SDK 39 项通过。前端检查、生产构建和公开健康检查通过。具体业务租户的 Client/Scope/角色仍需独立配置与验收。
 
 ### 5.2.0 历史目录与 Webhook 验收
 

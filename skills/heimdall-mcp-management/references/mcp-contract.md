@@ -65,6 +65,12 @@ MCP 专属代码位于 Heimdall：
 - 分页返回：`McpPageResult<T>`。
 - 写返回：`McpMutationResult<T>`；第一次返回预览和令牌，第二次才执行。
 
+### 用户与 TOTP 删除语义核验
+
+- 核对实际部署版本的 TOTP 删除工具、Service 与 Repository：软删除、停用和物理清除密钥材料不是同一语义。只有确认敏感字段已按契约清除后，才能声称材料已被永久删除；不要读取、输出或记录密钥内容。
+- 审计已删除系统用户时，同时核对 `sys_user_role` 关联、登录凭据与主体会话。未软删的角色关系不等于账号当前可登录；反之，凭据失效也不能证明历史角色关联已清理。不要在未经明确授权时清除历史数据。
+- MCP 工具的 `Destructive` 标记或描述不能替代对业务 Service、Repository 和持久化行为的核验。删除和恢复操作应覆盖上述边界的回归测试。
+
 ## 安全边界
 
 - `McpIdentityBoundary` 是平台/租户身份的第一道边界。
@@ -97,5 +103,5 @@ MCP 专属代码位于 Heimdall：
 - `/mcp` 端点策略对 AK/SK、Heimdall OAuth、外部应用 OAuth 三类主体有授权测试。
 - 受限凭据委派子集和越权拒绝有测试。
 - 数据库迁移扩大 MCP 策略 JSON 字段且保持幂等。
-- 后端 `dotnet test -c Release` 全通过且 0 警告。
+- 后端先用 `dotnet build be/Test/Asgard.Heimdall.Tests/Asgard.Heimdall.Tests.csproj -c Release` 构建，再执行 `dotnet be/Test/Asgard.Heimdall.Tests/bin/Release/net10.0/Asgard.Heimdall.Tests.dll -noLogo -noColor`；核对实际测试数、失败数和跳过数。完整集成测试需配置隔离的 PostgreSQL/Redis，不能把零测试当通过。
 - 前端 `npm run typecheck`、`npm run lint`、`npm run build` 全通过。

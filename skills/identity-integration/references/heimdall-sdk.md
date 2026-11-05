@@ -1,6 +1,6 @@
 # Heimdall 官方 SDK 用法
 
-以 SDK **5.6.0**、源码标签 `v5.6.0` 为接口基线。协议与能力清单见 [SDK API](https://github.com/BenLampson/Asgard.Heimdall/blob/v5.6.0/sdk/API.md)。下面按使用环境选入口，不另写一套 Token 协议。
+以 SDK 源码标签 `v5.9.0` 为接口基线。Node、浏览器 npm 包及 C# NuGet 5.9.0 均已公开发布并通过隔离缓存安装验证。协议与能力清单见 [SDK API](https://github.com/BenLampson/Asgard.Heimdall/blob/v5.9.0/sdk/API.md)。下面按使用环境选入口，不另写一套 Token 协议。
 
 ## 选择与安装
 
@@ -24,7 +24,7 @@ dotnet add package Asgard.Heimdall.Client --version {已发布SDK版本}
 
 源码合并与产品 tag 不等于三个包已发布，安装前分别核对 npm、NuGet 与 Release 记录；不把仅包含服务端的旧 tag 当 SDK 源码链接。若目标包尚未发布，可引用上述提交的 SDK 项目，或消费按该源码构建的本地 nupkg，并明确其来源；不自动触发生产发布。
 
-三个 SDK 版本跟随 Heimdall 产品 Release。跨版本接入先核对方法签名和协议，不因示例自动升级已有依赖。完整构建/打包方法见 [SDK README](https://github.com/BenLampson/Asgard.Heimdall/blob/v5.6.0/sdk/README.md)。
+三个 SDK 版本跟随 Heimdall 产品 Release。跨版本接入先核对方法签名和协议，不因示例自动升级已有依赖。完整构建/打包方法见 [SDK README](https://github.com/BenLampson/Asgard.Heimdall/blob/main/sdk/README.md)。
 
 ## JWT 时间容差与升级
 
@@ -242,4 +242,4 @@ Node 继承无存储协议方法 `createLoginRequest`、`exchangeCode`、`refres
 
 现有 .NET / Node 服务端包提供独立的 `HeimdallUserProvisioningClient`：C# 从 `HeimdallClientFactory.CreateUserProvisioning(name)` 获取，Node 从 server 包导入并调用 `createUser`。显式配置 `heimdall.users.create` 和 `heimdall-users-api`，凭据来自服务端注入。Scope 必须由管理员授予 Client，角色来自当前应用 RBAC 的 `isUserDefault`，不得用具体业务对象或部署白名单决定权限。`isDefault` 仍用于新租户管理员，禁止复用为普通用户默认角色。
 
-接口只接收用户名、邮箱、初始密码及可选展示名/手机号，拒绝归属与角色字段；归属来自已验证 Token。不返回用户 Token，不改 OIDC 登录，不向浏览器包添加创建接口。创建 POST 不自动重试。安装 5.6.0 的现有服务端包即可，无新包。开通、迁移、错误契约与完整示例见 [用户供给契约](../../heimdall-service-integration/references/user-provisioning.md) 和 [仓库接入指南](https://github.com/BenLampson/Asgard.Heimdall/blob/v5.6.0/docs/backend-user-provisioning.md)。
+接口接收用户名、邮箱、初始密码，以及可选展示名、登录手机号 `phone` 和可共享的联系号码 `contactPhone`；归属来自已验证 Token，拒绝归属与角色字段。响应同时返回 `loginPhone` 与 `contactPhone`，登录标识冲突可返回字段编码。创建 POST 不自动重试。Node 和 NuGet 5.9.0 已公开发布并通过安装验证。开通、迁移、错误契约与完整示例见 [用户供给契约](../../heimdall-service-integration/references/user-provisioning.md) 和 [仓库接入指南](https://github.com/BenLampson/Asgard.Heimdall/blob/v5.9.0/docs/backend-user-provisioning.md)。
