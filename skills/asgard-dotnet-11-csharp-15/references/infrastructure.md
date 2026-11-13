@@ -128,7 +128,7 @@ Rules:
 - Sync the log table structure once during startup before accepting writes.
 - Use `Channel.CreateUnbounded` for the in-process queue so business threads are not blocked by database latency.
 - Flush immediately when queue size reaches `BatchSize`, or flush on timer when `Period` seconds elapse first.
-- After a successful batch insert, run old-log deletion through a throttled cleanup policy: delete records older than `RetentionDays`, and never run cleanup more often than `CleanupIntervalMinutes`.
+- Run retention in a separate background task. Wait `CleanupIntervalMinutes` before the first pass and after each pass; delete records older than `RetentionDays` even without new writes. Stop and await deletion before disposing the store.
 - On shutdown, dispose the Serilog pipeline with `dispose: true` so the final batch can be flushed.
 - Record sink/worker failures into a diagnostic channel such as `Serilog.Debugging.SelfLog`; do not throw back into business code.
 

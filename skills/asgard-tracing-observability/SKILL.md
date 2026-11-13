@@ -95,7 +95,7 @@ Trace:
 - Trace 持久化使用独立 FreeSql 连接，不复用业务 `IFreeSql`。
 - 启动时自动同步 `asgard_trace` 表结构。
 - 请求线程只入队，不同步写数据库。
-- 后台 worker 按 `BatchSize` / `Period` 批量写入，并按 `RetentionDays` + `CleanupIntervalMinutes` 清理旧 Trace。
+- 后台 worker 按 `BatchSize` / `Period` 批量写入。启用落库后，Trace 和数据库日志各自使用独立任务，按 `RetentionDays` 和 `CleanupIntervalMinutes` 清理；即使没有新写入也会执行。首次执行和下一轮等待均使用配置间隔。
 - 普通日志中的 `AsgardTrace` 只保留摘要，并通过 `TraceId` 与 `asgard_trace` 关联。
 
 ## 有界 Trace 与故障语义
@@ -103,7 +103,7 @@ Trace:
 - 请求线程以非阻塞 `TryWrite` 投递；等待队列最多 1,024 条，单个在途批次最多 `min(BatchSize, 1024)` 条。满队列、关闭或释放时拒绝最新记录；这是记录数限制，不是总字节数限制
 - 每批最多三次写入，失败后等待 50/100 毫秒重试；耗尽后计数并丢弃，消费者继续。尾批次按同一 `Period` 聚合期限冲刷，不因新记录持续到达而无限延后
 - 拒绝、重试、失败批次、清理失败及丢弃有内部计数，节流后经后台 `SelfLog` 报告；每个存储最多一个待执行/执行中的诊断任务，慢速或抛错的接收器不阻塞请求或消费者，不承诺每条诊断都输出
-- 插入成功后的过期清理失败不会重试已成功插入。关闭共用一次排空，真实数据库操作结束后才释放连接；重试次数有界不等于数据库调用有超时，卡住的数据库会延迟关闭
+- 清理失败只记录诊断并继续下一轮，不触发写入重试。关闭时取消清理，等待在途删除结束并排空写入队列后才释放数据库；卡住的数据库操作可能延迟关闭
 - 属于尽力而为投递：饱和或重试耗尽会丢失，提交结果不明确时重试可能重复。可靠审计需另行设计持久化队列与幂等协议，不新增公共配置
 
 实现与验证入口：`FreeSqlTraceStore`、`TraceWorker`、`TraceDeliveryDiagnostics`、`FreeSqlTraceStoreBackpressureTests`，以及 Asgard `src/doc/24-日志与可观测性.md`。
