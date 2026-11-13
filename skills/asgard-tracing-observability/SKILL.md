@@ -58,7 +58,7 @@ description: "按 TraceId 排查 Asgard 线上异常、步骤与身份快照，�
 | **自动记录仓储关键调用** | `AbsAsgardRepositoryBase` 统一封装 |
 | **Trace 独立落库** | `Trace.Enabled` + 独立 `FreeSqlTraceStore` |
 | **Trace 分页查询** | 注入 `ITraceQueryService`，插件自行写 Controller 和授权 |
-| **数据库日志分页查询** | 注入 `IDatabaseLogQueryService`，插件自行写 Controller 和授权 |
+| **数据库日志分页查询** | 使用 `AsgardContext.DatabaseLogQuery` 或直接注入 `IDatabaseLogQueryService` |
 | **AI 复现错误现场** | `asgard_trace` 表里的 request snapshot + steps/tags/notes/branches |
 
 ## Trace 独立持久化配置
@@ -110,7 +110,9 @@ Trace:
 
 ## 持久化记录查询
 
-Asgard 提供只读查询服务，不提供默认查询 Controller。这样做是为了把路由、权限、字段裁剪、审计边界留给插件或业务系统。不要为了“方便”在框架层新增公开 Controller。
+Yggdrasil 自动注册 `IDatabaseLogQueryService` 和 `ITraceQueryService`。自定义宿主先注册日志配置和 `AddAsgardObservabilityQueries()`，再调用 `AddAsgardContext()`。数据库日志关闭或服务未装配时，`AsgardContext.DatabaseLogQuery` 为 `null`。
+
+框架不映射查询路由。插件需要 HTTP 接口时，由受运维权限保护的 Controller 暴露选定的字段。查询服务读取整个宿主的日志，不会按当前租户过滤，普通租户权限不能用于放行。
 
 可注入服务：
 
@@ -121,6 +123,25 @@ Asgard 提供只读查询服务，不提供默认查询 Controller。这样做�
 
 - Trace 查询读取 `Trace.Provider` / `Trace.ConnectionString` / `Trace.TableName`。
 - 数据库日志查询读取 `logging.database.provider` / `logging.database.connectionString` / `logging.database.tableName`。
+
+已授权的运维服务可直接从 Context 查询，无需知道表结构。请求类型位于 `Asgard.Abstractions.Observability`：
+
+```csharp
+var logs = asgardContext.DatabaseLogQuery;
+if (logs is not null)
+{
+    var result = await logs.QueryAsync(new DatabaseLogQueryRequest
+    {
+        Page = 1,
+        Size = 20,
+        Level = "Error",
+        StartTime = DateTime.UtcNow.AddHours(-1)
+    }, cancellationToken);
+    var detail = await logs.GetByIdAsync(logId, cancellationToken);
+}
+```
+
+`DatabaseLogQueryRequest` 还支持 `MessageKeyword`、`TraceId`、`EndTime` 和 `MachineName`。时间范围使用 UTC；详情不存在时返回 `null`。
 
 插件侧推荐写法：
 
@@ -184,6 +205,8 @@ public sealed class ObservabilityController(
 - 对用户投诉“框架行为很神奇”的场景，优先看请求汇总日志里的步骤链和备注
 - 对 AI 修 bug 的场景，优先查 `asgard_trace`，拿 `TraceId` 关联普通日志和错误请求快照
 - 对后台管理、运维面板或插件内置诊断页，优先注入查询 service，再由插件自己写 Controller 和授权
+- 数据库日志队列最多等待 4096 条，满时丢弃最新记录；每批最多三次写入，失败后继续处理后续批次。故障和丢弃量通过 Serilog SelfLog 报告
+- 数据库日志建表同步会补时间索引，过期日志按每批最多 256 条清理；启动前为已有大表加索引预留维护时间
 - 正常请求全量落库必须显式使用 `Trace.CaptureAllRequest=true`，避免数据库膨胀
 - 如果问题本身属于 `AsgardContext` 使用方式，再联动 `$asgard-context-usage`
 

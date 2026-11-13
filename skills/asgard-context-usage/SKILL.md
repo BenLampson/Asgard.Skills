@@ -1,6 +1,6 @@
 ---
 name: asgard-context-usage
-description: "在 Asgard 中使用 AbsAsgardContext，处理公共能力获取、可空性、生命周期、租户作用域和 Trace 备注。缓存与锁的详细契约使用对应模块 skill。"
+description: "使用 AbsAsgardContext 的公共能力，包括可空性、生命周期、租户作用域、Trace 备注和数据库日志查询。各模块详细契约使用对应 skill。"
 ---
 
 # Asgard Context Usage
@@ -38,6 +38,7 @@ description: "在 Asgard 中使用 AbsAsgardContext，处理公共能力获取�
 | `SystemConfig` | 系统配置 | 配置模块 |
 | `WildcardMatcher` | 通配符匹配 | 工具模块 |
 | `Trace` | 当前请求轻量追踪上下文 | 可观测性 / 追踪模块 |
+| `DatabaseLogQuery` | 宿主数据库日志只读查询，支持分页和详情 | 可观测性模块 |
 
 ## 获取方式
 
@@ -75,6 +76,11 @@ description: "在 Asgard 中使用 AbsAsgardContext，处理公共能力获取�
   - `AsgardContext.Trace?.AddTag(...)`
   - `AsgardContext.Trace?.AddBranch(...)`
 - 如果问题本身是“框架追踪能力怎么设计、为什么只记录轻量摘要、哪些入口会自动记步骤”，直接切到 `$asgard-tracing-observability`
+
+## 数据库日志查询
+
+- Yggdrasil 自动装配查询服务；通过 `AsgardContext.DatabaseLogQuery` 取得，未启用 `logging.database.enabled` 或未注册服务时返回 `null`。
+- 这是宿主级运维数据。对外查询先校验运维权限，再按 [可观测性技能](../asgard-tracing-observability/SKILL.md#持久化记录查询) 调用并裁剪返回字段。
 
 ## 代码示例
 

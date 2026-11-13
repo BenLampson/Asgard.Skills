@@ -21,10 +21,10 @@ if (hostConfig.Auth?.Enabled == true)
     app.UseAuthentication();
 }
 
-app.UseAsgardTenant();
-
 // 插件或外部扩展中间件
 configureMiddleware?.Invoke(app);
+
+app.UseAsgardTenant();
 
 // host.rateLimiting.user.enabled=true 时，Yggdrasil 在此处自动执行用户层。
 // 宿主应用不要自行再注册第二个 UseRateLimiter()。

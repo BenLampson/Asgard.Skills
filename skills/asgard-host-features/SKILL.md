@@ -129,6 +129,7 @@ auth:
 
 - 宿主内置认证当前是 Bearer JWT 模式
 - 认证实现基于 OIDC discovery + JWKS 自发现
+- 签名密钥按 issuer 缓存；遇到未知 `kid` 可提前刷新 discovery 和 JWKS，同一 issuer 的并发刷新合并，每次提前刷新后冷却 30 秒
 - `host.auth.enabled` 只控制宿主默认 JWT 注册与 `UseAuthentication()` 接线
 - 即使关闭宿主内置 JWT，`UseAuthorization()`、`AsgardAuth`、租户和身份上下文链路仍可能由外部认证方案继续工作
 - 宿主会在 `OnTokenValidated` 时检查当前身份是否已有 `tenant_id`
@@ -161,6 +162,7 @@ auth:
 
 - `UseAuthentication()` 负责把来访请求解析成 `ClaimsPrincipal`
 - `UseAsgardTenant()` 负责根据当前身份建立租户上下文
+- 自定义认证应在宿主回调或插件中间件写入 `HttpContext.User`；宿主在这些扩展之后建立租户快照，再执行授权
 - `IAsgardIdentityContext` / `AbsAsgardContext.IdentityContext` 负责向业务代码暴露当前身份快照
 - `UseAuthorization()` 和 `AsgardAuth` 负责基于这些信息做鉴权
 
@@ -282,10 +284,10 @@ if (hostConfig.Auth?.Enabled == true)
     app.UseAuthentication();
 }
 
-app.UseAsgardTenant();
-
 // 插件或外部中间件扩展点
 configureMiddleware?.Invoke(app);
+
+app.UseAsgardTenant();
 
 // host.rateLimiting.user.enabled=true 时，Yggdrasil 在此处自动执行用户层。
 // 宿主应用不要自行再注册第二个 UseRateLimiter()。
@@ -306,7 +308,7 @@ app.MapControllers();
 **关键位置：**
 - `UseRouting()` 必须在认证链路之前，确保终结点信息可被认证授权系统识别
 - `UseAuthentication()` 在启用宿主内置 JWT 时接入
-- `UseAsgardTenant()` 必须位于认证之后，这样才能基于身份建立租户上下文
+- `UseAsgardTenant()` 位于认证和外部身份扩展之后，根据最终身份建立租户上下文
 - 实例与 IP 层位于认证前；用户层位于认证、租户和外部身份扩展之后、授权之前
 - `UseAuthorization()` 需要在插件或外部中间件之后统一执行，避免扩展链路还没补充身份信息就提前鉴权
 - 三层宿主限流由框架自动接线，不要通过重复调用 `UseRateLimiter()` 模拟分层
