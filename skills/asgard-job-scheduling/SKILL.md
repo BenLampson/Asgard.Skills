@@ -76,7 +76,7 @@ job:
 
 ## 异步完成与启动失败清理
 
-目标包含 Asgard 6.0.1 基础设施生命周期修复（2026-10-08 核对；发布状态另行确认）时，运行中调度器的作业、触发器和全局 pause/resume 操作会等待 Quartz 实际完成后再返回/记录成功；异常和取消向调用者传播。先核对目标源码，不据此假定旧 NuGet 包已具备修复。
+运行中调度器的作业、触发器和全局 pause/resume 操作会等待 Quartz 实际完成后再返回或记录成功；异常和取消向调用者传播。
 
 - 始终 `await` 调度操作，不用 fire-and-forget，也不把“已调用”当成注册成功
 - 启动前操作仍遵循既有暂存队列与去重语义；返回只代表已暂存，不保证 Quartz 已开始执行
@@ -86,9 +86,7 @@ job:
 
 实现锚点：Asgard 的 `QuartzJobScheduler.JobManagement.cs`、`QuartzJobScheduler.TriggerManagement.cs`、`QuartzJobRegistrar.cs`、`JobManager.cs`。验证 `QuartzJobSchedulerOperationTests`、`JobManagerLifecycleTests` 等目标测试后再升级。
 
-## 6.0.2：实现范围、启动与 DI 所有权
-
-以下适用于 Asgard 6.0.2 运行时优化源码；发布状态需另行核对，不表示 NuGet 已完成发布。维护旧包时先确认包含对应实现，不把这些行为追溯到 6.0.1。
+## 实现范围、启动与 DI 所有权
 
 - 当前为单进程 `RAMJobStore`，动态作业重启即丢失；不提供持久化、集群协调或自定义工厂切换
 - `enableCluster` 只接受 `false`；`connectionString`、`dbProvider`、`jobFactoryType` 只允许省略或空字符串；`maxBatchSize` 只接受兼容默认值 `100`，不代表实际批量获取功能。启用/解析或直接启动时显式拒绝不支持值，不新增必填配置；`threadPoolSize` 必须大于零，`instanceId` 必须非空
@@ -98,7 +96,7 @@ job:
 - 每次触发在提供者支持时创建独立作用域。已注册作业优先从容器解析；未注册作业使用标准 `ActivatorUtilities`，支持构造选择属性、可选参数及清晰的缺失依赖错误；已注册日志优先，手工激活时可回退 `ILogger`/`ILogger<T>`
 - 容器解析作业由容器释放，不额外 Dispose；手工激活作业由适配器单次释放，再释放作用域，优先异步释放。激活失败也清理作用域；不要让单例作业捕获 scoped 依赖
 
-`references/JobManager.cs` 是 6.0.1 快照，不用于复制上述新启动接线。核对目标源码的 `JobSchedulerOptionsValidator`、`QuartzJobFactory`、`JobManager`、`AsgardRuntimeHostedService` 和 `src/doc/19-作业调度.md`。
+`references/JobManager.cs` 是历史快照。核对当前启动接线时查看源码中的 `JobSchedulerOptionsValidator`、`QuartzJobFactory`、`JobManager`、`AsgardRuntimeHostedService` 和 `src/doc/19-作业调度.md`。
 
 ## 代码示例
 

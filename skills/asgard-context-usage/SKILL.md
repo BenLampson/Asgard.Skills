@@ -1,13 +1,13 @@
 ---
 name: asgard-context-usage
-description: "在 Asgard 中使用 AbsAsgardContext，处理公共能力获取、可空性、生命周期、租户作用域和 Trace 备注。缓存与锁的详细契约使用对应模块 skill。"
+description: "使用 AbsAsgardContext 的公共能力，包括可空性、生命周期、租户作用域、Trace 备注和数据库日志查询。各模块详细契约使用对应 skill。"
 ---
 
 # Asgard Context Usage
 
 ## 缓存版本边界
 
-缓存示例面向 Asgard 5.3+，使用 `IAsgardCache`。默认 Yggdrasil 宿主自动装配缓存；关闭时提供 `NullAsgardCache`，自定义宿主仍需判空。升级与配置迁移读取 `$asgard-cache`。本目录中含旧缓存接口的源码拷贝是 5.3 前快照，只用于维护旧版；不能据此生成 5.3+ 缓存接线。
+使用 `IAsgardCache`。默认 Yggdrasil 宿主自动装配缓存；关闭时提供 `NullAsgardCache`，自定义宿主仍需判空。旧缓存配置迁移见 `$asgard-cache`；实现以 7.x 源码为准。
 
 
 ## 作用
@@ -25,7 +25,7 @@ description: "在 Asgard 中使用 AbsAsgardContext，处理公共能力获取�
 
 | 属性 | 能力说明 | 模块 |
 |------|----------|------|
-| `Cache` | Redis 单层业务缓存（5.3+） | 缓存模块 |
+| `Cache` | Redis 单层业务缓存 | 缓存模块 |
 | `Compression` | 数据压缩（Brotli）| 压缩模块 |
 | `TenantScopeFactory` | 租户作用域工厂 | 租户模块 |
 | `IdentityContext` | 当前身份上下文 | 身份认证模块 |
@@ -38,6 +38,7 @@ description: "在 Asgard 中使用 AbsAsgardContext，处理公共能力获取�
 | `SystemConfig` | 系统配置 | 配置模块 |
 | `WildcardMatcher` | 通配符匹配 | 工具模块 |
 | `Trace` | 当前请求轻量追踪上下文 | 可观测性 / 追踪模块 |
+| `DatabaseLogQuery` | 宿主数据库日志只读查询，支持分页和详情 | 可观测性模块 |
 
 ## 获取方式
 
@@ -75,6 +76,11 @@ description: "在 Asgard 中使用 AbsAsgardContext，处理公共能力获取�
   - `AsgardContext.Trace?.AddTag(...)`
   - `AsgardContext.Trace?.AddBranch(...)`
 - 如果问题本身是“框架追踪能力怎么设计、为什么只记录轻量摘要、哪些入口会自动记步骤”，直接切到 `$asgard-tracing-observability`
+
+## 数据库日志查询
+
+- Yggdrasil 自动装配查询服务；通过 `AsgardContext.DatabaseLogQuery` 取得，未启用 `logging.database.enabled` 或未注册服务时返回 `null`。
+- 这是宿主级运维数据。对外查询先校验运维权限，再按 [可观测性技能](../asgard-tracing-observability/SKILL.md#持久化记录查询) 调用并裁剪返回字段。
 
 ## 代码示例
 

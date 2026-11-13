@@ -1,6 +1,6 @@
 ---
 name: dotnet-10-csharp-14
-description: "开发非 Asgard 的 .NET 10/C# 14 应用，参考 Minimal API、DI、弹性、Channels 和测试。Asgard 编码规范必须使用 asgard-dotnet-10-csharp-14。"
+description: "开发非 Asgard 的 .NET 10/C# 14 应用，参考 Minimal API、DI、弹性、Channels 和测试。Asgard 编码规范必须使用 asgard-dotnet-11-csharp-15。"
 ---
 
 # .NET 10 & C# 14 Best Practices
@@ -9,7 +9,7 @@ description: "开发非 Asgard 的 .NET 10/C# 14 应用，参考 Minimal API、D
 
 这个 skill 是 **通用 .NET 10 / C# 14 参考**，不是 Asgard 仓库中的编码规则权威。
 
-- 处理 Asgard 仓库时，编码硬规则统一使用 `$asgard-dotnet-10-csharp-14`
+- 处理 Asgard 仓库时，编码硬规则统一使用 `$asgard-dotnet-11-csharp-15`
 - 处理 Asgard 仓库时，项目结构统一使用 `$asgard-plugin-structure`
 - 本 skill 适合非 Asgard 场景，或作为通用语言/框架能力补充参考
 

@@ -68,7 +68,7 @@ messaging:
 
 ## 确认与重试契约
 
-目标包含 Asgard 6.0.1 基础设施生命周期修复（2026-10-08 核对；发布状态另行确认）时，先读取 [确认、有限重试与故障恢复](references/settlement-and-retry.md)。不要仅凭旧包版本号假定已修复。
+配置或排查 RabbitMQ 消息确认、重试、死信和故障恢复时，读取 [确认、有限重试与故障恢复](references/settlement-and-retry.md)。
 
 - 默认 `AutoAck=false`、重试 3 次、启用死信均保持不变；默认成功路径仍由 handler 手动 ACK
 - `AutoAck=true` 是 broker 投递即确认；不能再发送手动 ACK/NACK，失败不自动重试

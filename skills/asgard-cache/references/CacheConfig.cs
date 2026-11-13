@@ -24,6 +24,8 @@ public class CacheConfig : ISystemConfig
             throw new InvalidOperationException("Redis timeouts must be greater than 0.");
         if (Redis.Database is < 0 or > 15)
             throw new InvalidOperationException("Redis database index must be between 0 and 15.");
+        if (Redis.StreamDatabase is < 0 or > 15)
+            throw new InvalidOperationException("caching.redis.streamDatabase 必须为 0 至 15，或省略以沿用缓存数据库。");
         if (Redis.RetryCount < 0 || Redis.RetryIntervalMilliseconds <= 0)
             throw new InvalidOperationException("Redis retry configuration is invalid.");
     }

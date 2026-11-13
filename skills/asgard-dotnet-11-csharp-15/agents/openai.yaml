@@ -1,0 +1,4 @@
+interface:
+  display_name: "Asgard .NET 11 / C# 15"
+  short_description: "Asgard .NET 11 / C# 15 编码规范、文件规则与乐观锁更新"
+  default_prompt: "Use $asgard-dotnet-11-csharp-15 to write or review Asgard C# code using this skill and its linked references."

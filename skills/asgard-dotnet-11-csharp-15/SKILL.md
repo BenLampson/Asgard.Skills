@@ -1,13 +1,13 @@
 ---
-name: asgard-dotnet-10-csharp-14
-description: "编写、修改或审查 Asgard C# 代码时使用的编码规则权威：.NET 10/C# 14、文件规范、中文注释、DI 和乐观锁更新。API 与项目结构另用专项 skill。"
+name: asgard-dotnet-11-csharp-15
+description: "编写、修改或审查 Asgard C# 代码的编码规则权威：Asgard 7.x 的 .NET 11/C# 15、文件规范、中文注释、DI 和乐观锁更新。API 与项目结构另用专项 skill。"
 ---
 
-# Asgard .NET 10 / C# 14 Coding Conventions
+# Asgard .NET 11 / C# 15 编码规范
 
 ## 作用
 
-本 skill 定义了 Asgard 框架下编写 .NET 10 / C# 14 代码时必须遵循的编码规范和最佳实践。包括语言特性使用、基础设施模式、通用后端安全编码、测试、反模式避免、推荐类库等内容。
+Asgard 7.x 的运行库、starter、插件和测试统一使用 `net11.0` / C# 15；构建使用仓库 `global.json` 锁定的 .NET 11 SDK。旧应用见 [升级到 Asgard 7.x](../asgard-host-features/references/openapi-scalar.md#升级到-asgard-7x)。
 
 **重要**：
 
@@ -19,7 +19,7 @@ description: "编写、修改或审查 Asgard C# 代码时使用的编码规则�
 
 ## 什么时候使用
 
-- **编写任何新代码时** - 确保遵循 C# 14 语法和 Asgard 约定
+- **编写任何新代码时** - 使用 C# 15 和 Asgard 编码约定
 - **重构现有代码** - 将旧语法升级为新标准
 - **添加依赖注入** - 遵循生命周期约定
 - **编写通用安全相关后端代码** - 遵循 API token 校验、密钥保护、CORS 等服务端实践
@@ -104,9 +104,9 @@ await repository.UpdateAsync(entity);
 
 完整规则见 `references/project_rules.md` 和 `references/never-do-this.md`。
 
-## C# 14 语言特性使用指南
+## C# 语言特性使用指南
 
-编写主构造函数或扩展块时，读取 [语言示例](references/language-examples.md)；其他语言细节按需读取 [C# 14 参考](references/csharp-14.md)。
+编写主构造函数或扩展块时，读取 [语言示例](references/language-examples.md)；其他写法见 [C# 15 语言模式](references/language-patterns.md)。
 
 ## 依赖注入与基础设施
 
@@ -122,7 +122,7 @@ await repository.UpdateAsync(entity);
 
 - 总是给选项配置加上 `.ValidateOnStart()`
 - 结构化日志使用占位符，不使用字符串插值
-- Asgard 数据库日志统一走 `LogConfig.Database` + Serilog + 独立 `IFreeSql` + `Channel` 批量写入，并在批量插入成功后按 `RetentionDays` + `CleanupIntervalMinutes` 节流清理旧日志
+- Asgard 数据库日志统一走 `LogConfig.Database` + Serilog + 独立 `IFreeSql` + `Channel` 批量写入；过期记录由独立任务按 `RetentionDays` 和 `CleanupIntervalMinutes` 定时删除，不依赖新日志写入
 - HttpClient 总是通过 `IHttpClientFactory` 注入
 - HttpClient 总是加上 `AddStandardResilienceHandler()`
 - 后台任务使用 `BackgroundService`
@@ -189,7 +189,7 @@ await repository.UpdateAsync(entity);
 ## 推荐参考资料
 
 所有详细内容都在 `references/` 目录：
-- `csharp-14.md` - C# 14 语言特性
+- `language-patterns.md` - Asgard C# 15 常用语言模式
 - `infrastructure.md` - 依赖注入、配置、缓存、弹性
 - `security.md` - 安全最佳实践清单
 - `testing.md` - 集成测试示例

@@ -13,15 +13,7 @@ TsGen 是可选开发工具，不是 Asgard 前端的强制依赖。项目决定
 
 ### 典型用法
 
-```powershell
-dotnet run --project Common/Asgard.TsGen/Asgard.TsGen.csproj -- --assembly ./Host/Asgard.Yggdrasil.AspNetCore/bin/Debug/net10.0/Asgard.Yggdrasil.AspNetCore.dll
-```
-
-也可以在安装为工具后执行：
-
-```powershell
-asgard-tsgen --assembly ./bin/Debug/net10.0/MyApi.dll
-```
+Asgard 7.0 的 `Asgard.TsGen` 是 `net11.0` 类库。使用宿主导出端点，不要把类库当成可直接运行的全局工具。
 
 开发环境下，需要先显式启用 Yggdrasil 宿主导出端点：
 

@@ -13,7 +13,7 @@ description: "复查 Asgard 后端改动，检查分层、统一响应、租户�
 - 是否出现项目里已经反复踩过的坑
 - 是否存在“代码能跑，但以后一定出事”的高风险实现
 
-这个 skill 是审查型 skill，不负责替代 `$asgard-dotnet-10-csharp-14`、`$asgard-database`、`$asgard-api-development` 等开发规范；它负责在实现完成后做守门和兜底。
+这个 skill 是审查型 skill，不负责替代 `$asgard-dotnet-11-csharp-15`、`$asgard-database`、`$asgard-api-development` 等开发规范；它负责在实现完成后做守门和兜底。
 
 ## 什么时候必须使用
 
@@ -47,14 +47,14 @@ description: "复查 Asgard 后端改动，检查分层、统一响应、租户�
 
 ### 1. 文件结构硬规则检查
 
-这是来自 `$asgard-dotnet-10-csharp-14` 的硬约束，review 时不能漏掉。
+这是来自 `$asgard-dotnet-11-csharp-15` 的硬约束，review 时不能漏掉。
 
 复查结论必须遵守以下规则：
 
 - 一个 `.cs` 文件中禁止放置多个类；默认要求一个文件只承载一个类
 - 如果同一文件里同时出现多个业务类型、实体、服务、控制器、仓储、DTO、VO，默认按问题报告
 - 如果用户没有明确要求偏离该规则，就不要以“只是代码风格”为由忽略
-- 当无法快速判断某个文件结构是否合规时，按“需要根据 `$asgard-dotnet-10-csharp-14` skill 继续核查文件结构硬规则”处理，而不是直接放过
+- 当无法快速判断某个文件结构是否合规时，按“需要根据 `$asgard-dotnet-11-csharp-15` skill 继续核查文件结构硬规则”处理，而不是直接放过
 
 必须重点检查以下模式：
 
@@ -81,7 +81,7 @@ description: "复查 Asgard 后端改动，检查分层、统一响应、租户�
 - 更新时必须先从数据库读取当前实体，再在原实体上应用允许修改的字段
 - `Version` 只能来自数据库当前实体，不能信任 DTO 或前端
 - 不允许 DTO 覆盖 `CreateTime`、`CreateBy`、`Deleted`、`TenantId`、`ClientId` 等持久化字段
-- 对租户实体，不允许在更新时随 DTO 覆盖租户归属字段；按 `$asgard-dotnet-10-csharp-14` 执行，单实体共享缓存补丁禁止常规归属更新，不能仅凭注释放开
+- 对租户实体，不允许在更新时随 DTO 覆盖租户归属字段；按 `$asgard-dotnet-11-csharp-15` 执行，单实体共享缓存补丁禁止常规归属更新，不能仅凭注释放开
 - 如果实体有 `Update(...)`、`Enable()`、`Disable()` 等行为方法，优先调用实体方法
 - 如果实体没有行为方法，再显式逐字段赋值，并在约定需要时调用 `MarkAsUpdated()`
 
@@ -123,7 +123,7 @@ await repository.UpdateAsync(entity);
 - Controller 必须继承 `BaseController`
 - 对外业务 API 路由必须以 `/api` 作为第一段路径，最终 URL 应为 `https://xxx.com/api/xxxx`
 - `[Route("users")]`、`[Route("[controller]")]` 或 Action 裸路径导致业务接口挂在站点根路径时，默认按问题报告
-- 健康检查、静态文件、Swagger、OIDC discovery/JWKS 等框架或协议端点可以不套 `/api`，但业务 Controller 不应例外
+- 健康检查、静态文件、OpenAPI、OIDC discovery/JWKS 等框架或协议端点可以不套 `/api`，但业务 Controller 不应例外
 - 对外返回必须使用 `Response<T>`、`Response<object>`、`PageResponse<T>` 或 `CursorResponse<T>`
 - 不要直接返回裸 DTO、VO、集合、字符串、布尔值、数字、匿名对象
 
@@ -151,7 +151,7 @@ await repository.UpdateAsync(entity);
 
 ## 参考导航
 
-- 编码硬规则看 `$asgard-dotnet-10-csharp-14`
+- 编码硬规则看 `$asgard-dotnet-11-csharp-15`
 - 数据访问与乐观锁规则看 `$asgard-database`
 - Controller 统一响应规则看 `$asgard-api-development`
 - 仓储与服务职责边界看 `$asgard-repository-service-registration`

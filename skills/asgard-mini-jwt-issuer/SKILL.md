@@ -300,7 +300,7 @@ host:
 | Application Manifest、Tenant 绑定、管理员 Grant 与授权版本 | `$heimdall-application-rbac` |
 | `host.auth.jwt`、中间件顺序、宿主配置 | `$asgard-host-features` |
 | `AsgardAuthMatch`、角色权限和 `token_type` 授权 | `$asgard-auth-authorization` |
-| C# 代码规范和测试写法 | `$asgard-dotnet-10-csharp-14` |
+| C# 代码规范和测试写法 | `$asgard-dotnet-11-csharp-15` |
 
 ## 模板
 

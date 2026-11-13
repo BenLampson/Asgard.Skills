@@ -20,7 +20,7 @@ description: "编写或修改 Asgard Controller、/api 路由、VO、统一响�
 
 - 控制器文件默认位于 `Controllers/`，目录权威见 `$asgard-plugin-structure`
 - 输入模型默认位于 `Models/DTO`，输出模型默认位于 `Models/VO`
-- 编码硬规则统一见 `$asgard-dotnet-10-csharp-14`
+- 编码硬规则统一见 `$asgard-dotnet-11-csharp-15`
 
 ## 什么时候使用
 
@@ -66,7 +66,7 @@ description: "编写或修改 Asgard Controller、/api 路由、VO、统一响�
 以下要求属于 Asgard Web API 的硬约束，不允许为了“方便”而放宽：
 
 - 所有 Controller 必须继承 `BaseController`
-- 所有对外后端 API 路由必须以 `/api` 作为第一段路径，例如 `[Route("api/[controller]")]`、`[Route("api/users")]`；除健康检查、静态文件、Swagger、OIDC discovery/JWKS 等框架或协议端点外，不要把业务接口挂在根路径
+- 所有对外后端 API 路由必须以 `/api` 作为第一段路径，例如 `[Route("api/[controller]")]`、`[Route("api/users")]`；除健康检查、静态文件、OpenAPI、OIDC discovery/JWKS 等框架或协议端点外，不要把业务接口挂在根路径
 - 分层职责固定为：`Controller -> Service -> Repository -> Entity`
 - 输出职责固定为：`Service` 产出 DTO，`Controller` 把 DTO 转成 VO 后再统一包装响应
 - 所有 Controller Action 对外返回值必须统一使用 `Response<T>`、`Response<object>`、`PageResponse<T>` 或 `CursorResponse<T>`
@@ -75,8 +75,8 @@ description: "编写或修改 Asgard Controller、/api 路由、VO、统一响�
 - 游标分页 / 无限滚动列表接口必须返回 `CursorResponse<T>`
 - 不允许 Controller 直接返回未包装的 VO、DTO、字符串、布尔值、数字、匿名对象或集合
 - 不允许在 Controller 中再自定义另一套通用响应壳模型
-- Swagger / OpenAPI 的 `ProducesResponseType` 也必须与统一响应模型保持一致
-- 对于返回实体详情或单一资源的 Action，如果成功返回类型是 `Response<TVo>`，则 `404 NotFound` 的 `ProducesResponseType` 也应优先标注为 `Response<TVo>`，保持 Swagger 文档与统一响应壳的泛型语义一致
+- OpenAPI 的 `ProducesResponseType` 也必须与统一响应模型保持一致
+- 对于返回实体详情或单一资源的 Action，如果成功返回类型是 `Response<TVo>`，则 `404 NotFound` 的 `ProducesResponseType` 也应优先标注为 `Response<TVo>`，保持 OpenAPI 文档与统一响应壳的泛型语义一致
 
 ## 响应方法对照表
 
@@ -134,16 +134,16 @@ public class UserVo
 
 - 每个控制器只负责一个业务领域
 - 新增或改造业务接口时，先确认最终 URL 是 `https://xxx.com/api/xxxx` 形态
-- 为每个 Action 添加 `[ProducesResponseType]` 注释，便于 Swagger 生成文档
-- 详情类 / 单资源接口优先让 `200` 与 `404` 共享同一个 `Response<TVo>` 标注，减少 Swagger 类型语义漂移
+- 为每个 Action 添加 `[ProducesResponseType]` 注释，便于 OpenAPI 生成文档
+- 详情类 / 单资源接口优先让 `200` 与 `404` 共享同一个 `Response<TVo>` 标注，减少 OpenAPI 类型语义漂移
 - 通过 `AsgardContext` 获取当前用户、租户等上下文信息
 - 需要区分用户登录令牌与后端服务令牌时，优先用 `token_type = 'UserLogin'` / `token_type = 'BackendService'`
 - 增删改查涉及审计字段时，显式写入当前 `UserId`、必要时补充 `TenantId`
 - 如果多个接口都依赖当前用户信息，优先在 Service 层统一封装获取逻辑
 - 保持 Action 简洁，只做参数编排和结果返回
 - 控制器文件放在 `Controllers/`，不要另起结构
-- 需要文档时，在项目根目录 `app.yaml` 中开启 `host.swagger.enabled: true`
-- 所有实现继续遵守 `$asgard-dotnet-10-csharp-14`
+- Asgard 7.0 需要文档时，在宿主的 `app.yaml` 开启 `host.openApi.enabled: true`；默认 `/scalar` 和 `/openapi/v1.json`。宿主接线与迁移见 `$asgard-host-features`
+- 所有实现继续遵守 `$asgard-dotnet-11-csharp-15`
 - 审查 Controller 时，优先检查返回类型是否仍然是 `Response` / `PageResponse` 家族
 
 ## 不要这样做

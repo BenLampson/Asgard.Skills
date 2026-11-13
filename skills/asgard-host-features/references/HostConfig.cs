@@ -1,11 +1,13 @@
 namespace Asgard.Abstractions.AspNetCore.Host;
 
+
+
 /// <summary>
 /// ASP.NET Core 主机配置。
 /// </summary>
 /// <remarks>
 /// 实现 <see cref="ISystemConfig"/> 接口，提供 Asgard 框架的主机级配置，
-/// 包括 Kestrel 服务器、CORS、认证、Swagger、限流和健康检查等配置。
+/// 包括 Kestrel 服务器、CORS、认证、OpenAPI、限流和健康检查等配置。
 /// </remarks>
 /// <example>
 /// <code>
@@ -26,11 +28,10 @@ namespace Asgard.Abstractions.AspNetCore.Host;
 ///       allowAnyHeader: true
 ///   auth:
 ///     enabled: true
-///   swagger:
+///   openApi:
 ///     enabled: true
 ///     title: "Asgard API"
 ///     version: "v1"
-/// </code>
 /// </example>
 public class HostConfig : ISystemConfig
 {
@@ -38,7 +39,7 @@ public class HostConfig : ISystemConfig
     /// 应用程序配置。
     /// </summary>
     /// <remarks>
-    /// 必填配置，包含应用名称、版本和环境信息，用于 Swagger 文档显示等。
+    /// 必填配置，包含应用名称、版本和环境信息，用于 OpenAPI 文档显示等。
     /// </remarks>
     /// <value>应用程序配置项</value>
     [ConfigPath("host.application")]
@@ -75,18 +76,21 @@ public class HostConfig : ISystemConfig
     public AuthOptions? Auth { get; set; }
 
     /// <summary>
-    /// Swagger/OpenAPI 文档配置。
+    /// OpenAPI 文档与 Scalar 交互页面配置。
     /// </summary>
     /// <remarks>
-    /// 可选配置，用于生成和展示 API 的 Swagger UI 文档，默认不启用。
+    /// 可选配置，用于生成和展示 API 的 OpenAPI 文档和 Scalar 页面，默认不启用。
     /// </remarks>
-    /// <value>Swagger 配置项</value>
-    [ConfigPath("host.swagger")]
-    public SwaggerOptions? Swagger { get; set; }
+    /// <value>OpenAPI 配置项</value>
+    [ConfigPath("host.openApi")]
+    public OpenApiHostOptions? OpenApi { get; set; }
 
     /// <summary>
     /// TypeScript 客户端导出配置。
     /// </summary>
+    /// <remarks>
+    /// 可选配置，默认不启用。启用后仅在开发环境开放导出端点。
+    /// </remarks>
     [ConfigPath("host.tsGen")]
     public TsGenHostOptions? TsGen { get; set; }
 
@@ -140,7 +144,7 @@ public class HostConfig : ISystemConfig
 
         Cors?.Validate();
         Auth?.Validate();
-        Swagger?.Validate();
+        OpenApi?.Validate();
         TsGen?.Validate();
         RateLimiting?.Validate();
         HealthCheck?.Validate();

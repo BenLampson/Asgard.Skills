@@ -1,6 +1,6 @@
 ---
 name: asgard-host-features
-description: "配置 Asgard host.* 的 JWT Bearer、中间件、CORS、Swagger、TsGen、限流和健康检查。前端登录、OIDC/PKCE 流程设计用 identity-integration。"
+description: "配置 Asgard host.* 的 JWT Bearer、中间件、CORS、OpenAPI/Scalar、TsGen、限流和健康检查。前端登录、OIDC/PKCE 流程设计用 identity-integration。"
 ---
 
 # Asgard 宿主 Web 功能配置
@@ -37,7 +37,7 @@ host:
   staticFiles: ...    # 静态文件
   cors: ...          # CORS 跨域
   auth: ...         # JWT 认证
-  swagger: ...      # Swagger 文档
+  openApi: ...      # OpenAPI 文档和 Scalar
   tsGen: ...        # 可选 TypeScript 客户端导出
   rateLimiting: ... # 实例、IP、用户分层限流
   healthCheck: ...  # 健康检查
@@ -118,7 +118,7 @@ cors:
 auth:
   enabled: true
   jwt:
-    issuerTemplate: "https://idp.example.com/realms/{tenantId}"
+    issuerTemplate: "https://idp.example.com/realms/{tenant}"
     audience: "your-audience"
     requireHttpsMetadata: true
     discoveryCacheMinutes: 60
@@ -129,6 +129,7 @@ auth:
 
 - 宿主内置认证当前是 Bearer JWT 模式
 - 认证实现基于 OIDC discovery + JWKS 自发现
+- 签名密钥按 issuer 缓存；遇到未知 `kid` 可提前刷新 discovery 和 JWKS，同一 issuer 的并发刷新合并，每次提前刷新后冷却 30 秒
 - `host.auth.enabled` 只控制宿主默认 JWT 注册与 `UseAuthentication()` 接线
 - 即使关闭宿主内置 JWT，`UseAuthorization()`、`AsgardAuth`、租户和身份上下文链路仍可能由外部认证方案继续工作
 - 宿主会在 `OnTokenValidated` 时检查当前身份是否已有 `tenant_id`
@@ -161,26 +162,17 @@ auth:
 
 - `UseAuthentication()` 负责把来访请求解析成 `ClaimsPrincipal`
 - `UseAsgardTenant()` 负责根据当前身份建立租户上下文
+- 自定义认证应在宿主回调或插件中间件写入 `HttpContext.User`；宿主在这些扩展之后建立租户快照，再执行授权
 - `IAsgardIdentityContext` / `AbsAsgardContext.IdentityContext` 负责向业务代码暴露当前身份快照
 - `UseAuthorization()` 和 `AsgardAuth` 负责基于这些信息做鉴权
 
 也就是说，业务代码真正应该读取的是 `AsgardContext.IdentityContext?.UserInfo`，而不是自己重新拼装 claim。
 
-### Swagger/OpenAPI（host.swagger）
+### OpenAPI 与 Scalar（host.openApi）
 
-```yaml
-swagger:
-  enabled: true
-  title: "你的 API 名称"
-  version: "v1"
-  description: "API 描述"
-```
+Asgard 7.0 使用 ASP.NET Core OpenAPI 生成 JSON，Scalar 提供交互页面。默认关闭；在宿主 `app.yaml` 设置 `host.openApi.enabled: true` 后，访问 `/openapi/v1.json` 和 `/scalar`。Yggdrasil 和快速 starter 入口会自动接线。
 
-**推荐做法：**
-- 为所有控制器和操作添加 XML 注释
-- Controller 对外返回统一使用 Asgard 的 `Response` 家族响应模型
-- 非分页接口使用 `Response<T>` / `Response<object>`，分页接口使用 `PageResponse<T>` / `CursorResponse<T>`
-- Swagger 会自动包含注释信息
+修改版本、配置代理、使用 Bearer 调试或从旧版迁移，读取 [OpenAPI 与 Scalar](references/openapi-scalar.md)。
 
 ### TypeScript 客户端导出（host.tsGen）
 
@@ -263,7 +255,7 @@ host:
 ```yaml
 healthCheck:
   enabled: true
-  endpoint: "/health"
+  path: "/health"
 ```
 
 ## 推荐中间件顺序
@@ -292,10 +284,10 @@ if (hostConfig.Auth?.Enabled == true)
     app.UseAuthentication();
 }
 
-app.UseAsgardTenant();
-
 // 插件或外部中间件扩展点
 configureMiddleware?.Invoke(app);
+
+app.UseAsgardTenant();
 
 // host.rateLimiting.user.enabled=true 时，Yggdrasil 在此处自动执行用户层。
 // 宿主应用不要自行再注册第二个 UseRateLimiter()。
@@ -303,15 +295,11 @@ configureMiddleware?.Invoke(app);
 // 插件中间件之后统一进入授权
 app.UseAuthorization();
 
-if (hostConfig.Swagger?.Enabled == true)
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// 默认宿主按 host.openApi.enabled 映射 OpenAPI JSON 和 Scalar 端点。
 
 if (hostConfig.HealthCheck?.Enabled == true)
 {
-    app.MapHealthChecks(hostConfig.HealthCheck.Endpoint);
+    app.MapHealthChecks(hostConfig.HealthCheck.Path);
 }
 
 app.MapControllers();
@@ -320,7 +308,7 @@ app.MapControllers();
 **关键位置：**
 - `UseRouting()` 必须在认证链路之前，确保终结点信息可被认证授权系统识别
 - `UseAuthentication()` 在启用宿主内置 JWT 时接入
-- `UseAsgardTenant()` 必须位于认证之后，这样才能基于身份建立租户上下文
+- `UseAsgardTenant()` 位于认证和外部身份扩展之后，根据最终身份建立租户上下文
 - 实例与 IP 层位于认证前；用户层位于认证、租户和外部身份扩展之后、授权之前
 - `UseAuthorization()` 需要在插件或外部中间件之后统一执行，避免扩展链路还没补充身份信息就提前鉴权
 - 三层宿主限流由框架自动接线，不要通过重复调用 `UseRateLimiter()` 模拟分层
@@ -342,6 +330,7 @@ app.MapControllers();
 
 需要查看配置定义或验证规则时读 `references/`：
 - `HostConfig.cs` - 宿主根配置类
+- `OpenApiHostOptions.cs` - 7.0 文档开关、版本与 Scalar 路由约束
 - `StaticFileHostOptions.cs` - 静态文件配置选项
 - `TsGenHostOptions.cs` - 可选 TypeScript 客户端导出配置
 - `nginx-ip-rate-limiting.md` - Nginx 转发头、可信代理接线与 IP 限流验证
@@ -372,4 +361,4 @@ app.MapControllers();
 - ❌ 不要把租户中间件放在认证之前
 - ❌ 不要假设关闭 `host.auth.enabled` 就等于整个授权链路失效，它只表示宿主不再代你注册默认 JWT Bearer
 - ❌ 不要忘记 `tenant_id` 可能由宿主在 token 校验后自动补充，不要自己再写一份互相冲突的补 claim 逻辑
-- ❌ Swagger 启用后，不要忘了给 API 添加 XML 注释说明
+- ❌ 启用文档时，为控制器操作补齐 XML 注释和响应类型标注

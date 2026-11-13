@@ -57,7 +57,7 @@ public class UsersController : BaseController
 }
 ```
 
-不要写成 `[Route("users")]`、`[Route("[controller]")]` 或只依赖 Action 上的裸路径，除非这是明确的框架端点、健康检查、Swagger 或 OIDC discovery/JWKS 等协议端点。
+不要写成 `[Route("users")]`、`[Route("[controller]")]` 或只依赖 Action 上的裸路径，除非这是明确的框架端点、健康检查、OpenAPI 或 OIDC discovery/JWKS 等协议端点。
 
 ### 在 Controller 中获取当前用户信息
 

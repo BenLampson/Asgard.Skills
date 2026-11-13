@@ -9,7 +9,7 @@ description: "构建或修改 Asgard/Heimdall 管理前端的 Umi、Ant Design P
 
 Use this for browser-based Asgard admin consoles, especially Heimdall-style management pages. The default UI stack is Umi Max, React, TypeScript, Ant Design, Ant Design Pro Components, and DVA models. New Heimdall business SPAs should reuse `@benlampson/heimdall-browser`; preserve existing OIDC adapters within the task's migration scope. API clients may use optional Asgard.TsGen output or another project-selected shared client strategy.
 
-For login-flow architecture and PKCE/OIDC protocol design, also use `$identity-integration`. For backend controllers that must be exposed to frontend generation, also use `$asgard-api-development` and `$asgard-dotnet-10-csharp-14`.
+For login-flow architecture and PKCE/OIDC protocol design, also use `$identity-integration`. For backend controllers that must be exposed to frontend generation, also use `$asgard-api-development` and `$asgard-dotnet-11-csharp-15`.
 
 For official SDK installation, initialization and lifecycle calls, read [Heimdall SDK usage](../identity-integration/references/heimdall-sdk.md#浏览器创建一个共享-client). Use one shared BrowserClient and its callback, renewal, fetch and logout methods. UI state and Asgard response unwrapping stay in the project's existing frontend layers; the SDK supplies no React hook or UI.
 

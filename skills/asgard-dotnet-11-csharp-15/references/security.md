@@ -1,4 +1,4 @@
-# .NET 10 Security Best Practices
+# Asgard .NET 安全实践
 
 ## Authentication with ASP.NET Core Identity
 

@@ -15,7 +15,7 @@ Asgard 使用强类型配置系统，从 YAML 文件、环境变量、命令行�
 - `app.yaml` 默认由 starter / host 启动项目加载；单项目快速验证时也可位于同项目根目录
 - 配置类默认位于 `Config/PluginConfigs` 或 `Config/{ThirdPartyName}`
 - 项目结构见 `$asgard-plugin-structure`
-- 编码硬规则见 `$asgard-dotnet-10-csharp-14`
+- 编码硬规则见 `$asgard-dotnet-11-csharp-15`
 
 ## 什么时候使用
 
@@ -71,7 +71,7 @@ database:
 
 | 配置范围 | 路径前缀 | 示例 |
 |----------|----------|------|
-| 宿主级配置 | `host.*` | `host.kestrel.endpoints.http.url`, `host.swagger.enabled` |
+| 宿主级配置 | `host.*` | `host.kestrel.endpoints.http.url`, `host.openApi.enabled` |
 | 基础设施 | `database.*` | 数据库配置 |
 | 基础设施 | `caching.*` | 缓存配置 |
 | 基础设施 | `messaging.*` | 消息队列配置 |

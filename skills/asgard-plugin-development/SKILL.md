@@ -27,7 +27,7 @@ description: "实现 Asgard 内建插件入口、PluginBase、AddPluginConventio
 
 强制编码规则统一见：
 
-- `$asgard-dotnet-10-csharp-14`
+- `$asgard-dotnet-11-csharp-15`
 
 生命周期边界统一见：
 
@@ -149,7 +149,7 @@ starter 项目的 `Program.cs` 默认负责：
 - 只有 `AddPluginConventions` 未覆盖的能力，才下沉到扩展类或模块装配类
 - 把 `plugin.yaml` 作为插件项目中的插件级 YAML 根文件
 - 正式开发优先采用“插件项目 + starter 项目分离”
-- 所有实现代码都继续遵守 `$asgard-dotnet-10-csharp-14`
+- 所有实现代码都继续遵守 `$asgard-dotnet-11-csharp-15`
 
 ## 不要这样做
 
@@ -161,7 +161,7 @@ starter 项目的 `Program.cs` 默认负责：
 - ❌ 不要在本 skill 中自行决定目录结构，目录问题交给 `$asgard-plugin-structure`
 - ❌ 不要在 `OnConfigureServicesAsync` 里构建或解析 `ServiceProvider`
 - ❌ 不要把生命周期规则写成另一套，阶段边界交给 `$asgard-plugin-lifecycle`
-- ❌ 不要发明与 `$asgard-dotnet-10-csharp-14` 冲突的编码写法
+- ❌ 不要发明与 `$asgard-dotnet-11-csharp-15` 冲突的编码写法
 
 ## 参考资料
 

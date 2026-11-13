@@ -8,7 +8,9 @@ public partial class YggdrasilHostBuilder
     /// <summary>
     /// 配置宿主最终使用的中间件管道。
     /// </summary>
-    private void ConfigureMiddlewarePipeline(WebApplication app)
+    private async Task ConfigureMiddlewarePipelineAsync(
+        WebApplication app,
+        CancellationToken cancellationToken)
     {
         _logger.LogDebug("Configuring middleware pipeline...");
 
@@ -41,7 +43,7 @@ public partial class YggdrasilHostBuilder
         if (_pluginManager != null && _pluginManager.LoadedPlugins.Any())
         {
             _logger.LogDebug("Configuring plugin middleware...");
-            _pluginManager.ConfigureMiddlewareAsync(app).GetAwaiter().GetResult();
+            await _pluginManager.ConfigureMiddlewareAsync(app, cancellationToken);
             _logger.LogDebug("Plugin middleware configured");
         }
         else
@@ -49,25 +51,19 @@ public partial class YggdrasilHostBuilder
             _logger.LogDebug("No loaded plugins, skipping plugin middleware configuration");
         }
 
+        if (_hostConfig.RateLimiting is { Enabled: true, User: { Enabled: true } })
+        {
+            // 用户分区必须在宿主认证及外部身份中间件之后执行，
+            // 确保 HttpContext.User 已包含可用于分区的稳定主体声明。
+            _ = app.UseMiddleware<YggdrasilUserRateLimitingMiddleware>();
+        }
+
         // 授权中间件需要始终接入管线。
         // 即便宿主关闭了内置 JWT 认证，外部模块或插件仍可能注册自定义认证方案、
         // 写入身份上下文或补充声明信息，因此必须在这些扩展中间件之后再统一执行授权。
         _ = app.UseAuthorization();
 
-        if (_hostConfig.Swagger is { Enabled: true })
-        {
-            _ = app.UseSwagger();
-            _ = app.UseSwaggerUI(options =>
-            {
-                options.SwaggerEndpoint(
-                    $"/{_hostConfig.Swagger.RoutePrefix}/{_hostConfig.Swagger.Version}/swagger.json",
-                    _hostConfig.Swagger.Title);
-                options.RoutePrefix = _hostConfig.Swagger.RoutePrefix;
-            });
-
-            _logger.LogDebug("Swagger middleware enabled with route prefix {RoutePrefix}", _hostConfig.Swagger.RoutePrefix);
-        }
-
+        MapOpenApiDocumentation(app);
         MapHealthChecks(app);
         MapTsGenerationEndpoint(app);
         _ = app.MapControllers();

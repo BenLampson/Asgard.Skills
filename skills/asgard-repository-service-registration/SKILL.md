@@ -7,7 +7,7 @@ description: "实现 Asgard 仓储与服务 DI 注册，包括 RepositoryAttribu
 
 ## 缓存版本边界
 
-缓存示例面向 Asgard 5.3+，使用 `IAsgardCache`。默认 Yggdrasil 宿主自动装配缓存；关闭时提供 `NullAsgardCache`，自定义宿主仍需判空。升级与配置迁移读取 `$asgard-cache`。本目录中含旧缓存接口的源码拷贝是 5.3 前快照，只用于维护旧版；不能据此生成 5.3+ 缓存接线。
+使用 `IAsgardCache`。默认 Yggdrasil 宿主自动装配缓存；关闭时提供 `NullAsgardCache`，自定义宿主仍需判空。旧缓存配置迁移见 `$asgard-cache`；实现以 7.x 源码为准。
 
 
 ## 作用
@@ -21,7 +21,7 @@ description: "实现 Asgard 仓储与服务 DI 注册，包括 RepositoryAttribu
 - 服务接口默认放在 `Services/IServices`
 - 服务实现默认放在 `Services/Services`
 - 项目结构见 `$asgard-plugin-structure`
-- 编码硬规则见 `$asgard-dotnet-10-csharp-14`
+- 编码硬规则见 `$asgard-dotnet-11-csharp-15`
 - 乐观锁与更新路径规则见 `$asgard-database`
 - 需要对仓储/服务层改动做复查时，请启用 `$asgard-backend-guard`
 

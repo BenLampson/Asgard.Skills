@@ -43,7 +43,7 @@
 | **插件化** | 业务功能作为插件加载，宿主只负责编排 |
 | **可扩展** | 框架核心不硬编码业务，通过插件扩展功能 |
 | **约定优先** | 基于约定自动扫描注册，减少配置 |
-| **可选降级** | 能力按模块与目标版本处理；5.3+ 默认宿主禁用缓存时提供 NullAsgardCache |
+| **可选降级** | 能力按模块与目标版本处理；默认宿主禁用缓存时提供 NullAsgardCache |
 | **一步构建** | 插件编译后直接放入目录，无需重新编译宿主 |
 
 ## 核心入口
@@ -61,7 +61,7 @@
 |------|------------|------|
 | asgard-host-project | `$asgard-host-project` | 宿主项目构建与启动 |
 | asgard-configuration | `$asgard-configuration` | 配置体系、YAML、ConfigPath |
-| asgard-host-features | `$asgard-host-features` | 静态文件、宿主默认 JWT / host.auth 接线、Swagger、限流、健康检查 |
+| asgard-host-features | `$asgard-host-features` | 静态文件、宿主默认 JWT / host.auth 接线、OpenAPI、限流、健康检查 |
 | asgard-api-development | `$asgard-api-development` | Web API、控制器、统一响应 |
 | asgard-admin-frontend | `$asgard-admin-frontend` | 管理后台前端、Heimdall 页面、TsGen 客户端消费 |
 | asgard-plugin-development | `$asgard-plugin-development` | 插件实现与约定 |
@@ -70,7 +70,7 @@
 | asgard-base-types | `$asgard-base-types` | 基类、响应模型、继承语义 |
 | asgard-repository-service-registration | `$asgard-repository-service-registration` | 仓储扫描、服务注册、约定装配 |
 | asgard-database | `$asgard-database` | 数据库、FreeSql 仓储与租户过滤 |
-| asgard-cache | `$asgard-cache` | 5.3+ Redis 单层业务缓存 |
+| asgard-cache | `$asgard-cache` | Redis 单层业务缓存 |
 | asgard-distributed-lock | `$asgard-distributed-lock` | Redis 分布式锁、续租和锁丢失处理 |
 | heimdall-service-integration | `$heimdall-service-integration` | 微服务身份、目录权限与撤销同步 |
 | heimdall-application-rbac | `$heimdall-application-rbac` | 应用域权限与 Tenant 绑定 |
@@ -80,7 +80,7 @@
 | asgard-job-scheduling | `$asgard-job-scheduling` | 作业调度、定时任务 |
 | identity-integration | `$identity-integration` | Web 登录流、OIDC/PKCE、IDP 与 token 集成 |
 | asgard-security | `$asgard-security` | 加密、密码哈希、密钥生成 |
-| asgard-dotnet-10-csharp-14 | `$asgard-dotnet-10-csharp-14` | 编码规范、最佳实践 |
+| asgard-dotnet-11-csharp-15 | `$asgard-dotnet-11-csharp-15` | 编码规范、最佳实践 |
 
 ## 调用链示例
 
