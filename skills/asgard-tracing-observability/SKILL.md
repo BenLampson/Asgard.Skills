@@ -1,6 +1,6 @@
 ---
 name: asgard-tracing-observability
-description: "按 TraceId 排查 Asgard 线上异常、步骤与身份快照，或配置请求追踪、独立持久化和数据库日志。业务故障定位与脱敏复现用此 skill。"
+description: "按 TraceId 排查 Asgard 异常，或配置请求追踪、自定义请求采集回调、独立持久化和数据库日志。业务故障定位与脱敏复现用此 skill。"
 ---
 
 # Asgard Tracing And Observability
@@ -54,6 +54,7 @@ description: "按 TraceId 排查 Asgard 线上异常、步骤与身份快照，�
 | **补充结构化标签** | `AsgardContext.Trace?.AddTag(...)` |
 | **补充分支判断** | `AsgardContext.Trace?.AddBranch(...)` |
 | **自动记录请求链路** | 顶层请求追踪中间件 |
+| **应用决定 Trace 快照字段** | 通过 `AddAsgardTraceRequestCapture` 注册[请求采集回调](references/request-capture.md) |
 | **自动记录控制器执行** | MVC 全局 Action Filter |
 | **自动记录仓储关键调用** | `AbsAsgardRepositoryBase` 统一封装 |
 | **Trace 独立落库** | `Trace.Enabled` + 独立 `FreeSqlTraceStore` |
@@ -88,7 +89,7 @@ Trace:
 - `Trace.Enabled: true` 且 `Trace.CaptureAllRequest: false`：只持久化异常或 HTTP 5xx。
 - `Trace.Enabled: true` 且 `Trace.CaptureAllRequest: true`：所有请求持久化。
 - 错误/5xx 请求保存 request snapshot；正常请求即使落库，也只保存轻量链路，不保存 body。
-- 请求头和 JSON body 中的 `Authorization`、`Cookie`、`password`、`token`、`secret`、`key` 等敏感字段必须掩码。
+- 默认规则仅掩码已知字段名；业务需要按接口筛选字段时，使用[请求采集回调](references/request-capture.md)，由应用明确返回可保存的值。
 
 实现边界：
 
