@@ -59,6 +59,7 @@ public sealed class CacheManager : ICacheManager
                 DistributedCache = new Microsoft.Extensions.Caching.StackExchangeRedis.RedisCache(options);
                 // 显式验证连接；启用的 Redis 不可用时终止启动，不静默降级。
                 _ = await DistributedCache.GetAsync("__asgard_health_check__", cancellationToken);
+                await ValidateStreamDatabaseAsync(ConnectionMultiplexer, cancellationToken);
                 _cache = new RedisAsgardCache(DistributedCache, _config, ConnectionMultiplexer!);
                 IsConnected = true;
                 _logger.LogDebug("Redis 单层缓存初始化完成。");
@@ -71,6 +72,24 @@ public sealed class CacheManager : ICacheManager
             }
         }
         finally { _ = _lifecycleGate.Release(); }
+    }
+
+    /// <summary>探测不同的 Stream 数据库，避免在首次收发消息时才发现 Redis 不支持该索引。</summary>
+    private async Task ValidateStreamDatabaseAsync(IConnectionMultiplexer connection, CancellationToken cancellationToken)
+    {
+        var redis = _config.Redis;
+        if (redis.StreamDatabase is not int streamDatabase || streamDatabase == redis.Database) return;
+
+        // EXISTS 与键类型无关，也不会创建键或改变 Stream 状态。
+        var probeKey = (redis.InstanceName ?? string.Empty) + "stream:__asgard_health_check__";
+        try
+        {
+            _ = await connection.GetDatabase(streamDatabase).KeyExistsAsync(probeKey).WaitAsync(cancellationToken);
+        }
+        catch (Exception ex) when (ex is RedisCommandException or RedisServerException)
+        {
+            throw new InvalidOperationException($"无法访问 caching.redis.streamDatabase={streamDatabase}，请核对 Redis 支持的数据库索引和访问权限。", ex);
+        }
     }
 
     /// <inheritdoc />

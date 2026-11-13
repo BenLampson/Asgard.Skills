@@ -5,6 +5,7 @@ caching:
     instanceName: "{InstanceName}"
     defaultExpirationMinutes: {DefaultExpirationMinutes}
     database: {Database}
+    # streamDatabase: 1  # 可选；省略时与缓存同库
     connectTimeout: 5000
     syncTimeout: 5000
     asyncTimeout: 5000

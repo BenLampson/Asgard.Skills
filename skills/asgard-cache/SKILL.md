@@ -20,6 +20,7 @@ caching:
     connectionString: "localhost:6379"
     instanceName: "MyApp:"
     database: 0
+    # streamDatabase: 1  # 可选；省略时与缓存同库
     defaultExpirationMinutes: 30
 ```
 
@@ -58,6 +59,9 @@ Redis 范围删除先验证并去重输入，再以最多 256 个单键删除任
 ## Redis 消息能力
 
 Asgard 7.x 中 `AddAsgardCache` 和 Yggdrasil 注册 `IRedisPubSub`、`IRedisStream`，可通过注入或 `AbsAsgardContext.RedisPubSub`、`RedisStream` 使用。缓存关闭时 Context 属性为 null，直接解析接口抛异常；不得静默丢弃消息。频道和流键不自动按租户隔离。缓存的单键、批量、前缀删除原子跳过 Stream；旧缓存键和 Stream 键保持不变，完全重名时不能共存。滚动升级时旧实例不具备保护。版本和实现以目标源码或包为准。完整 API 和故障恢复边界见 [Redis 消息](references/redis-messaging.md)。
+
+Stream 可通过 `caching.redis.streamDatabase` 指定独立逻辑库，默认与缓存同库。配置不同库时复用连接并在初始化时探测索引；Pub/Sub 不按库隔离。已有 Stream 切库前先排空或迁移消息及消费组。
+
 ## 参考与分发
 
 - `references/CacheConfig.cs`、`references/CacheManager.cs`：当前配置与生命周期实现。

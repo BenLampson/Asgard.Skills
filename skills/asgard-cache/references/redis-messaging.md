@@ -15,7 +15,7 @@ var message = await subscription.ReadAsync(cancellationToken);
 
 ## Stream
 
-Stream 物理键为 `InstanceName + "stream:" + stream`，使用配置的 Redis 数据库；当前接口仅支持不重复的 UTF-8 文本字段。`AddAsync`、`ReadAsync`、`RangeAsync`、`TrimAsync` 支持追加、非阻塞读取、范围与裁剪；`CreateGroupAsync`、`ReadGroupAsync`、`PendingAsync`、`ClaimAsync`、`AcknowledgeAsync` 和 `DeleteAsync` 支持消费组及手动恢复。
+Stream 物理键为 `InstanceName + "stream:" + stream`，使用 `caching.redis.streamDatabase`，省略时沿用 `caching.redis.database`；当前接口仅支持不重复的 UTF-8 文本字段。`AddAsync`、`ReadAsync`、`RangeAsync`、`TrimAsync` 支持追加、非阻塞读取、范围与裁剪；`CreateGroupAsync`、`ReadGroupAsync`、`PendingAsync`、`ClaimAsync`、`AcknowledgeAsync` 和 `DeleteAsync` 支持消费组及手动恢复。
 
 ```csharp
 // redisStream 为从 DI 或 Context 取得并已判空的 IRedisStream。
@@ -31,6 +31,12 @@ foreach (var item in messages)
 
 默认读取尚未投递的新消息；读取指定消费者待确认消息可传 `position: "0"`。消费失败时按业务策略用 `PendingAsync` 查找并用 `ClaimAsync` 转移超时消息，成功处理后确认。API 不提供阻塞读取、自动确认、自动重试或后台消费；删除或裁剪消息不自动确认待处理项。Stream 存在 Redis 中，重启后的持久性取决于 Redis 持久化配置。取消等待不代表已发往 Redis 的命令撤销，业务应处理重复和结果未知。
 
+## 切换 Stream 数据库
+
+`streamDatabase` 可设置为 0–15，实际可用索引由 Redis 服务端决定。设置为不同的逻辑库仍使用同一连接；宿主初始化时探测该库。仅支持 DB 0 的部署应保持同库。Pub/Sub 频道、缓存和分布式锁不受这个配置影响。
+
+切换配置不会搬迁消息、消费组或待确认状态。先排空旧库或迁移数据，再统一切换生产者与消费者。
+
 ## 缓存删除边界
 
-包含本次保护的源码在单键、批量和前缀删除时以 Redis 单键脚本原子检查类型，跳过 Stream，同时保留现有缓存与 Stream 的物理键。前缀扫描整体仍非原子；旧版本实例不具备该保护，滚动升级时不能依赖全部实例已隔离。缓存和 Stream 若指向同一个物理键，则无法同时占用该键，读写会因类型不匹配失败；应使用不同名字。租户和应用隔离仍须业务按名称、配置及授权建立。
+包含本次保护的源码在单键、批量和前缀删除时以 Redis 单键脚本原子检查类型，跳过 Stream，同时保留现有缓存与 Stream 的物理键。前缀扫描整体仍非原子；旧版本实例不具备该保护，滚动升级时不能依赖全部实例已隔离。不同逻辑库允许同名键，缓存删除只访问缓存库。同库时缓存和 Stream 不能占用同一个物理键，应使用不同名字。租户和应用隔离仍须业务按名称、配置及授权建立。
