@@ -29,7 +29,7 @@ description: "创建或调整 Asgard 插件与 starter 的目录、依赖、Glob
 - 生命周期：`$asgard-plugin-lifecycle`
 - 强制编码规则：`$asgard-dotnet-11-csharp-15`
 
-Asgard 7.0 的 starter 和插件均使用 `net11.0`；按同一 Asgard 版本对齐包引用。维护既有 6.x 项目时保留其目标框架，升级需同时调整 starter、插件与运行镜像。
+starter 和插件统一使用 `net11.0` / C# 15，Asgard 包版本保持一致。旧应用见 [升级到 Asgard 7.x](../asgard-host-features/references/openapi-scalar.md#升级到-asgard-7x)。
 
 使用项目模板时，在仓库的中央包配置中给 `Asgard.PluginSdk` 和 `Asgard.Analyzers` 指定同一版；未启用中央管理时在项目引用上指定版本。启动前通过 `ASGARD_ENCRYPTION_KEY`（16、24 或 32 字节）和 `ASGARD_ENCRYPTION_IV`（16 字节）注入 Base64 值。
 

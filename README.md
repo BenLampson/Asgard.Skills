@@ -11,9 +11,9 @@ Asgard 框架的 AI 技能仓库。
 - 集中管理和版本控制技能定义文件
 - 方便在不同开发环境间同步技能配置
 
-## Asgard 7.0
+## Asgard 7.x 开发基线
 
-新项目使用 .NET 11 / C# 15。starter 和插件都以 `net11.0` 为目标；通过 `host.openApi` 开启 [OpenAPI + Scalar](skills/asgard-host-features/references/openapi-scalar.md)。从旧版更新技能后重新运行下方安装脚本，编码入口改用 `$asgard-dotnet-11-csharp-15`；维护 6.x 应以项目依赖版本为准。
+Asgard 开发统一使用 .NET 11 / C# 15。starter 和插件都以 `net11.0` 为目标；通过 `host.openApi` 开启 [OpenAPI + Scalar](skills/asgard-host-features/references/openapi-scalar.md)。编码入口是 `$asgard-dotnet-11-csharp-15`，更新技能后可重新运行下方安装脚本。旧应用见 [升级指引](skills/asgard-host-features/references/openapi-scalar.md#升级到-asgard-7x)。
 
 ## 技能结构
 
@@ -51,7 +51,7 @@ python -X utf8 scripts/validate_skills.py
 
 description 的仓库维护上限为 180 字符，触发条件和边界前置。这个上限是本仓库约定，不是平台限制。长示例保存在 references，入口写明读取场景；静态校验通过不代表自动触发率已经验证。
 
-缓存入口与缓存模板按 Asgard 5.3+ 的版本边界使用；含旧缓存接口的源码快照显式标记历史版本。任务先核对目标项目依赖版本，不混用接口，也不自动升级项目。
+缓存使用 Redis 单层模式和 `IAsgardCache`；旧缓存配置的迁移步骤见 [缓存技能](skills/asgard-cache/SKILL.md)。
 
 当前需要重点遵守的一条 API 硬规则是：
 

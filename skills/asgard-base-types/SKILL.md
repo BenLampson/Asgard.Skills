@@ -155,7 +155,7 @@ public class {PluginName}Plugin : PluginBase
 
 ## AbsAsgardContext（框架统一上下文）
 
-缓存类型与行为按目标版本确认；5.3+ 使用 `IAsgardCache`，关闭时默认宿主提供 `NullAsgardCache`。本目录 `AbsAsgardContext.cs` 是含旧缓存接口的历史快照，不可用于生成 5.3+ 缓存接线。
+使用 `IAsgardCache`，关闭时默认宿主提供 `NullAsgardCache`。本目录 `AbsAsgardContext.cs` 是历史快照；当前缓存接线见 `$asgard-cache`。
 
 **作用：** 聚合所有可选模块能力，通过属性暴露。所有属性都是 `T?` 类型，未启用对应模块时返回 `null`。
 
@@ -201,7 +201,7 @@ public class {ServiceName}Service : I{ServiceName}Service
 
 | 属性 | 能力 |
 |------|------|
-| `Cache` | 5.3+ Redis 单层业务缓存 |
+| `Cache` | Redis 单层业务缓存 |
 | `JobScheduler` | 作业调度 |
 | `MessageQueue` | 消息队列 |
 | `DistributedLock` | 分布式锁 |

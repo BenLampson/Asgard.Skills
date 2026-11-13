@@ -1,6 +1,6 @@
 # 插件关闭与重载
 
-适用于包含 Asgard 6.0.1 基础设施生命周期修复（2026-10-08 核对；发布状态另行确认）的目标源码；不是对所有已发布版本的承诺。先检查 Asgard 的 `PluginManager.cs`、`PluginManager.Lifecycle.cs`、`PluginLoaderHelper.cs` 和 `PluginServiceConfigurator.cs`。
+以下说明 Asgard 7.x 的关闭和重载契约。核对实现时查看 Asgard 的 `PluginManager.cs`、`PluginManager.Lifecycle.cs`、`PluginLoaderHelper.cs` 和 `PluginServiceConfigurator.cs`。
 
 ## 使用边界
 

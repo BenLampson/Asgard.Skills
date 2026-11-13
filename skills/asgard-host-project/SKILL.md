@@ -15,7 +15,7 @@ description: "创建或修改 Asgard host/starter、Program.cs、YggdrasilHost �
 - 插件内部目录结构见 `$asgard-plugin-structure`
 - 代码实现必须遵守 `$asgard-dotnet-11-csharp-15`
 
-Asgard 7.0 的 starter 和插件均使用 `net11.0`；按同一 Asgard 版本对齐包引用。维护既有 6.x 项目时保留其目标框架，升级需同时调整 starter、插件与运行镜像。
+starter 和插件统一使用 `net11.0` / C# 15，Asgard 包版本保持一致。旧应用见 [升级到 Asgard 7.x](../asgard-host-features/references/openapi-scalar.md#升级到-asgard-7x)。
 
 ## 什么时候使用
 
@@ -104,15 +104,14 @@ Asgard 7.0 的 starter 和插件均使用 `net11.0`；按同一 Asgard 版本对
 - 不要把“示例里出现了中间件”理解成“所有项目都必须手写一遍”
 - 只有在你脱离默认链路、或默认链路无法覆盖你的认证实现时，才需要显式补线
 
-### 版本兼容提醒：`PluginWebAppDefaults` 授权托底
+### `PluginWebAppDefaults` 授权托底
 
-从修复 `PluginWebAppDefaults.RunAsync<TPlugin>()` 与 Yggdrasil 默认链路不一致的版本开始，快速入口也应由框架统一托底 `UseAuthorization()`，并在 `host.auth.enabled: true` 时统一接入宿主默认 `UseAuthentication()`。
+`PluginWebAppDefaults.RunAsync<TPlugin>()` 与 Yggdrasil 一样统一接入 `UseAuthorization()`，并在 `host.auth.enabled: true` 时统一接入宿主默认 `UseAuthentication()`。
 
 升级后的迁移原则：
 
-- 现有 starter 里已经手写 `app.UseAuthentication().UseAuthorization()` 的项目可以继续运行，不需要为了升级立即改代码。
 - 新项目和新模板不要再默认手写认证授权中间件，优先保持 `await PluginWebAppDefaults.RunAsync<TPlugin>(configPath);`。
-- 维护旧项目时，可以在确认没有插件自定义认证链路依赖该回调后，逐步删除 starter 里的重复 `UseAuthentication()` / `UseAuthorization()`。
+- 升级时，确认没有插件自定义认证链路依赖该回调后，删除 starter 里的重复 `UseAuthentication()` / `UseAuthorization()`。
 - 重复调用通常不会导致应用启动失败，但可能让认证或授权处理重复执行；不要把“重复也能跑”当成推荐结构。
 
 ## 推荐代码结构
@@ -193,7 +192,7 @@ await app.RunAsync();
 
 ## 构建失败与资源所有权
 
-目标包含 Asgard 6.0.1 基础设施生命周期修复（2026-10-08 核对；发布状态另行确认）时，宿主统一拥有构建前创建的缓存、MQ、作业调度、追踪和引导日志资源；DI 中注入的相关实例是借用。不要在业务服务或插件里分别 Dispose 宿主提供的管理器/连接/调度器。
+宿主统一拥有构建前创建的缓存、MQ、作业调度、追踪和引导日志资源；DI 中注入的相关实例是借用。不要在业务服务或插件里分别 Dispose 宿主提供的管理器/连接/调度器。
 
 - 宿主停止时先关闭作业、清理插件，期间 MQ/缓存/追踪仍可用；随后释放基础设施，最后排空追踪并关闭引导日志
 - 构建失败会回滚已创建资源；构建后即使未 Start，Dispose 也会清理；重复停止/释放复用同一清理过程
@@ -245,10 +244,8 @@ await app.RunAsync();
 - `Program-Full.cs.template` - starter 完整入口
 - `Program-WithHooks.cs.template` - starter 带钩子入口
 
-## 6.0.2：作业延迟到托管启动
-
-以下适用于 Asgard 6.0.2 运行时优化源码；发布状态需另行核对，不表示 NuGet 已完成发布。维护旧包时先确认包含对应实现，不把这些行为追溯到 6.0.1。
+## 作业延迟到托管启动
 
 宿主 Build/BuildAsync 只通过 `JobManager.PrepareAsync` 准备调度器并注册配置作业，随后设置最终 DI 提供者，完成插件初始化/启动钩子及中间件配置。宿主 `StartAsync` 的运行时托管服务才调用管理器初始化并真正启动 Quartz，传递宿主取消令牌；仅 Build 后调度器 `IsStarted=false`，`StartNow` 不能提前执行。排队注册错误或启动取消传播并使用清理路径；未 Start 的宿主释放仍清理准备资源。
 
-独立 `JobManager.InitializeAsync` 保持立即准备并启动，不能把宿主延迟启动规则套用到独立用法。配置限制、每次触发的 DI 作用域与作业资源所有权见 `$asgard-job-scheduling`。本目录旧源码快照仍是历史参考，6.0.2 接线以目标 `YggdrasilHostBuilder`、`AsgardRuntimeHostedService`、`JobManager` 为准。
+独立 `JobManager.InitializeAsync` 保持立即准备并启动，不能把宿主延迟启动规则套用到独立用法。配置限制、每次触发的 DI 作用域与作业资源所有权见 `$asgard-job-scheduling`。核对当前接线时读取 `YggdrasilHostBuilder`、`AsgardRuntimeHostedService`和 `JobManager`。

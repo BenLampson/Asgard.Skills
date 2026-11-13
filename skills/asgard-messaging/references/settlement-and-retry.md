@@ -1,6 +1,6 @@
 # RabbitMQ 确认、重试与恢复
 
-适用于包含 Asgard 6.0.1 基础设施生命周期修复（2026-10-08 核对；发布状态另行确认）的目标源码。先核对目标版本及 `SubscribeOptions`，不要把修复当作所有旧包已具有的行为。源码入口为 Asgard 的 `src/doc/18-消息队列.md`、`RabbitMQDeliverySettlement.cs`、`RabbitMQMessageQueue.Delivery.cs`、`RabbitMQMessageQueue.cs` 及相关消息工厂/拓扑文件。
+以下说明 Asgard 7.x 的 RabbitMQ 消息处理契约。配置前核对 `SubscribeOptions`。源码入口为 Asgard 的 `src/doc/18-消息队列.md`、`RabbitMQDeliverySettlement.cs`、`RabbitMQMessageQueue.Delivery.cs`、`RabbitMQMessageQueue.cs` 及相关消息工厂/拓扑文件。
 
 ## 保持现有调用方式
 

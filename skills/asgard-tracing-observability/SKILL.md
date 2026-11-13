@@ -98,9 +98,7 @@ Trace:
 - 后台 worker 按 `BatchSize` / `Period` 批量写入，并按 `RetentionDays` + `CleanupIntervalMinutes` 清理旧 Trace。
 - 普通日志中的 `AsgardTrace` 只保留摘要，并通过 `TraceId` 与 `asgard_trace` 关联。
 
-## 6.0.2：有界 Trace 与故障语义
-
-以下适用于 Asgard 6.0.2 运行时优化源码；发布状态需另行核对，不表示 NuGet 已完成发布。维护旧包时先确认包含对应实现，不把这些行为追溯到 6.0.1。
+## 有界 Trace 与故障语义
 
 - 请求线程以非阻塞 `TryWrite` 投递；等待队列最多 1,024 条，单个在途批次最多 `min(BatchSize, 1024)` 条。满队列、关闭或释放时拒绝最新记录；这是记录数限制，不是总字节数限制
 - 每批最多三次写入，失败后等待 50/100 毫秒重试；耗尽后计数并丢弃，消费者继续。尾批次按同一 `Period` 聚合期限冲刷，不因新记录持续到达而无限延后

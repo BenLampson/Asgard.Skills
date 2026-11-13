@@ -170,7 +170,7 @@ auth:
 
 Asgard 7.0 使用 ASP.NET Core OpenAPI 生成 JSON，Scalar 提供交互页面。默认关闭；在宿主 `app.yaml` 设置 `host.openApi.enabled: true` 后，访问 `/openapi/v1.json` 和 `/scalar`。Yggdrasil 和快速 starter 入口会自动接线。
 
-修改版本、配置代理、使用 Bearer 调试或从旧版迁移，读取 [OpenAPI 与 Scalar](references/openapi-scalar.md)。维护未升级的 6.x 项目时先核对该版本的配置契约。
+修改版本、配置代理、使用 Bearer 调试或从旧版迁移，读取 [OpenAPI 与 Scalar](references/openapi-scalar.md)。
 
 ### TypeScript 客户端导出（host.tsGen）
 

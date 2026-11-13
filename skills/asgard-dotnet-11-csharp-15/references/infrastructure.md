@@ -200,7 +200,7 @@ public class MyService(IOptions<MySettings> settings)
 
 ## Caching
 
-Asgard 5.3+ business caching uses Redis through `IAsgardCache`, normally available as `AbsAsgardContext.Cache`. Read `$asgard-cache` for configuration, TTL, invalidation, disabled behavior, and migration. Default Yggdrasil already registers the cache; do not add an in-memory business cache or silently fall back to memory. Internal OIDC/JWKS `IMemoryCache` is a separate concern.
+Asgard business caching uses Redis through `IAsgardCache`, normally available as `AbsAsgardContext.Cache`. Read `$asgard-cache` for configuration, TTL, invalidation, disabled behavior, and migration. Default Yggdrasil already registers the cache; do not add an in-memory business cache or silently fall back to memory. Internal OIDC/JWKS `IMemoryCache` is a separate concern.
 
 ## Response Compression
 

@@ -1,11 +1,11 @@
-# C# 14 - Modern C# Features
+# Asgard C# 15 语言模式
 
 这些 C# 14 及更早引入的写法在 Asgard 7.0 的 C# 15 中继续适用。
 
 ## Primary Constructors
 
 ```csharp
-// Good (C# 14 primary constructor)
+// Good (primary constructor)
 public class UserService(IOptions<Settings> settings, ILogger<UserService> logger)
 {
     private readonly Settings _settings = settings.Value;

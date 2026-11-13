@@ -43,7 +43,7 @@
 | **插件化** | 业务功能作为插件加载，宿主只负责编排 |
 | **可扩展** | 框架核心不硬编码业务，通过插件扩展功能 |
 | **约定优先** | 基于约定自动扫描注册，减少配置 |
-| **可选降级** | 能力按模块与目标版本处理；5.3+ 默认宿主禁用缓存时提供 NullAsgardCache |
+| **可选降级** | 能力按模块与目标版本处理；默认宿主禁用缓存时提供 NullAsgardCache |
 | **一步构建** | 插件编译后直接放入目录，无需重新编译宿主 |
 
 ## 核心入口
@@ -70,7 +70,7 @@
 | asgard-base-types | `$asgard-base-types` | 基类、响应模型、继承语义 |
 | asgard-repository-service-registration | `$asgard-repository-service-registration` | 仓储扫描、服务注册、约定装配 |
 | asgard-database | `$asgard-database` | 数据库、FreeSql 仓储与租户过滤 |
-| asgard-cache | `$asgard-cache` | 5.3+ Redis 单层业务缓存 |
+| asgard-cache | `$asgard-cache` | Redis 单层业务缓存 |
 | asgard-distributed-lock | `$asgard-distributed-lock` | Redis 分布式锁、续租和锁丢失处理 |
 | heimdall-service-integration | `$heimdall-service-integration` | 微服务身份、目录权限与撤销同步 |
 | heimdall-application-rbac | `$heimdall-application-rbac` | 应用域权限与 Tenant 绑定 |

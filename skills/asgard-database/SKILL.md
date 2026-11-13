@@ -7,7 +7,7 @@ description: "配置 Asgard 数据库或编写 FreeSql 实体、仓储和更新�
 
 ## 缓存版本边界
 
-缓存示例面向 Asgard 5.3+，使用 `IAsgardCache`。默认 Yggdrasil 宿主自动装配缓存；关闭时提供 `NullAsgardCache`，自定义宿主仍需判空。升级与配置迁移读取 `$asgard-cache`。本目录中含旧缓存接口的源码拷贝是 5.3 前快照，只用于维护旧版；不能据此生成 5.3+ 缓存接线。
+使用 `IAsgardCache`。默认 Yggdrasil 宿主自动装配缓存；关闭时提供 `NullAsgardCache`，自定义宿主仍需判空。旧缓存配置迁移见 `$asgard-cache`；实现以 7.x 源码为准。
 
 
 ## 作用
@@ -218,7 +218,7 @@ public class {EntityName}Repository : AbsAsgardRepositoryBase<{EntityName}, {Key
 
 ### 多租户约定
 
-以下以单实体共享缓存补丁 `0abb1d959418c4b877ef3fc909abdee553e7b11f` 为基线；先确认目标版本包含该补丁。涉及租户范围、缓存键、写入或事务时读取 [完整契约与迁移示例](references/shared-entity-cache-tenant-scopes.md)，不要把本行为推定为所有已发布 5.3 包的契约。
+涉及租户范围、缓存键、写入或事务时，读取 [单实体共享缓存契约与迁移示例](references/shared-entity-cache-tenant-scopes.md)。
 
 - 查询、更新、删除：只要实体继承 `AbsAsgardTenantEntity`，FreeSql 会通过框架注册的 `GlobalFilter` 自动带当前租户条件
 - 单租户范围写入：框架通过 `IAsgardRepositoryContext.IdentityContext` 对允许的空 `TenantId` 回填当前租户；跨租户写入必须显式提供合法归属。该机制不得用于修复合法应用/平台直属历史行
@@ -236,11 +236,9 @@ public class {EntityName}Repository : AbsAsgardRepositoryBase<{EntityName}, {Key
 - 跨租户业务使用授权范围，不用 `DisableGlobalFilter` 代替授权；原始 SQL 等可信基础设施入口必须自行实现授权、事务和缓存失效
 - 手动构建 FreeSql 时调用 `AsgardTenantDataProtection.Configure(fsql, identityContext)`，数据库与仓储必须使用同一个环境身份访问器
 
-### 6.0.2 批量缓存与字符串主键
+### 批量缓存与字符串主键
 
-以下适用于 Asgard 6.0.2 运行时优化源码；发布状态需另行核对，不表示 NuGet 已完成发布。维护旧包时先确认包含对应实现，不把这些行为追溯到 6.0.1。
-
-默认批量写入去重实体键与当前/实体租户/平台列表前缀；工作单元内捕获前缀并在提交后失效。覆盖缓存清理虚方法的仓储保留逐实体兼容路径，不应假定自动获得去重或列表提交后失效。字符串主键只投影主键、分块查询并把不明确别名交给数据库比较，不可自行小写/Trim。修改批量写入或自定义仓储前读取 [完整边界](references/shared-entity-cache-tenant-scopes.md#602批量路径与扩展兼容)。
+默认批量写入去重实体键与当前/实体租户/平台列表前缀；工作单元内捕获前缀并在提交后失效。覆盖缓存清理虚方法的仓储保留逐实体兼容路径，不应假定自动获得去重或列表提交后失效。字符串主键只投影主键、分块查询并把不明确别名交给数据库比较，不可自行小写/Trim。修改批量写入或自定义仓储前读取 [完整边界](references/shared-entity-cache-tenant-scopes.md#批量路径与扩展兼容)。
 
 ### 删除行为与可选软删除审计
 

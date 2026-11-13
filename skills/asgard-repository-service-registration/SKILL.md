@@ -7,7 +7,7 @@ description: "实现 Asgard 仓储与服务 DI 注册，包括 RepositoryAttribu
 
 ## 缓存版本边界
 
-缓存示例面向 Asgard 5.3+，使用 `IAsgardCache`。默认 Yggdrasil 宿主自动装配缓存；关闭时提供 `NullAsgardCache`，自定义宿主仍需判空。升级与配置迁移读取 `$asgard-cache`。本目录中含旧缓存接口的源码拷贝是 5.3 前快照，只用于维护旧版；不能据此生成 5.3+ 缓存接线。
+使用 `IAsgardCache`。默认 Yggdrasil 宿主自动装配缓存；关闭时提供 `NullAsgardCache`，自定义宿主仍需判空。旧缓存配置迁移见 `$asgard-cache`；实现以 7.x 源码为准。
 
 
 ## 作用

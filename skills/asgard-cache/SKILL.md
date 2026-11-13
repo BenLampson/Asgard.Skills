@@ -1,13 +1,13 @@
 ---
 name: asgard-cache
-description: Configure and use Asgard 6.0+ Redis business caching with IAsgardCache, TTL, invalidation and disabled-cache behavior. Excludes OIDC/JWKS internal memory caching.
+description: Configure and use Asgard Redis business caching with IAsgardCache, TTL, invalidation and disabled-cache behavior. Excludes OIDC/JWKS internal memory caching.
 ---
 
 # Asgard Redis 缓存
 
 ## 当前版本
 
-适用于 Asgard 6.0+，业务缓存仅支持 Redis。通过 `IAsgardCache` 使用，默认宿主自动装配；自定义宿主使用 `AddAsgardCache`，手动装配使用 `RedisAsgardCache` / `RedisCacheConfigurator`。
+Asgard 7.x 的业务缓存使用 Redis。通过 `IAsgardCache` 使用，默认宿主自动装配；自定义宿主使用 `AddAsgardCache`，手动装配使用 `RedisAsgardCache` / `RedisCacheConfigurator`。
 
 所有示例和实现只使用当前 API。业务缓存没有本地层、两级回填或内存回退。
 
@@ -39,9 +39,9 @@ caching:
 - Yggdrasil 自动提供分布式锁并与 DataProtection 复用 Redis 连接。不要为迁移缓存另造连接或改变锁语义；宿主生命周期补丁下，DI 获得的共享连接/缓存为借用实例，不由业务或插件手动释放。宿主统一资源所有权见 `$asgard-host-project`。
 - OIDC/JWKS 的内部 IMemoryCache 独立保留，不属于业务缓存，不应一并删除。
 
-## 单实体共享缓存补丁
+## 单实体共享缓存
 
-本补丁以 Asgard 提交 `0abb1d959418c4b877ef3fc909abdee553e7b11f` 为核对基线；不要据此假定所有 5.3 包都已有此行为，也不要自动升级依赖。涉及仓储缓存、平台/租户访问、工作单元或部署迁移时，读取 [共享缓存与显式租户范围](../asgard-database/references/shared-entity-cache-tenant-scopes.md)。
+涉及仓储缓存、平台/租户访问、工作单元或部署迁移时，读取 [共享缓存与显式租户范围](../asgard-database/references/shared-entity-cache-tenant-scopes.md)。
 
 - 不新增配置。复用现有 Redis 逻辑数据库与 `InstanceName`；一个缓存范围对应一个逻辑业务数据库/schema
 - 键不含调用者租户；缓存命中仍须检查真实实体归属，不能把共享缓存当跨租户授权
@@ -49,13 +49,11 @@ caching:
 - 工作单元内不读写共享实体缓存，提交后统一失效；数据库提交后的失效异常不意味着回滚
 - cache-aside 不保证线性一致；本补丁不提供 outbox，也不修复列表缓存算法
 
-## 6.0.2：批量删除边界
-
-以下适用于 Asgard 6.0.2 运行时优化源码；发布状态需另行核对，不表示 NuGet 已完成发布。维护旧包时先确认包含对应实现，不把这些行为追溯到 6.0.1。
+## 批量删除边界
 
 Redis 范围删除先验证并去重输入，再以最多 256 个单键删除任务构成有界流水线；前缀扫描结果同样分批删除。客户端按服务端能力选择 DEL/UNLINK，不发跨槽多键删除，也不建立全量历史键索引。删除失败仍传播；这不是实测 Redis Cluster 验收声明，也不改变前缀扫描与并发写入非原子的边界。
 
-仓储的默认批量失效、工作单元捕获前缀和自定义虚方法兼容路径见 [共享缓存契约](../asgard-database/references/shared-entity-cache-tenant-scopes.md#602批量路径与扩展兼容)。
+仓储的默认批量失效、工作单元捕获前缀和自定义虚方法兼容路径见 [共享缓存契约](../asgard-database/references/shared-entity-cache-tenant-scopes.md#批量路径与扩展兼容)。
 
 ## 参考与分发
 
