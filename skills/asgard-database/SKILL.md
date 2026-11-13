@@ -71,7 +71,7 @@ CREATE TABLE `city` (
 - 仓储接口默认位于 `Domains/IRepositories`
 - 仓储实现默认位于 `Domains/Repositories`
 - 项目结构见 `$asgard-plugin-structure`
-- 编码硬规则见 `$asgard-dotnet-10-csharp-14`
+- 编码硬规则见 `$asgard-dotnet-11-csharp-15`
 - 需要对数据库相关实现做风险复查时，请启用 `$asgard-backend-guard`
 
 什么时候使用本 skill：

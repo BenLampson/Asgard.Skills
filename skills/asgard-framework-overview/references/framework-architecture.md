@@ -61,7 +61,7 @@
 |------|------------|------|
 | asgard-host-project | `$asgard-host-project` | 宿主项目构建与启动 |
 | asgard-configuration | `$asgard-configuration` | 配置体系、YAML、ConfigPath |
-| asgard-host-features | `$asgard-host-features` | 静态文件、宿主默认 JWT / host.auth 接线、Swagger、限流、健康检查 |
+| asgard-host-features | `$asgard-host-features` | 静态文件、宿主默认 JWT / host.auth 接线、OpenAPI、限流、健康检查 |
 | asgard-api-development | `$asgard-api-development` | Web API、控制器、统一响应 |
 | asgard-admin-frontend | `$asgard-admin-frontend` | 管理后台前端、Heimdall 页面、TsGen 客户端消费 |
 | asgard-plugin-development | `$asgard-plugin-development` | 插件实现与约定 |
@@ -80,7 +80,7 @@
 | asgard-job-scheduling | `$asgard-job-scheduling` | 作业调度、定时任务 |
 | identity-integration | `$identity-integration` | Web 登录流、OIDC/PKCE、IDP 与 token 集成 |
 | asgard-security | `$asgard-security` | 加密、密码哈希、密钥生成 |
-| asgard-dotnet-10-csharp-14 | `$asgard-dotnet-10-csharp-14` | 编码规范、最佳实践 |
+| asgard-dotnet-11-csharp-15 | `$asgard-dotnet-11-csharp-15` | 编码规范、最佳实践 |
 
 ## 调用链示例
 

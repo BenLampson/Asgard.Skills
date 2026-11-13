@@ -1,6 +1,6 @@
 ---
 name: asgard-host-features
-description: "配置 Asgard host.* 的 JWT Bearer、中间件、CORS、Swagger、TsGen、限流和健康检查。前端登录、OIDC/PKCE 流程设计用 identity-integration。"
+description: "配置 Asgard host.* 的 JWT Bearer、中间件、CORS、OpenAPI/Scalar、TsGen、限流和健康检查。前端登录、OIDC/PKCE 流程设计用 identity-integration。"
 ---
 
 # Asgard 宿主 Web 功能配置
@@ -37,7 +37,7 @@ host:
   staticFiles: ...    # 静态文件
   cors: ...          # CORS 跨域
   auth: ...         # JWT 认证
-  swagger: ...      # Swagger 文档
+  openApi: ...      # OpenAPI 文档和 Scalar
   tsGen: ...        # 可选 TypeScript 客户端导出
   rateLimiting: ... # 实例、IP、用户分层限流
   healthCheck: ...  # 健康检查
@@ -118,7 +118,7 @@ cors:
 auth:
   enabled: true
   jwt:
-    issuerTemplate: "https://idp.example.com/realms/{tenantId}"
+    issuerTemplate: "https://idp.example.com/realms/{tenant}"
     audience: "your-audience"
     requireHttpsMetadata: true
     discoveryCacheMinutes: 60
@@ -166,21 +166,11 @@ auth:
 
 也就是说，业务代码真正应该读取的是 `AsgardContext.IdentityContext?.UserInfo`，而不是自己重新拼装 claim。
 
-### Swagger/OpenAPI（host.swagger）
+### OpenAPI 与 Scalar（host.openApi）
 
-```yaml
-swagger:
-  enabled: true
-  title: "你的 API 名称"
-  version: "v1"
-  description: "API 描述"
-```
+Asgard 7.0 使用 ASP.NET Core OpenAPI 生成 JSON，Scalar 提供交互页面。默认关闭；在宿主 `app.yaml` 设置 `host.openApi.enabled: true` 后，访问 `/openapi/v1.json` 和 `/scalar`。Yggdrasil 和快速 starter 入口会自动接线。
 
-**推荐做法：**
-- 为所有控制器和操作添加 XML 注释
-- Controller 对外返回统一使用 Asgard 的 `Response` 家族响应模型
-- 非分页接口使用 `Response<T>` / `Response<object>`，分页接口使用 `PageResponse<T>` / `CursorResponse<T>`
-- Swagger 会自动包含注释信息
+修改版本、配置代理、使用 Bearer 调试或从旧版迁移，读取 [OpenAPI 与 Scalar](references/openapi-scalar.md)。维护未升级的 6.x 项目时先核对该版本的配置契约。
 
 ### TypeScript 客户端导出（host.tsGen）
 
@@ -263,7 +253,7 @@ host:
 ```yaml
 healthCheck:
   enabled: true
-  endpoint: "/health"
+  path: "/health"
 ```
 
 ## 推荐中间件顺序
@@ -303,15 +293,11 @@ configureMiddleware?.Invoke(app);
 // 插件中间件之后统一进入授权
 app.UseAuthorization();
 
-if (hostConfig.Swagger?.Enabled == true)
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// 默认宿主按 host.openApi.enabled 映射 OpenAPI JSON 和 Scalar 端点。
 
 if (hostConfig.HealthCheck?.Enabled == true)
 {
-    app.MapHealthChecks(hostConfig.HealthCheck.Endpoint);
+    app.MapHealthChecks(hostConfig.HealthCheck.Path);
 }
 
 app.MapControllers();
@@ -342,6 +328,7 @@ app.MapControllers();
 
 需要查看配置定义或验证规则时读 `references/`：
 - `HostConfig.cs` - 宿主根配置类
+- `OpenApiHostOptions.cs` - 7.0 文档开关、版本与 Scalar 路由约束
 - `StaticFileHostOptions.cs` - 静态文件配置选项
 - `TsGenHostOptions.cs` - 可选 TypeScript 客户端导出配置
 - `nginx-ip-rate-limiting.md` - Nginx 转发头、可信代理接线与 IP 限流验证
@@ -372,4 +359,4 @@ app.MapControllers();
 - ❌ 不要把租户中间件放在认证之前
 - ❌ 不要假设关闭 `host.auth.enabled` 就等于整个授权链路失效，它只表示宿主不再代你注册默认 JWT Bearer
 - ❌ 不要忘记 `tenant_id` 可能由宿主在 token 校验后自动补充，不要自己再写一份互相冲突的补 claim 逻辑
-- ❌ Swagger 启用后，不要忘了给 API 添加 XML 注释说明
+- ❌ 启用文档时，为控制器操作补齐 XML 注释和响应类型标注

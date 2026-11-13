@@ -1,13 +1,13 @@
 ---
-name: asgard-dotnet-10-csharp-14
-description: "编写、修改或审查 Asgard C# 代码时使用的编码规则权威：.NET 10/C# 14、文件规范、中文注释、DI 和乐观锁更新。API 与项目结构另用专项 skill。"
+name: asgard-dotnet-11-csharp-15
+description: "编写、修改或审查 Asgard C# 代码的编码规则权威：7.0 起 .NET 11/C# 15、文件规范、中文注释、DI 和乐观锁更新。API 与项目结构另用专项 skill。"
 ---
 
-# Asgard .NET 10 / C# 14 Coding Conventions
+# Asgard .NET 11 / C# 15 编码规范
 
 ## 作用
 
-本 skill 定义了 Asgard 框架下编写 .NET 10 / C# 14 代码时必须遵循的编码规范和最佳实践。包括语言特性使用、基础设施模式、通用后端安全编码、测试、反模式避免、推荐类库等内容。
+Asgard 7.0 运行库、starter 和插件使用 `net11.0` / C# 15，框架源码锁定 .NET SDK `11.0.100`。Roslyn 分析器仍以 `netstandard2.0` / C# 14 构建。维护 Asgard 6.x 时以目标项目的 TFM、语言版本和依赖为准，未经请求不升级。
 
 **重要**：
 
@@ -19,7 +19,7 @@ description: "编写、修改或审查 Asgard C# 代码时使用的编码规则�
 
 ## 什么时候使用
 
-- **编写任何新代码时** - 确保遵循 C# 14 语法和 Asgard 约定
+- **编写任何新代码时** - 确保遵循目标项目语言版本和 Asgard 约定
 - **重构现有代码** - 将旧语法升级为新标准
 - **添加依赖注入** - 遵循生命周期约定
 - **编写通用安全相关后端代码** - 遵循 API token 校验、密钥保护、CORS 等服务端实践
@@ -104,9 +104,9 @@ await repository.UpdateAsync(entity);
 
 完整规则见 `references/project_rules.md` 和 `references/never-do-this.md`。
 
-## C# 14 语言特性使用指南
+## C# 语言特性使用指南
 
-编写主构造函数或扩展块时，读取 [语言示例](references/language-examples.md)；其他语言细节按需读取 [C# 14 参考](references/csharp-14.md)。
+编写主构造函数或扩展块时，读取 [语言示例](references/language-examples.md)；沿用 [C# 14 语言特性参考](references/csharp-14.md) 中仍适用的模式；新语法按目标项目的编译器版本选用。
 
 ## 依赖注入与基础设施
 

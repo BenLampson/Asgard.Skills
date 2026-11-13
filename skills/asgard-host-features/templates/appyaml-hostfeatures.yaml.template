@@ -24,14 +24,15 @@ host:
   # JWT 认证
   auth:
     enabled: {auth_enabled}
-    issuer: {issuer}
-    audience: {audience}
-    key: {jwt_key}
-  # Swagger 文档
-  swagger:
-    enabled: {swagger_enabled}
-    title: {swagger_title}
-    version: {swagger_version}
+    jwt:
+      issuerTemplate: "{issuer_template}"  # 必须包含一个 {tenant}
+      audience: {audience}
+      requireHttpsMetadata: true
+  # OpenAPI 文档和 Scalar 页面
+  openApi:
+    enabled: {openapi_enabled}
+    title: {openapi_title}
+    version: {openapi_version}
   # 分层限流：根级字段是当前实例共享总量桶
   rateLimiting:
     enabled: {rateLimiting_enabled}
@@ -56,4 +57,4 @@ host:
   # 健康检查
   healthCheck:
     enabled: {healthCheck_enabled}
-    endpoint: {health_check_endpoint}
+    path: {health_check_path}

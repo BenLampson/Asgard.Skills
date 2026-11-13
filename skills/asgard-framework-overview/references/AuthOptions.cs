@@ -13,7 +13,7 @@ public class AuthOptions
     /// </summary>
     /// <remarks>
     /// 该开关只控制宿主默认提供的 Bearer JWT 注册与 <c>UseAuthentication()</c> 接线，
-    /// 以及 Swagger 中的 Bearer 展示。
+    /// 以及 OpenAPI 文档中的 Bearer 展示。
     /// Asgard 自身的授权策略、多租户能力和授权中间件不会因该开关关闭而失效。
     /// </remarks>
     /// <value><see langword="true"/> 表示启用宿主内置 JWT；否则关闭该默认认证实现。</value>

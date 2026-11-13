@@ -16,6 +16,8 @@ description: "为跨模块或入口不明确的 Asgard 框架任务选择专项 
 
 ## 版本判断
 
+- Asgard 7.0 运行库只支持 `net11.0`，宿主和插件使用 C# 15。API 文档由 ASP.NET Core OpenAPI 与 Scalar 提供；旧应用迁移见 [宿主 OpenAPI](../asgard-host-features/references/openapi-scalar.md)。
+
 - 先读取目标项目的包引用、中央包版本或 `Directory.Build.props`，按实际目标版本选择 API；不要根据目录名推断版本。
 - 缓存 skill 与新缓存模板面向 5.3+；旧缓存源码快照只服务旧版本维护。升级任务按 `$asgard-cache` 迁移，不混用两代接口。
 - 不把某个固定版本称作“最新”。发包或升级时核对目标源码版本；缺少事实时明确版本假设，不擅自升级项目。
@@ -54,7 +56,7 @@ Asgard 当前更推荐：
 - 宿主项目与启动编排：使用 `$asgard-host-project`。
 - 项目结构、基础文件、目录分层：使用 `$asgard-plugin-structure`。
 - 配置体系、`app.yaml`、`plugin.yaml`、`ConfigPath`：使用 `$asgard-configuration`。
-- `host.staticFiles`、`host.auth`、`host.swagger`、限流、健康检查：使用 `$asgard-host-features`。
+- `host.staticFiles`、`host.auth`、`host.openApi`、限流、健康检查：使用 `$asgard-host-features`。
 - Web 登录流、OIDC / PKCE、IDP 对接、token 契约与前后端认证协作：使用 `$identity-integration`。
 - 管理后台前端、Heimdall 风格页面、TsGen 客户端消费、Umi/Ant Design Pro 页面调用链：使用 `$asgard-admin-frontend`。
 - Web API、控制器、统一响应：使用 `$asgard-api-development`。
@@ -81,7 +83,7 @@ Asgard 当前更推荐：
 - 优先把框架能力从 `AbsAsgardContext` 获取；确实需要更底层控制时再注入具体接口。
 - 优先沿用 starter / host 加载 `app.yaml`，插件主体维护 `plugin.yaml`。
 - 优先让控制器薄、服务显式、仓储只做数据访问、插件承载模块边界。
-- 生成代码时保持与 `$asgard-dotnet-10-csharp-14` 一致的仓库级规则。
+- 生成代码时保持与 `$asgard-dotnet-11-csharp-15` 一致的仓库级规则。
 
 ## 不要这样做
 
@@ -99,3 +101,4 @@ Asgard 当前更推荐：
 - `YggdrasilHostBuilder.Configurator.cs` - 默认中间件顺序与 `UseAuthorization()`
 - `AsgardAuthAttributes.cs` - 授权特性与策略绑定
 - `AuthOptions.cs` - 认证配置语义
+- `YggdrasilHostBuilder.OpenApi.cs` - 注册 OpenAPI transformer 与映射 Scalar

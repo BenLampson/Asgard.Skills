@@ -1,6 +1,6 @@
 # C# 14 - Modern C# Features
 
-Use these patterns for modern .NET 10 / C# 14 code.
+这些 C# 14 及更早引入的写法在 Asgard 7.0 的 C# 15 中继续适用。
 
 ## Primary Constructors
 

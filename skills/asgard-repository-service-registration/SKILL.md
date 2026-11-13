@@ -21,7 +21,7 @@ description: "实现 Asgard 仓储与服务 DI 注册，包括 RepositoryAttribu
 - 服务接口默认放在 `Services/IServices`
 - 服务实现默认放在 `Services/Services`
 - 项目结构见 `$asgard-plugin-structure`
-- 编码硬规则见 `$asgard-dotnet-10-csharp-14`
+- 编码硬规则见 `$asgard-dotnet-11-csharp-15`
 - 乐观锁与更新路径规则见 `$asgard-database`
 - 需要对仓储/服务层改动做复查时，请启用 `$asgard-backend-guard`
 

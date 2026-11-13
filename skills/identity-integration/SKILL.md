@@ -41,7 +41,7 @@ description: "使用 Heimdall 官方 C#/浏览器/Node SDK，或设计 Asgard OI
 | `AsgardAuth*`、授权 DSL、`token_type` 授权表达式 | `$asgard-auth-authorization` |
 | 密码哈希、数据加密、密钥生成 | `$asgard-security` |
 | 宿主 `host.auth` / 中间件接线 | `$asgard-host-features` |
-| Asgard 仓库级 C#/.NET 编码规范 | `$asgard-dotnet-10-csharp-14` |
+| Asgard 仓库级 C#/.NET 编码规范 | `$asgard-dotnet-11-csharp-15` |
 
 ## 集成决策
 
@@ -264,7 +264,7 @@ builder.Services
 
 ## 典型反模式
 
-- ❌ 在 `$asgard-dotnet-10-csharp-14` 里讨论前端 Web 登录流
+- ❌ 在 `$asgard-dotnet-11-csharp-15` 里讨论前端 Web 登录流
 - ❌ 在 `$asgard-security` 里讨论 PKCE、OIDC 登录页面跳转
 - ❌ 在 `$asgard-identity-userinfo` 里直接展开整套前端授权码流程
 - ❌ 只设计前端登录成功页面，不定义后端 token 校验方式
@@ -279,8 +279,8 @@ builder.Services
 - 需要设计 Heimdall 应用权限模板、Tenant 绑定和应用管理员授权范围：`$heimdall-application-rbac`
 - 需要设计 Asgard 标准 claim、`AbsAsgardUserInfo`、测试身份构造：`$asgard-identity-userinfo`
 - 需要编写授权规则或调试 `AsgardAuthMatch(...)`：`$asgard-auth-authorization`
-- 需要配置宿主认证、CORS、Swagger、中间件顺序：`$asgard-host-features`
-- 需要写 Asgard C# 实现代码和测试：`$asgard-dotnet-10-csharp-14`
+- 需要配置宿主认证、CORS、OpenAPI、中间件顺序：`$asgard-host-features`
+- 需要写 Asgard C# 实现代码和测试：`$asgard-dotnet-11-csharp-15`
 - 需要开发、接入或审查 Heimdall MCP：`$heimdall-mcp-management`
 
 ## 参考资料

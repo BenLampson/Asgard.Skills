@@ -1,13 +1,29 @@
 # 系统级配置文件，固定放在项目根目录。
 
 host:
-  swagger:
-    enabled: true
+  application:
+    name: "{ApplicationName}"
+    environment: Development
+  kestrel:
+    endpoints:
+      http:
+        url: "http://127.0.0.1:5000"
+  openApi:
+    enabled: false  # 本地联调需要时改为 true，访问 /scalar 和 /openapi/v1.json
+
+# 通过环境变量提供 Base64 密钥和 IV；不要把真实值提交到仓库。
+Asgard:
+  Encryption:
+    Key: "${env:ASGARD_ENCRYPTION_KEY}"
+    Iv: "${env:ASGARD_ENCRYPTION_IV}"
 
 database:
   enabled: false
 
 caching:
+  enabled: false
+
+messaging:
   enabled: false
 
 job:

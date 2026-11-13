@@ -55,7 +55,7 @@ description: "开发、集成或审查 Heimdall /mcp 管理能力，处理 OAuth
 
 ## 协同 skill
 
-- C# 规则与后端复查：`$asgard-dotnet-10-csharp-14`、`$asgard-backend-guard`
+- C# 规则与后端复查：`$asgard-dotnet-11-csharp-15`、`$asgard-backend-guard`
 - Controller 与授权：`$asgard-api-development`、`$asgard-auth-authorization`
 - 身份/OAuth 集成：`$identity-integration`、`$asgard-identity-userinfo`
 - 管理前端：`$asgard-admin-frontend`

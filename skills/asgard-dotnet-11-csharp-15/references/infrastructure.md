@@ -1,4 +1,4 @@
-# .NET 10 Infrastructure Patterns
+# Asgard .NET 基础设施模式
 
 ## Dependency Injection
 

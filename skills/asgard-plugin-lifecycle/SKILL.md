@@ -12,7 +12,7 @@ description: "实现或排查 Asgard 宿主钩子、插件生命周期、状态�
 结构与规则边界：
 
 - 文件放置与项目结构见 `$asgard-plugin-structure`
-- 代码实现必须继续遵守 `$asgard-dotnet-10-csharp-14`
+- 代码实现必须继续遵守 `$asgard-dotnet-11-csharp-15`
 
 ## 什么时候使用
 

@@ -13,7 +13,9 @@ description: "创建或修改 Asgard host/starter、Program.cs、YggdrasilHost �
 
 - 宿主 / starter 启动结构看本 skill 自己的说明与 `templates/`
 - 插件内部目录结构见 `$asgard-plugin-structure`
-- 代码实现必须遵守 `$asgard-dotnet-10-csharp-14`
+- 代码实现必须遵守 `$asgard-dotnet-11-csharp-15`
+
+Asgard 7.0 的 starter 和插件均使用 `net11.0`；按同一 Asgard 版本对齐包引用。维护既有 6.x 项目时保留其目标框架，升级需同时调整 starter、插件与运行镜像。
 
 ## 什么时候使用
 

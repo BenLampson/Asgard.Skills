@@ -1,5 +1,3 @@
-// 历史源码快照（Asgard 5.3 前）：缓存接口与装配不适用于 5.3+。
-// 当前业务缓存契约请读取 asgard-cache/SKILL.md；不要复制本文件的旧缓存调用。
 namespace Asgard.Yggdrasil.AspNetCore;
 
 public partial class YggdrasilHostBuilder
@@ -19,6 +17,7 @@ public partial class YggdrasilHostBuilder
             _ = services.AddSingleton(_logConfig!);
             _ = services.AddSingleton(_traceConfig!);
             _ = services.AddSingleton(_cacheConfig!);
+            services.TryAddSingleton(_distributedLockOptions!);
             _ = services.AddSingleton(_databaseConfig!);
             _ = services.AddSingleton(_mqConfig!);
             _ = services.AddSingleton(_jobConfig!);
@@ -27,6 +26,14 @@ public partial class YggdrasilHostBuilder
             _ = services.AddAsgardObservabilityQueries();
 
             RegisterInfrastructureManagers(services);
+            _ = services.AddAsgardRedisMessaging();
+
+            if (_cacheConfig!.Enabled
+                && !services.Any(descriptor => descriptor.ServiceType == typeof(IDistributedLock)))
+            {
+                // Redis 可用时分布式锁属于宿主基础能力，无需业务模块重复声明注册。
+                _ = services.AddDistributedLock(_distributedLockOptions!);
+            }
 
             if (_databaseConfig!.Enabled)
             {
@@ -85,31 +92,7 @@ public partial class YggdrasilHostBuilder
 
             _afterServiceRegistration?.Invoke(services);
 
-            if (_hostConfig.Swagger is { Enabled: true })
-            {
-                _ = services.AddSwaggerGen(options =>
-                {
-                    // 文档元数据来自主机配置，XML 注释路径则按实际参与运行的程序集动态收集。
-                    options.SwaggerDoc(_hostConfig.Swagger.Version, new Microsoft.OpenApi.OpenApiInfo
-                    {
-                        Title = _hostConfig.Swagger.Title,
-                        Version = _hostConfig.Swagger.Version,
-                        Description = _hostConfig.Swagger.Description
-                    });
-
-                    foreach (var xmlPath in GetSwaggerXmlCommentPaths())
-                    {
-                        options.IncludeXmlComments(xmlPath);
-                    }
-
-                    ConfigureSwaggerSecurity(options);
-                });
-
-                _logger.LogDebug(
-                    "Swagger services enabled: {Title} {Version}",
-                    _hostConfig.Swagger.Title,
-                    _hostConfig.Swagger.Version);
-            }
+            RegisterOpenApi(services);
 
             _logger.LogInformation("[Phase 4/5] Service registration completed");
         });
@@ -121,22 +104,20 @@ public partial class YggdrasilHostBuilder
     /// <param name="services">应用服务集合。</param>
     private void RegisterInfrastructureManagers(IServiceCollection services)
     {
+        // 容器仅拥有统一所有者；以下资源均以借用实例注册。
+        _ = services.AddSingleton(_ => _runtimeLifetime);
+
         // 即使缓存模块被显式关闭，也要提供一个可注入的空缓存实现。
-        // 这样业务仓储可以继续统一依赖 IMultiLevelCache，而不需要为“禁用缓存”分支改写构造函数。
+        // 这样业务仓储可以继续统一依赖 IAsgardCache，而不需要为“禁用缓存”分支改写构造函数。
         if (_cacheConfig is not null && _cacheManager is null)
         {
-            _ = services.AddSingleton<IMultiLevelCache>(new MultiLevelCache(null, null, _cacheConfig));
+            _ = services.AddSingleton<IAsgardCache>(new NullAsgardCache());
         }
 
         if (_cacheManager != null)
         {
             _ = services.AddSingleton<ICacheManager>(_cacheManager);
             _ = services.AddSingleton(_cacheManager.Cache);
-
-            if (_cacheManager.MemoryCache != null)
-            {
-                _ = services.AddSingleton(_cacheManager.MemoryCache);
-            }
 
             if (_cacheManager.DistributedCache != null)
             {
@@ -156,13 +137,13 @@ public partial class YggdrasilHostBuilder
         if (_mqManager != null)
         {
             _ = services.AddSingleton<IMQManager>(_mqManager);
-            _ = services.AddSingleton(sp => sp.GetRequiredService<IMQManager>().MessageQueue);
+            _ = services.AddSingleton(_mqManager.MessageQueue);
         }
 
         if (_jobManager != null)
         {
             _ = services.AddSingleton<IJobManager>(_jobManager);
-            _ = services.AddSingleton(sp => sp.GetRequiredService<IJobManager>().Scheduler);
+            _ = services.AddSingleton(_jobManager.Scheduler);
         }
 
         if (_traceStore != null)
@@ -205,51 +186,19 @@ public partial class YggdrasilHostBuilder
 
         _ = services.AddRateLimiter(options =>
         {
-            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-            options.OnRejected = static (context, cancellationToken) =>
-            {
-                context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
-                return ValueTask.CompletedTask;
-            };
-
-            options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(_ =>
-                rateLimitingOptions.Policy switch
-                {
-                    "FixedWindow" => RateLimitPartition.GetFixedWindowLimiter(
-                        "global",
-                        _ => new FixedWindowRateLimiterOptions
-                        {
-                            PermitLimit = rateLimitingOptions.PermitLimit,
-                            Window = TimeSpan.FromSeconds(rateLimitingOptions.WindowSeconds),
-                            QueueLimit = rateLimitingOptions.QueueLimit,
-                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst
-                        }),
-                    "SlidingWindow" => RateLimitPartition.GetSlidingWindowLimiter(
-                        "global",
-                        _ => new SlidingWindowRateLimiterOptions
-                        {
-                            PermitLimit = rateLimitingOptions.PermitLimit,
-                            Window = TimeSpan.FromSeconds(rateLimitingOptions.WindowSeconds),
-                            SegmentsPerWindow = rateLimitingOptions.SegmentsPerWindow,
-                            QueueLimit = rateLimitingOptions.QueueLimit,
-                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst
-                        }),
-                    "TokenBucket" => RateLimitPartition.GetTokenBucketLimiter(
-                        "global",
-                        _ => new TokenBucketRateLimiterOptions
-                        {
-                            TokenLimit = rateLimitingOptions.TokenLimit,
-                            TokensPerPeriod = rateLimitingOptions.TokensPerSecond,
-                            ReplenishmentPeriod = TimeSpan.FromSeconds(1),
-                            AutoReplenishment = true,
-                            QueueLimit = rateLimitingOptions.QueueLimit,
-                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst
-                        }),
-                    _ => throw new InvalidOperationException($"Unsupported rate limiting policy: {rateLimitingOptions.Policy}")
-                });
+            YggdrasilRateLimiterFactory.ConfigureRejection(options);
+            options.GlobalLimiter = YggdrasilRateLimiterFactory.CreatePreAuthenticationLimiter(rateLimitingOptions);
         });
 
-        _logger.LogDebug("Rate limiting services registered");
+        if (rateLimitingOptions.User is { Enabled: true } userRateLimitingOptions)
+        {
+            _ = services.AddSingleton(_ => new YggdrasilUserRateLimiter(userRateLimitingOptions));
+        }
+
+        _logger.LogDebug(
+            "Rate limiting services registered. IP layer enabled={IpEnabled}. User layer enabled={UserEnabled}",
+            rateLimitingOptions.Ip?.Enabled == true,
+            rateLimitingOptions.User?.Enabled == true);
     }
 
 }

@@ -32,15 +32,11 @@ configureMiddleware?.Invoke(app);
 // 授权统一放在扩展链路之后
 app.UseAuthorization();
 
-if (hostConfig.Swagger?.Enabled == true)
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// 默认宿主按 host.openApi.enabled 映射 OpenAPI JSON 和 Scalar 端点。
 
 if (hostConfig.HealthCheck?.Enabled == true)
 {
-    app.MapHealthChecks(hostConfig.HealthCheck.Endpoint);
+    app.MapHealthChecks(hostConfig.HealthCheck.Path);
 }
 
 app.MapControllers();

@@ -341,7 +341,7 @@ new Claim(ClaimTypes.Role, "Admin")
 - 需要写 Controller、增删改查接口、统一响应和当前用户读取示例时：结合 `$asgard-api-development`
 - 需要写 `AsgardAuth` 表达式、授权 DSL 或按 `token_type` 控制接口访问时：结合 `$asgard-auth-authorization`
 - 需要理解基类和字段语义时：使用 `$asgard-base-types`
-- 需要写 Asgard C# 代码和测试时：同时遵守 `$asgard-dotnet-10-csharp-14`
+- 需要写 Asgard C# 代码和测试时：同时遵守 `$asgard-dotnet-11-csharp-15`
 - 需要处理宿主认证、授权、中间件接入时：结合 `$asgard-host-features`
 
 ## 参考资料
