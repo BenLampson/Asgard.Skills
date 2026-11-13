@@ -1,6 +1,6 @@
 ---
 name: asgard-cache
-description: Configure and use Asgard Redis business caching with IAsgardCache, TTL, invalidation and disabled-cache behavior. Excludes OIDC/JWKS internal memory caching.
+description: Configure and use Asgard Redis business caching, Pub/Sub and Stream, including invalidation, disabled behavior and delivery boundaries. Excludes OIDC/JWKS internal memory caching.
 ---
 
 # Asgard Redis 缓存
@@ -55,6 +55,9 @@ Redis 范围删除先验证并去重输入，再以最多 256 个单键删除任
 
 仓储的默认批量失效、工作单元捕获前缀和自定义虚方法兼容路径见 [共享缓存契约](../asgard-database/references/shared-entity-cache-tenant-scopes.md#批量路径与扩展兼容)。
 
+## Redis 消息能力
+
+Asgard 7.x 中 `AddAsgardCache` 和 Yggdrasil 注册 `IRedisPubSub`、`IRedisStream`，可通过注入或 `AbsAsgardContext.RedisPubSub`、`RedisStream` 使用。缓存关闭时 Context 属性为 null，直接解析接口抛异常；不得静默丢弃消息。频道和流键不自动按租户隔离。缓存的单键、批量、前缀删除原子跳过 Stream；旧缓存键和 Stream 键保持不变，完全重名时不能共存。滚动升级时旧实例不具备保护。版本和实现以目标源码或包为准。完整 API 和故障恢复边界见 [Redis 消息](references/redis-messaging.md)。
 ## 参考与分发
 
 - `references/CacheConfig.cs`、`references/CacheManager.cs`：当前配置与生命周期实现。
