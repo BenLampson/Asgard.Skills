@@ -97,6 +97,7 @@ Heimdall MCP 管理能力开发、集成和 review 时，使用 `heimdall-mcp-ma
 - 约束平台/租户工具、Resources、Prompts、Tasks 和二阶段写确认
 - 约束凭据工具/权限/CIDR/有效期/速率/并发策略、租户边界和安全审计
 - 强制薄封装已有 Service，禁止在 MCP 中复制业务逻辑
+- [接入新增租户用户工具](skills/heimdall-mcp-management/references/mcp-contract.md#新增租户用户)：平台与租户工具选择、显式工具白名单和确认请求示例
 
 当前还需要重点了解的一条工具约定是：
 

@@ -12,7 +12,8 @@ description: "开发、集成或审查 Heimdall /mcp 管理能力，处理 OAuth
 ## 先判断任务类型
 
 - 开发或审查 MCP 工具：读取 `references/mcp-contract.md` 的“服务复用”和“工具契约”。
-- 接入远程 MCP 客户端：读取“传输与认证”。
+- 接入远程 MCP 客户端：读取“传输与认证”和“凭据策略”；同一 `/mcp` 按身份区分平台与租户。
+- 给已有租户加用户，或排查连接看不到该功能：读[新增租户用户](references/mcp-contract.md#新增租户用户)，按部署版本、身份、权限和工具白名单核对。
 - C#/Node 配置 MCP 认证头时，读取 [官方 SDK 的 MCP 适配](../identity-integration/references/heimdall-sdk.md#校验mcp-与未包含能力)，复用 `HeimdallMcpAuthentication` 或 `createMcpAuthenticationHeaders`，再交给标准 MCP 客户端。它们不封装工具/任务调用，不提供 HMAC 或 AK/SK 换 JWT，也不授予普通业务 Token 管理权限。
 - 配置 MCP 凭据：读取“凭据策略”。
 - 排查越权、跨租户、重复写入或审计：读取“安全边界”。
@@ -25,10 +26,10 @@ description: "开发、集成或审查 Heimdall /mcp 管理能力，处理 OAuth
 3. 租户工具从认证身份取得 TenantId；不要接受可切换租户的调用参数。
 4. 平台工具显式校验平台身份；应用、角色、Client、Provider 等资源继续调用已有 AccessGuard。
 5. 每个非只读工具必须使用 `McpWriteGuard` 二阶段确认，并把令牌绑定凭据、工具名和完整载荷。
-6. 每个工具类型使用 `[Authorize]`，每个业务工具继续声明对应 `AsgardAuth*` 权限。
+6. 每个工具类型使用 `[Authorize]`，业务工具用 `[McpAnyPermission]` 声明已有 Asgard 权限代码，供 MCP 发现和调用统一检查。
 7. 工具名是稳定公共契约；使用 `platform_`、`tenant_` 或 `heimdall_` 前缀，禁止重复和静默改名。
 8. `/mcp` 必须使用端点级授权策略：AK/SK 凭据可访问，OAuth Bearer 必须由 Heimdall 内置管理应用签发；不能只在 `tools/call` 过滤。
-9. MCP 凭据创建或更新另一把凭据时，委派工具和权限必须是当前凭据边界的子集，禁止通过新 AK/SK 自提权。
+9. 凭据写操作要求 Heimdall 管理应用的 `UserLogin` 身份。AK/SK 不能修改凭据策略；委派不得越过调用者现有权限边界。
 
 ## 开发流程
 
