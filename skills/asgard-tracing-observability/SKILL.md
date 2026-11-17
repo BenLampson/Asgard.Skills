@@ -14,7 +14,7 @@ description: "按 TraceId 排查 Asgard 异常，或配置请求追踪、自定�
 - 保留足以帮助定位问题、反推测试输入、解释分支走向的信息
 - 在请求结束时输出一条汇总日志
 - 允许业务代码通过 `AsgardContext.Trace` 追加备注、标签与分支说明
-- 可按 `Trace.*` 配置把 Trace 独立持久化到 `asgard_trace`，错误请求可采集脱敏后的 request snapshot，供 AI 复现问题
+- 可通过 `Trace.*` 将 Trace 持久化到 `asgard_trace`；需要落库请求数据时，由应用的采集回调筛选和脱敏，供故障复现
 - 可通过框架内置只读查询服务查询 `asgard_trace` 与 `asgard_logs`，但具体 Controller、权限、VO 暴露边界由插件或业务系统自行实现
 
 ## 什么时候使用
@@ -43,7 +43,7 @@ description: "按 TraceId 排查 Asgard 异常，或配置请求追踪、自定�
 | **参数策略** | 简单类型全量，复杂对象只记录类型名、关键标识字段和集合数量摘要 |
 | **普通日志策略** | 每请求输出一条轻量 `AsgardTrace` 摘要日志，不再把完整 request snapshot 拼进普通日志 |
 | **持久化策略** | `Trace.Enabled=false` 不落库；`Trace.Enabled=true` 只持久化异常/5xx；`Trace.CaptureAllRequest=true` 时所有请求落库 |
-| **错误快照** | 异常/5xx 请求默认保存脱敏 headers/body/identity，正常请求即使落库也不保存 body |
+| **错误快照** | 异常/5xx 可采集请求数据，应用通过回调筛选；正常请求即使落库也不保存 body |
 | **查询暴露** | 框架只提供 `ITraceQueryService` / `IDatabaseLogQueryService`，不内置 Controller，权限由插件或业务系统控制 |
 
 ## 推荐入口
@@ -89,7 +89,8 @@ Trace:
 - `Trace.Enabled: true` 且 `Trace.CaptureAllRequest: false`：只持久化异常或 HTTP 5xx。
 - `Trace.Enabled: true` 且 `Trace.CaptureAllRequest: true`：所有请求持久化。
 - 错误/5xx 请求保存 request snapshot；正常请求即使落库，也只保存轻量链路，不保存 body。
-- 默认规则仅掩码已知字段名；业务需要按接口筛选字段时，使用[请求采集回调](references/request-capture.md)，由应用明确返回可保存的值。
+- 默认采集只能按已知字段名掩码请求头和可解析的 JSON。查询串、非 JSON 正文以及解析失败的正文会保留原值；正文可能在达到 `MaxBodyBytes` 后被截断，导致原本合法的 JSON 无法脱敏。
+- 查询串、请求头和正文的过滤责任在应用。使用 [请求采集回调](references/request-capture.md) 的 `AddAsgardTraceRequestCapture`，按接口只返回允许入库的字段或业务摘要。回调返回的内容不会再套用默认脱敏；无法确认安全时省略该字段或返回 `null`。
 
 实现边界：
 
