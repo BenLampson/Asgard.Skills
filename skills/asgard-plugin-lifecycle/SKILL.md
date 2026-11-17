@@ -49,10 +49,12 @@ AfterServiceRegistration → 用户钩子
     ↓
 AfterHostBuild → 用户钩子
     ↓
-返回构建完成的 app
+返回构建完成的 app（插件已初始化，尚未启动）
     ↓
-app.RunAsync() → 启动
+YggdrasilHost.RunAsync(app) → 校验选项 → 启动插件与作业 → Web 监听
 ```
+
+使用包含新插件契约的框架时，`BuildAsync` 后可检查设置和路由；启动期副作用放在 `OnStartAsync`。使用 `builder.RunAsync()`、`YggdrasilHost.RunAsync(app)` 或 `PluginWebAppDefaults.RunAsync<TPlugin>()` 启动，让端口占用等启动错误在容器存活时触发停止回调。使用旧包时先核对实际启动顺序。
 
 ## 插件生命周期阶段
 
@@ -195,7 +197,7 @@ public class {PluginName} : PluginBase
     protected override Task OnStartAsync(CancellationToken cancellationToken)
     {
         // ✅ 正确：这里启动后台任务
-        // 框架已经自动加载 plugin.yaml 中的作业
+        // 该钩子成功后，框架自动排入插件清单中的作业
 
         return Task.CompletedTask;
     }
@@ -235,7 +237,7 @@ public class {PluginName} : PluginBase
 
 完整源码拷贝请参考 `references/` 目录：
 - `PluginState.cs` - 插件状态枚举
-- `IPluginServiceConfigurationContext.cs` - 服务配置上下文接口
+- `IPluginServiceConfigurationContext.cs` - 历史上下文快照；当前配置绑定方式见 [插件配置注入硬规则](../asgard-plugin-development/SKILL.md#插件配置注入硬规则)
 - `IPluginMiddlewareConfigurationContext.cs` - 中间件配置上下文接口
 
 代码范本请参考 `templates/` 目录：

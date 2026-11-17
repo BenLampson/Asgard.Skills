@@ -79,7 +79,7 @@ job:
 运行中调度器的作业、触发器和全局 pause/resume 操作会等待 Quartz 实际完成后再返回或记录成功；异常和取消向调用者传播。
 
 - 始终 `await` 调度操作，不用 fire-and-forget，也不把“已调用”当成注册成功
-- 启动前操作仍遵循既有暂存队列与去重语义；返回只代表已暂存，不保证 Quartz 已开始执行
+- 启动前操作返回只代表已暂存。包含新插件契约的框架按组名和名称检查重复，只有显式 `replace: true` 的添加操作可以替换已排队项
 - `TriggerJobAsync` 等待触发请求被调度器接受，不等于作业业务已执行完成
 - 配置式作业注册也等待底层 Quartz；`JobManager` 启动失败会释放已创建的调度器并保留原始失败，清理也失败时保留两者
 - 不用 `.Result` / `.Wait()` 代替 await；需要后台租户数据访问时按 `$asgard-context-usage` 建立授权范围
@@ -90,8 +90,8 @@ job:
 
 - 当前为单进程 `RAMJobStore`，动态作业重启即丢失；不提供持久化、集群协调或自定义工厂切换
 - `enableCluster` 只接受 `false`；`connectionString`、`dbProvider`、`jobFactoryType` 只允许省略或空字符串；`maxBatchSize` 只接受兼容默认值 `100`，不代表实际批量获取功能。启用/解析或直接启动时显式拒绝不支持值，不新增必填配置；`threadPoolSize` 必须大于零，`instanceId` 必须非空
-- Yggdrasil 构建阶段只 `PrepareAsync` 并注册作业；最终 DI、插件初始化/启动钩子和中间件就绪后，到宿主 `StartAsync` 的托管阶段才启动 Quartz。仅 Build 后 `IsStarted=false`，`StartNow` 也不能提前执行
-- 启动前注册仍按同键最后一次保留；排队注册失败、预先取消与进入管理器后的取消均传播并清理，不能只记录错误后继续启动
+- Yggdrasil 构建阶段只 `PrepareAsync` 并注册作业；最终 DI、插件初始化和中间件装配完成后，宿主 `StartAsync` 先校验选项，再启动插件，随后才启动 Quartz。仅 Build 后 `IsStarted=false`，`StartNow` 也不能提前执行
+- 插件清单与宿主作业使用同一个 `(group, name)` 空间。重复的插件作业会阻止启动并报告冲突来源；`jobs[].data` 随作业传入 `MergedJobData`，不要使用保留键 `AsgardJobType`。排队失败和取消均传播并清理
 - 独立 `JobManager.InitializeAsync` 仍一次准备并启动；独立 `IJobScheduler` 需显式 `StartAsync`，也可先准备管理器、设置最终服务提供者再初始化
 - 每次触发在提供者支持时创建独立作用域。已注册作业优先从容器解析；未注册作业使用标准 `ActivatorUtilities`，支持构造选择属性、可选参数及清晰的缺失依赖错误；已注册日志优先，手工激活时可回退 `ILogger`/`ILogger<T>`
 - 容器解析作业由容器释放，不额外 Dispose；手工激活作业由适配器单次释放，再释放作用域，优先异步释放。激活失败也清理作用域；不要让单例作业捕获 scoped 依赖

@@ -52,7 +52,7 @@ public class {PluginName} : PluginBase
     protected override Task OnStartAsync(CancellationToken cancellationToken)
     {
         // ✅ 正确：这里启动后台任务
-        // 框架已经自动加载 plugin.yaml 中的作业
+        // 该钩子成功后，框架自动排入插件清单中的作业
 
         return Task.CompletedTask;
     }

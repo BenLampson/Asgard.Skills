@@ -25,9 +25,9 @@ AfterServiceRegistration → 用户钩子
     ↓
 AfterHostBuild → 用户钩子
     ↓
-返回构建完成的 app
+返回构建完成的 app（插件已初始化）
     ↓
-app.RunAsync() → 启动
+YggdrasilHost.RunAsync(app) → 校验选项 → 启动插件与作业 → Web 监听
 ```
 
 # 插件阶段调用顺序
@@ -51,9 +51,9 @@ ConfigureMiddlewareAsync（此时：ServiceProvider 已构建）
     ↓
 StartAsync
     ↓
-  -> 自动加载 plugin.yaml 中定义的作业
-    ↓
   -> 插件启动后台任务、建立连接
+    ↓
+  -> 排入插件清单中定义的作业
     ↓
   -> 进入 Running 状态
     ↓

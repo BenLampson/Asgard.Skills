@@ -20,6 +20,6 @@ var builder = YggdrasilHost.CreateBuilder("app.yaml")
         {ExtraMiddleware}
     });
 
-var app = builder.Build();
+var app = await builder.BuildAsync();
 {AfterBuild}
-await app.RunAsync();
+await YggdrasilHost.RunAsync(app);

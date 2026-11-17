@@ -172,10 +172,12 @@ var builder = YggdrasilHost.CreateBuilder("app.yaml")
         {ExtraMiddleware}
     });
 
-var app = builder.Build();
+var app = await builder.BuildAsync();
 {AfterBuild}
-await app.RunAsync();
+await YggdrasilHost.RunAsync(app);
 ```
+
+不需要在 Build 后调整 `app` 时，直接 `await builder.RunAsync();`。需要先 Build 时，把已构建的 app 交给 `YggdrasilHost.RunAsync(app)`。两个运行入口在监听或托管启动失败时都会先停止再释放容器。它们需要目标框架包含新插件契约；已发布的 7.1.0 没有这两个入口。
 
 ## 内建插件注册
 
@@ -240,7 +242,7 @@ await app.RunAsync();
 完整源码拷贝请参考 `references/` 目录：
 - `YggdrasilHost.cs` - 静态入口
 - `YggdrasilHostBuilder.cs` - 历史构建器快照，当前配置钩子签名以上面的说明和目标源码为准
-- `PluginWebAppDefaults.cs` - 默认快捷入口
+- `PluginWebAppDefaults.cs` - 历史快捷入口快照；运行失败清理以目标源码为准
 
 源码锚点：
 
@@ -257,6 +259,6 @@ await app.RunAsync();
 
 ## 作业延迟到托管启动
 
-宿主 Build/BuildAsync 只通过 `JobManager.PrepareAsync` 准备调度器并注册配置作业，随后设置最终 DI 提供者，完成插件初始化/启动钩子及中间件配置。宿主 `StartAsync` 的运行时托管服务才调用管理器初始化并真正启动 Quartz，传递宿主取消令牌；仅 Build 后调度器 `IsStarted=false`，`StartNow` 不能提前执行。排队注册错误或启动取消传播并使用清理路径；未 Start 的宿主释放仍清理准备资源。
+宿主 Build/BuildAsync 只通过 `JobManager.PrepareAsync` 准备调度器并注册配置作业，随后设置最终 DI 提供者，完成插件初始化与中间件装配。宿主 `StartAsync` 在选项校验通过后执行插件 `OnStartAsync`，然后启动 Quartz，两者都早于 Web 监听并接收宿主取消令牌；仅 Build 后调度器 `IsStarted=false`，`StartNow` 不能提前执行。排队注册错误或启动取消传播并使用清理路径；未 Start 的宿主释放仍清理准备资源。
 
 独立 `JobManager.InitializeAsync` 保持立即准备并启动，不能把宿主延迟启动规则套用到独立用法。配置限制、每次触发的 DI 作用域与作业资源所有权见 `$asgard-job-scheduling`。核对当前接线时读取 `YggdrasilHostBuilder`、`AsgardRuntimeHostedService`和 `JobManager`。

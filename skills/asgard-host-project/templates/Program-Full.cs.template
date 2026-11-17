@@ -9,5 +9,4 @@ var builder = YggdrasilHost.CreateBuilder("app.yaml")
             .UseHttpsRedirection();
     });
 
-var app = builder.Build();
-await app.RunAsync();
+await builder.RunAsync();
