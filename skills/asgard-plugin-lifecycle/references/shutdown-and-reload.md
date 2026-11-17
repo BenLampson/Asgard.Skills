@@ -4,6 +4,8 @@
 
 ## 使用边界
 
+Asgard 7.1 的 Yggdrasil 在构建时固定插件服务和路由，宿主管理器拒绝 `UnloadAsync`、`UnloadWithDependentsAsync` 和 `ReloadAsync`。替换或移除 Web 插件应调整配置并重启宿主。整体停止仍会回收插件；以下单插件操作描述适用于独立的 `PluginManager`。
+
 - 批量停止与清理使用既有依赖拓扑逆序。A 依赖 B 时，先退出 A，再退出 B；不要依靠字典插入顺序或仅计算依赖数量
 - `UnloadAsync(pluginId)` 仅卸载指定插件；需要连同依赖方卸载时调用 `UnloadWithDependentsAsync(pluginId)`，不要误以为单插件卸载自动处理依赖图
 - 对运行中的插件尝试 Stop，再独立尝试 Dispose 和可收集加载上下文的 Unload。Stop 失败/取消不跳过后两步；Dispose 失败也不跳过 Unload

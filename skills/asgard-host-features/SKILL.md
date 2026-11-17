@@ -130,10 +130,10 @@ auth:
 - 宿主内置认证当前是 Bearer JWT 模式
 - 认证实现基于 OIDC discovery + JWKS 自发现
 - 签名密钥按 issuer 缓存；遇到未知 `kid` 可提前刷新 discovery 和 JWKS，同一 issuer 的并发刷新合并，每次提前刷新后冷却 30 秒
+- Asgard 7.1 起，没有公钥缓存的 issuer 共用单实例发现预算：`host.auth.jwt.coldIssuerDiscoveryLimit` 默认 8 次，`coldIssuerDiscoveryWindowSeconds` 默认 1 秒，`coldIssuerDiscoveryConcurrencyLimit` 默认同时 4 次在途。到达上限立即拒绝认证；缓存命中和现有公钥轮换不消耗冷发现预算。
 - `host.auth.enabled` 只控制宿主默认 JWT 注册与 `UseAuthentication()` 接线
 - 即使关闭宿主内置 JWT，`UseAuthorization()`、`AsgardAuth`、租户和身份上下文链路仍可能由外部认证方案继续工作
-- 宿主会在 `OnTokenValidated` 时检查当前身份是否已有 `tenant_id`
-- 如果 token 中没有 `tenant_id`，但 `issuer` 能匹配 `issuerTemplate`，宿主会自动补上 `tenant_id` claim
+- 宿主内置 JWT 在 `OnTokenValidated` 绑定 issuer 租户与 `tenant_id`；缺少声明时从发行者补齐，发现重复或冲突声明时拒绝认证。
 
 ### 框架托底事实
 

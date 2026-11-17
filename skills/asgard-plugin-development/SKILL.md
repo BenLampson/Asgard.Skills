@@ -94,6 +94,8 @@ description: "实现 Asgard 内建插件入口、PluginBase、AddPluginConventio
 
 如果需求只是“注册服务、仓储、插件配置”，默认写 `AddPluginConventions`，不要再生成一串 `AddScoped`、`AddRepositories`、`AddServices`。
 
+Asgard 7.1 起，`plugin.enabled` 只控制外部 DLL 列表和目录扫描。代码显式注册的内建插件仍参与装配；启用外部加载时，显式启用的 DLL 缺失会阻止宿主启动。
+
 ## 插件入口类职责
 
 插件入口类默认只负责：
