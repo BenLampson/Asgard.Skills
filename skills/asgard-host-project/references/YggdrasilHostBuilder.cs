@@ -1,4 +1,5 @@
 // 历史构建器源码快照：不包含 Asgard 6.0.1 资源所有权修复；当前生命周期以 SKILL.md 和目标源码为准。
+// 下文双参数 AfterConfigurationLoad 已移除，只供识别旧调用；迁移时按 SKILL.md 改成单参数。
 namespace Asgard.Yggdrasil.AspNetCore;
 
 public partial class YggdrasilHostBuilder

@@ -31,7 +31,7 @@ BeforeConfigurationLoad → 用户钩子
     ↓
 加载配置文件 + 环境变量 + 命令行
     ↓
-AfterConfigurationLoad → 用户钩子
+AfterConfigurationLoad → 读取不可变配置快照
     ↓
 加载并验证模块配置（database, caching, messaging, job 等）
     ↓
@@ -103,12 +103,14 @@ protected override Task OnConfigureMiddlewareAsync(
 
 | 钩子 | 执行时机 | 使用场景 |
 |------|----------|----------|
-| `BeforeConfigurationLoad` | 配置加载之前 | 添加额外配置源 |
-| `AfterConfigurationLoad` | 配置加载之后 | 根据配置动态调整服务 |
+| `BeforeConfigurationLoad` | 配置加载之前 | 调整 ASP.NET Core 的 HostBuilder |
+| `AfterConfigurationLoad` | 配置合并完成后 | 单参数读取不可变配置快照 |
 | `BeforeServiceRegistration` | 框架注册服务之前 | 覆盖框架默认注册 |
 | `AfterServiceRegistration` | 框架注册服务之后 | 添加额外服务注册 |
 | `ConfigureMiddleware` | 中间件配置阶段 | 配置 HTTP 管道 |
 | `AfterHostBuild` | 宿主构建完成之后 | 最后调整、启动任务 |
+
+`AfterConfigurationLoad` 只传只读快照；旧的双参数签名已移除。调用方式与迁移见 [宿主钩子](../asgard-host-project/SKILL.md#构建钩子顺序)。
 
 ## 插件状态转换流程
 

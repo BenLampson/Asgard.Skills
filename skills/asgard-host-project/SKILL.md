@@ -83,12 +83,23 @@ starter 和插件统一使用 `net11.0` / C# 15，Asgard 包版本保持一致�
 
 | 钩子 | 执行时机 | 使用场景 |
 |------|----------|----------|
-| `BeforeConfigurationLoad` | 配置加载之前 | 添加额外配置源、环境配置覆盖 |
-| `AfterConfigurationLoad` | 配置加载之后 | 根据配置动态调整服务 |
+| `BeforeConfigurationLoad` | 配置加载之前 | 调整 ASP.NET Core 的 HostBuilder |
+| `AfterConfigurationLoad` | 配置合并完成后 | 读取 Asgard 的不可变配置快照 |
 | `BeforeServiceRegistration` | 框架服务注册之前 | 注册自定义服务覆盖框架默认 |
 | `AfterServiceRegistration` | 框架服务注册之后 | 添加额外服务注册 |
 | `ConfigureMiddleware` | 中间件管道构建 | 配置中间件顺序 |
 | `AfterHostBuild` | 宿主构建完成之后 | 最后调整，注册启动任务 |
+
+`AfterConfigurationLoad` 只接受 `Action<IReadOnlyDictionary<string, string?>>`。旧的 `(hostBuilder, configuration)` 双参数写法已移除，迁移时改成单参数：
+
+```csharp
+.AfterConfigurationLoad(configuration =>
+{
+    var appName = configuration.GetValueOrDefault("host:application:name");
+});
+```
+
+快照使用冒号分隔的键，且不区分大小写。宿主配置在启动前通过 YAML、环境变量或命令行参数覆盖；需要注册服务时，使用服务注册钩子。
 
 ## 什么时候需要手写 `UseAuthentication()` / `UseAuthorization()`
 
@@ -178,8 +189,8 @@ await app.RunAsync();
 
 ```
 1. BeforeConfigurationLoad → 调用你的钩子
-2. 加载 YAML 配置文件
-3. AfterConfigurationLoad → 调用你的钩子
+2. 合并 YAML、环境 YAML、环境变量和命令行参数
+3. AfterConfigurationLoad → 提供不可变配置快照
 4. BeforeServiceRegistration → 调用你的钩子
 5. 框架注册基础设施服务（缓存、数据库、消息队列、作业调度）
 6. AfterServiceRegistration → 调用你的钩子
@@ -228,7 +239,7 @@ await app.RunAsync();
 
 完整源码拷贝请参考 `references/` 目录：
 - `YggdrasilHost.cs` - 静态入口
-- `YggdrasilHostBuilder.cs` - 构建器核心
+- `YggdrasilHostBuilder.cs` - 历史构建器快照，当前配置钩子签名以上面的说明和目标源码为准
 - `PluginWebAppDefaults.cs` - 默认快捷入口
 
 源码锚点：

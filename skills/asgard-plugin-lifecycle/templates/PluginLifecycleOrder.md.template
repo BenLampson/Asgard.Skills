@@ -7,7 +7,7 @@ BeforeConfigurationLoad → 用户钩子
     ↓
 加载配置文件 + 环境变量 + 命令行
     ↓
-AfterConfigurationLoad → 用户钩子
+AfterConfigurationLoad → 读取不可变配置快照（单参数）
     ↓
 加载并验证模块配置（database, caching, messaging, job 等）
     ↓
