@@ -5,6 +5,9 @@ description: "实现 Asgard 内建插件入口、PluginBase、AddPluginConventio
 
 # Asgard Plugin Development
 
+
+Asgard 8.0 的业务插件引用 `Asgard.PluginSdk`。Starter 显式引用 `Asgard.Yggdrasil.AspNetCore`，使用 `Asgard.PluginSdk` 命名空间调用 `PluginWebAppDefaults.RunAsync<TPlugin>()`。仅开发插件约定、作用域或映射时，只需插件 SDK。
+
 ## 作用
 
 这个 skill 只负责 **Asgard 内建插件实现与加载逻辑**。
@@ -72,7 +75,7 @@ description: "实现 Asgard 内建插件入口、PluginBase、AddPluginConventio
 
 默认先假设 `Asgard.PluginSdk` 已经处理插件常规装配，不要重复手写。
 
-`PluginWebAppDefaults.RunAsync<TPlugin>()` 已覆盖：
+宿主包中的 `PluginWebAppDefaults.RunAsync<TPlugin>()` 已覆盖：
 
 - 创建 Yggdrasil 宿主
 - 注册内建插件

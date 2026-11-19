@@ -155,65 +155,14 @@ public class {PluginName}Plugin : PluginBase
 
 ## AbsAsgardContext（框架统一上下文）
 
-使用 `IAsgardCache`，关闭时默认宿主提供 `NullAsgardCache`。本目录 `AbsAsgardContext.cs` 是历史快照；当前缓存接线见 `$asgard-cache`。
-
-**作用：** 聚合所有可选模块能力，通过属性暴露。所有属性都是 `T?` 类型，未启用对应模块时返回 `null`。
-
-**用法：**
+`AbsAsgardContext` 是每个作用域的业务入口。控制器已有 `AsgardContext`，服务通过构造函数注入。模块对象始终存在，有效配置和最近异常分别见 `Configuration` 与 `LastError`。应用依赖可选服务时通过 `Status` 判断，必需服务的异常由调用方向上传播。
 
 ```csharp
-namespace {Namespace}.Services;
-
-public class {ServiceName}Service : I{ServiceName}Service
-{
-    private readonly AbsAsgardContext _context;
-
-    public {ServiceName}Service(AbsAsgardContext context)
-    {
-        _context = context;
-    }
-
-    public async Task<{ResultType}> DoSomethingAsync()
-    {
-        // 使用缓存（检查 null，模块可能未启用）
-        var cache = _context.Cache;
-        if (cache != null)
-        {
-            var cached = await cache.GetAsync<{ResultType}>(key);
-            if (cached != null) return cached;
-        }
-
-        // 业务逻辑...
-
-        // 发布消息
-        var mq = _context.MessageQueue;
-        if (mq != null)
-        {
-            await mq.PublishAsync(topic, data);
-        }
-
-        return result;
-    }
-}
+var cached = await context.Redis.Cache.GetAsync<Order>(key, cancellationToken);
+context.Trace.AddTag("OrderId", orderId);
 ```
 
-**主要属性：**
-
-| 属性 | 能力 |
-|------|------|
-| `Cache` | Redis 单层业务缓存 |
-| `JobScheduler` | 作业调度 |
-| `MessageQueue` | 消息队列 |
-| `DistributedLock` | 分布式锁 |
-| `IdentityContext` | 当前身份信息 |
-| `TenantScopeFactory` | 租户作用域工厂 |
-| `Encryption` | 加密服务 |
-| `PasswordHasher` | 密码哈希 |
-
-**设计原则：**
-- 生命周期：Scoped，每次请求一个新实例
-- 可选模块：未启用返回 `null`，调用方检查并优雅降级
-- 避免循环依赖：模块间通过 Context 间接引用，不直接注入
+Redis 的子能力统一位于 `context.Redis`。`context.Database` 暴露工作单元。`context.JobScheduler` 和 `context.MessageQueue` 负责业务操作，资源启停和释放由宿主管理。完整能力表、未配置行为和历史查询见 [Context 用法](../asgard-context-usage/SKILL.md)。
 
 ## AbsAsgardUserInfo（统一用户信息基类）
 
@@ -302,7 +251,7 @@ public class Article : AbsAsgardTenantSoftDeleteAuditedEntity
 - ❌ 不要在已有 `Response` 家族的情况下，自己再定义另一套通用响应格式
 - ❌ 不要把 Controller 对外统一响应的规则错误地下沉到 Service / Repository 层
 - ❌ 不要让 Controller 直接返回裸 `VO`、`DTO`、集合或基元值
-- ❌ 不要忘了检查 `AbsAsgardContext` 的属性是否为 `null`（因为模块可能未启用）
+- 通过模块的 `Status` 判断配置状态，通过 `LastError` 定位运行故障。
 - ❌ 不要绕开 `AbsAsgardUserInfo` 再单独造一套用户信息模型
 - ❌ 不要因为框架提供软删除审计基类，就批量修改现有实体继承关系或表结构
 - ❌ 不要假设软删除审计实体会自动过滤已删除数据

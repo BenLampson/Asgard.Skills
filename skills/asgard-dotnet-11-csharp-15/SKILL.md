@@ -1,13 +1,13 @@
 ---
 name: asgard-dotnet-11-csharp-15
-description: "编写、修改或审查 Asgard C# 代码的编码规则权威：Asgard 7.x 的 .NET 11/C# 15、文件规范、中文注释、DI 和乐观锁更新。API 与项目结构另用专项 skill。"
+description: "编写、修改或审查 Asgard C# 代码的编码规则权威：Asgard 8.x 的 .NET 11/C# 15、文件规范、中文注释、DI 和乐观锁更新。API 与项目结构另用专项 skill。"
 ---
 
 # Asgard .NET 11 / C# 15 编码规范
 
 ## 作用
 
-Asgard 7.x 的运行库、starter、插件和测试统一使用 `net11.0` / C# 15；构建使用仓库 `global.json` 锁定的 .NET 11 SDK。旧应用见 [升级到 Asgard 7.x](../asgard-host-features/references/openapi-scalar.md#升级到-asgard-7x)。
+Asgard 8.x 的运行库、starter、插件和测试统一使用 `net11.0` / C# 15；构建使用仓库 `global.json` 锁定的 .NET 11 SDK。旧应用见 [升级到 Asgard 7.x](../asgard-host-features/references/openapi-scalar.md#升级到-asgard-7x)。
 
 **重要**：
 

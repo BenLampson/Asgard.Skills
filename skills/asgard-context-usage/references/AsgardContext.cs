@@ -1,97 +1,17 @@
-// 历史源码快照（Asgard 5.3 前）：缓存接口与装配不适用于 5.3+。
-// 当前业务缓存契约请读取 asgard-cache/SKILL.md；不要复制本文件的旧缓存调用。
 namespace Asgard.Core;
 
-/// <summary>
-/// Asgard 框架统一上下文实现类，提供所有模块的统一访问入口。
-/// </summary>
-/// <remarks>
-/// <para>
-/// 此类继承 <see cref="AbsAsgardContext"/>, 通过构造函数注入所有模块服务。
-/// 未注册的服务将为 <c>null</c>, 用户可优雅降级处理。
-/// </para>
-/// <para>
-/// <b>生命周期：</b>
-/// 注册为 Scoped 生命周期，每次请求创建新实例。
-/// </para>
-/// <para>
-/// <b>使用示例：</b>
-/// <code>
-/// // 注册服务
-/// services.AddAsgardContext();
-/// 
-/// // 使用
-/// public class MyService
-/// {
-///     private readonly AbsAsgardContext _context;
-///     
-///     public MyService(AbsAsgardContext context)
-///     {
-///         _context = context;
-///     }
-///     
-///     public void DoSomething()
-///     {
-///         // 访问缓存
-///         _context.Cache?.GetAsync<string>("key");
-///         
-///         // 访问消息队列
-///         _context.MessageQueue?.PublishAsync("topic", message);
-///     }
-/// }
-/// </code>
-/// </para>
-/// </remarks>
+/// <summary>从当前 DI 作用域按需装配业务能力，每个入口均可在没有基础设施时读取诊断。</summary>
 public class AsgardContext : AbsAsgardContext
 {
-    private readonly IMultiLevelCache? _cache;
-    private readonly ICompressionService? _compression;
-    private readonly ITenantScopeFactory? _tenantScopeFactory;
-    private readonly IAsgardIdentityContext? _identityContext;
-    private readonly IJobScheduler? _jobScheduler;
-    private readonly IMessageQueue? _messageQueue;
-    private readonly IDistributedLock? _distributedLock;
-    private readonly IEncryptionService? _encryption;
-    private readonly IPasswordHasher? _passwordHasher;
-    private readonly IKeyGenerator? _keyGenerator;
-    private readonly ISystemConfig? _systemConfig;
-    private readonly IWildcardMatcher? _wildcardMatcher;
-    private readonly IAsgardTraceContext? _trace;
+    private readonly IServiceProvider? _services;
+    private readonly IServiceProviderIsService? _registered;
+    private readonly FeatureRegistrations? _registrations;
+    private Dictionary<Type, object>? _manual;
+    private readonly FeatureHistory _history;
 
-    /// <summary>
-    /// 初始化 <see cref="AsgardContext"/> 类的新实例。
-    /// </summary>
-    /// <param name="cache">多级缓存服务（可选）。</param>
-    /// <param name="compression">压缩服务（可选）。</param>
-    /// <param name="tenantScopeFactory">租户作用域工厂（可选）。</param>
-    /// <param name="identityContext">身份上下文（可选）。</param>
-    /// <param name="jobScheduler">任务调度器（可选）。</param>
-    /// <param name="messageQueue">消息队列（可选）。</param>
-    /// <param name="distributedLock">分布式锁服务（可选）。</param>
-    /// <param name="encryption">加密服务（可选）。</param>
-    /// <param name="passwordHasher">密码哈希器（可选）。</param>
-    /// <param name="keyGenerator">密钥生成器（可选）。</param>
-    /// <param name="systemConfig">系统配置（可选）。</param>
-    /// <param name="wildcardMatcher">通配符匹配器（可选）。</param>
-    /// <param name="trace">请求追踪上下文（可选）。</param>
-    /// <remarks>
-    /// <para>
-    /// 所有参数均为可选，未注册的服务将为 <c>null</c>。
-    /// 这允许用户根据需要选择性注册模块，无需注册所有服务。
-    /// </para>
-    /// <para>
-    /// <b>依赖注入示例：</b>
-    /// <code>
-    /// // 只注册需要的服务
-    /// services.AddMultiLevelCache();
-    /// services.AddAsgardContext();
-    /// 
-    /// // Context.Cache 有值，其他属性为 null
-    /// </code>
-    /// </para>
-    /// </remarks>
+    /// <summary>保留手动装配的原有构造签名，缺省能力提供关闭状态的对象。</summary>
     public AsgardContext(
-        IMultiLevelCache? cache = null,
+        IAsgardCache? cache = null,
         ICompressionService? compression = null,
         ITenantScopeFactory? tenantScopeFactory = null,
         IAsgardIdentityContext? identityContext = null,
@@ -105,57 +25,58 @@ public class AsgardContext : AbsAsgardContext
         IWildcardMatcher? wildcardMatcher = null,
         IAsgardTraceContext? trace = null)
     {
-        _cache = cache;
-        _compression = compression;
-        _tenantScopeFactory = tenantScopeFactory;
-        _identityContext = identityContext;
-        _jobScheduler = jobScheduler;
-        _messageQueue = messageQueue;
-        _distributedLock = distributedLock;
-        _encryption = encryption;
-        _passwordHasher = passwordHasher;
-        _keyGenerator = keyGenerator;
-        _systemConfig = systemConfig;
-        _wildcardMatcher = wildcardMatcher;
-        _trace = trace;
+        _history = new();
+        Add(cache);
+        Add(compression);
+        Add(tenantScopeFactory);
+        Add(identityContext);
+        Add(jobScheduler);
+        Add(messageQueue);
+        Add(distributedLock);
+        Add(encryption);
+        Add(passwordHasher);
+        Add(keyGenerator);
+        Add(systemConfig);
+        Add(wildcardMatcher);
+        Add(trace);
     }
 
-    /// <inheritdoc />
-    public override IMultiLevelCache? Cache => _cache;
+    /// <summary>仅持有当前作用域及诊断，不在创建 Context 时构造业务依赖。</summary>
+    internal AsgardContext(IServiceProvider provider, FeatureHistory history)
+    {
+        _services = provider;
+        _registered = provider.GetRequiredService<IServiceProviderIsService>();
+        _registrations = provider.GetRequiredService<FeatureRegistrations>();
+        _history = history;
+    }
 
-    /// <inheritdoc />
-    public override ICompressionService? Compression => _compression;
+    private void Add<T>(T? service) where T : class
+    {
+        if (service is not null) (_manual ??= [])[typeof(T)] = service;
+    }
 
-    /// <inheritdoc />
-    public override ITenantScopeFactory? TenantScopeFactory => _tenantScopeFactory;
+    /// <summary>结合配置与容器的注册状态，实际服务在第一次业务调用时解析。</summary>
+    internal override FeatureBinding<T> Bind<T>(string name, T? fallback = null) where T : class
+    {
+        var (allowed, values) = FeatureConfiguration.Read(_services, name);
+        object? instance = null;
+        var present = _manual?.TryGetValue(typeof(T), out instance) == true || _registered?.IsService(typeof(T)) == true;
+        var descriptor = new FeatureDescriptor(name, allowed && present, values, _history,
+            _services?.GetService<ILoggerFactory>()?.CreateLogger($"Asgard.Features.{name.Split('.')[0]}"));
+        descriptor.Attach(instance as IAsgardFeature ?? _registrations?.Declaration<T>());
+        return new(descriptor, () => (T?)instance ?? _services?.GetService<T>(), fallback);
+    }
 
-    /// <inheritdoc />
-    public override IAsgardIdentityContext? IdentityContext => _identityContext;
+    /// <summary>默认 Redis 直接复用宿主提供的同一门面。单独装配的子服务也能从同一入口访问。</summary>
+    internal override IAsgardRedis CreateRedis()
+    {
+        if (_registered?.IsService(typeof(AsgardRedis)) == true)
+            return _services!.GetRequiredService<AsgardRedis>();
 
-    /// <inheritdoc />
-    public override IJobScheduler? JobScheduler => _jobScheduler;
+        var binding = Bind<IAsgardRedis>(nameof(Redis));
+        if (_registered?.IsService(typeof(IAsgardRedis)) == true) return new AsgardRedis(binding);
 
-    /// <inheritdoc />
-    public override IMessageQueue? MessageQueue => _messageQueue;
-
-    /// <inheritdoc />
-    public override IDistributedLock? DistributedLock => _distributedLock;
-
-    /// <inheritdoc />
-    public override IEncryptionService? Encryption => _encryption;
-
-    /// <inheritdoc />
-    public override IPasswordHasher? PasswordHasher => _passwordHasher;
-
-    /// <inheritdoc />
-    public override IKeyGenerator? KeyGenerator => _keyGenerator;
-
-    /// <inheritdoc />
-    public override ISystemConfig? SystemConfig => _systemConfig;
-
-    /// <inheritdoc />
-    public override IWildcardMatcher? WildcardMatcher => _wildcardMatcher;
-
-    /// <inheritdoc />
-    public override IAsgardTraceContext? Trace => _trace;
+        return new AsgardRedis(binding, Bind<IAsgardCache>("Redis.Cache", new DisabledAsgardCache()),
+            Bind<IRedisPubSub>("Redis.PubSub"), Bind<IRedisStream>("Redis.Stream"), Bind<IDistributedLock>("Redis.Locks"));
+    }
 }

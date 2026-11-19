@@ -7,7 +7,7 @@ description: "在 Asgard 中使用加密、密码哈希和密钥生成，处理 
 
 ## 作用
 
-定义 Asgard 提供的安全核心能力：加密、密码哈希、密钥生成。这些能力都通过 `AbsAsgardContext` 统一访问，支持模块级启用/禁用，未启用时优雅降级。
+定义 Asgard 提供的安全核心能力：加密、密码哈希、密钥生成。这些能力都通过 `AbsAsgardContext` 统一访问，可通过各自的 `Status` 了解装配状态。
 
 ## 什么时候使用
 
@@ -27,13 +27,13 @@ description: "在 Asgard 中使用加密、密码哈希和密钥生成，处理 
 
 ## 获取方式
 
-所有安全能力都通过 `AbsAsgardContext` 获取，属性可为 null（模块未启用时），必须做空检查后使用：
+所有安全能力都通过 `AbsAsgardContext` 获取，模块关闭时 `Status` 为 `Disabled`。需要该能力的密码或加密操作会抛 `AsgardFeatureDisabledException`。
 
 | 属性 | 说明 |
 |------|------|
-| `AbsAsgardContext.Encryption` | AES 加密/解密服务，模块未启用时为 null |
-| `AbsAsgardContext.PasswordHasher` | BCrypt 密码哈希服务，模块未启用时为 null |
-| `AbsAsgardContext.KeyGenerator` | 密钥生成服务，模块未启用时为 null |
+| `AbsAsgardContext.Encryption` | AES 加密/解密服务，关闭时可检查状态和配置 |
+| `AbsAsgardContext.PasswordHasher` | BCrypt 密码哈希服务，关闭时可检查状态和配置 |
+| `AbsAsgardContext.KeyGenerator` | 密钥生成服务，关闭时可检查状态和配置 |
 
 ## 推荐用法
 
@@ -60,7 +60,7 @@ description: "在 Asgard 中使用加密、密码哈希和密钥生成，处理 
 
 ## 推荐做法
 
-- 通过 `AbsAsgardContext` 获取安全能力，始终做空检查，支持模块动态启用/禁用
+- 通过 `AbsAsgardContext` 获取安全能力，按 `Status` 判断是否提供相应操作
 - 敏感数据加密存储，不要明文存储在数据库
 - 密码永远不存储明文，始终 BCrypt 哈希
 - 使用 BCrypt 内置随机盐，不需要自己加盐
@@ -79,7 +79,7 @@ description: "在 Asgard 中使用加密、密码哈希和密钥生成，处理 
 
 ❌ 不要跳过 `needsRehash` 检查，它会自动帮你升级工作因子保持安全性
 
-❌ 不要忽略 `null` 检查，安全模块可以被禁用，必须支持优雅降级
+密码校验、加密等操作是业务前提时，让模块关闭或运行失败的异常传播。
 
 ## 参考资料
 

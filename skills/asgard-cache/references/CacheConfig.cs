@@ -7,6 +7,10 @@ public class CacheConfig : ISystemConfig
     [ConfigPath("caching.enabled", DefaultValue = false)]
     public bool Enabled { get; set; }
 
+    /// <summary>可靠失效的部署标识。同一业务库及 Redis 范围的副本使用相同值。</summary>
+    [ConfigPath("caching.outboxScope")]
+    public string? OutboxScope { get; set; }
+
     /// <summary>Redis 连接、命名空间和默认 TTL。</summary>
     [ConfigPath("caching.redis")]
     public RedisCacheOptions Redis { get; set; } = new();
@@ -14,6 +18,7 @@ public class CacheConfig : ISystemConfig
     /// <summary>启用时验证 Redis 配置，关闭时不要求有效的连接信息。</summary>
     public void Validate()
     {
+        if (!Enabled && !string.IsNullOrWhiteSpace(OutboxScope)) throw new InvalidOperationException("缓存失效发件箱需要启用缓存。");
         if (!Enabled) return;
         ArgumentNullException.ThrowIfNull(Redis);
         if (string.IsNullOrWhiteSpace(Redis.ConnectionString))

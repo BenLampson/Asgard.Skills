@@ -32,29 +32,16 @@ public class {ServiceName}
 /// </summary>
 /// <param name="{ParameterName}">{ParameterSummary}</param>
 /// <returns>查询结果</returns>
-public async Task<{ResultType}?> Get{ResultName}Async({ParameterType} {ParameterName})
+public async Task<{ResultType}?> {MethodName}({ParameterType} {ParameterName})
 {
-    var cacheKey = $"{ModuleName}:{EntityName}:{ParameterName}";
+    var cacheKey = string.Concat("{ModuleName}:{EntityName}:", {ParameterName});
 
-    // 先尝试从缓存获取（空检查支持优雅降级）
-    if (AsgardContext.Cache != null)
-    {
-        var cached = await AsgardContext.Cache.GetAsync<{ResultType}>(cacheKey);
-        if (cached != null)
-        {
-            return cached;
-        }
-    }
+    var cache = AsgardContext.Redis.Cache;
+    var cached = await cache.GetAsync<{ResultType}>(cacheKey);
+    if (cached != null) return cached;
 
-    // 缓存未命中或缓存未启用，降级到直接查询
-    var result = await _{repositoryName}.GetByIdAsync({ParameterName});
-
-    // 写入缓存
-    if (result != null && AsgardContext.Cache != null)
-    {
-        await AsgardContext.Cache.SetAsync(cacheKey, result);
-    }
-
+    var result = await _{repositoryName}.{QueryMethod}({ParameterName});
+    if (result != null) await cache.SetAsync(cacheKey, result);
     return result;
 }
 ```
@@ -69,7 +56,7 @@ public async Task<{ResultType}?> Get{ResultName}Async({ParameterType} {Parameter
 public async Task ExecuteAsync(CancellationToken cancellationToken)
 {
     // 需要在后台任务中创建租户作用域时，使用 TenantScopeFactory
-    if (AsgardContext.TenantScopeFactory != null)
+    if (AsgardContext.TenantScopeFactory.Status == AsgardFeatureStatus.Enabled)
     {
         using var scope = AsgardContext.TenantScopeFactory.CreateScope({TenantId});
         // 在作用域内执行业务逻辑时，FreeSql 全局过滤和 Asgard 仓储会自动读取当前租户
@@ -92,12 +79,12 @@ public async Task ExecuteAsync(CancellationToken cancellationToken)
 /// <param name="cancellationToken">取消令牌</param>
 public async Task ExecuteOnceAsync(CancellationToken cancellationToken)
 {
-    if (AsgardContext.DistributedLock == null)
+    if (AsgardContext.Redis.Locks.Status == AsgardFeatureStatus.Disabled)
     {
         throw new InvalidOperationException("分布式锁未装配，不能执行需要互斥的任务。");
     }
 
-    await using var handle = await AsgardContext.DistributedLock.TryAcquireAsync(
+    await using var handle = await AsgardContext.Redis.Locks.TryAcquireAsync(
         "jobs:{JobName}",
         new DistributedLockAcquireOptions
         {
@@ -123,12 +110,11 @@ public async Task ExecuteOnceAsync(CancellationToken cancellationToken)
 ### 注册服务（Program.cs）
 
 ```csharp
-// 仅自定义宿主手动装配；默认 Yggdrasil 已自动注册，不重复调用。
-// 注册顺序：先注册其他模块，最后注册 Asgard Context
-builder.Services.AddAsgardCache(builder.Configuration);
-builder.Services.AddMessageQueue(builder.Configuration);
-builder.Services.AddJobScheduler(builder.Configuration);
-builder.Services.AddAsgardContext(); // 最后注入，确保所有服务都已注册
+// 自定义宿主使用已合并的 AsgardConfigurationRoot configuration。Yggdrasil 会自动完成这些注册。
+_ = builder.Services.AddAsgardCache(configuration.Load<CacheConfig>());
+_ = builder.Services.AddMessageQueue(configuration.Load<MQConfig>());
+_ = builder.Services.AddJobScheduler(configuration.Load<JobConfig>());
+_ = builder.Services.AddAsgardContext();
 ```
 
 ### 追加轻量追踪备注
@@ -141,9 +127,9 @@ builder.Services.AddAsgardContext(); // 最后注入，确保所有服务都已�
 /// <returns>订单标识</returns>
 public async Task<Guid> CreateOrderAsync(CreateOrderCommand command)
 {
-    AsgardContext.Trace?.AddTag("OrderId", command.OrderId.ToString());
-    AsgardContext.Trace?.AddBranch("OrderCreate", "ValidateBeforePersist");
-    AsgardContext.Trace?.AddNote("该备注用于反推单元测试输入，不用于记录完整对象图。");
+    AsgardContext.Trace.AddTag("OrderId", command.OrderId.ToString());
+    AsgardContext.Trace.AddBranch("OrderCreate", "ValidateBeforePersist");
+    AsgardContext.Trace.AddNote("该备注用于反推单元测试输入，不用于记录完整对象图。");
 
     return await _orderRepository.InsertAsync(command.ToEntity());
 }

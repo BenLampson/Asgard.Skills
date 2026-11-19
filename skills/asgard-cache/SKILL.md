@@ -1,69 +1,58 @@
 ---
 name: asgard-cache
-description: Configure and use Asgard Redis business caching, Pub/Sub and Stream, including invalidation, disabled behavior and delivery boundaries. Excludes OIDC/JWKS internal memory caching.
+description: "通过 AsgardContext.Redis 使用对象缓存、Pipeline、条件事务、Lua、Pub/Sub、Stream、分布式锁和原生客户端，处理关闭状态、回源与事务失效。"
 ---
 
-# Asgard Redis 缓存
+# Asgard Redis
 
-## 当前版本
-
-Asgard 7.x 的业务缓存使用 Redis。通过 `IAsgardCache` 使用，默认宿主自动装配；自定义宿主使用 `AddAsgardCache`，手动装配使用 `RedisAsgardCache` / `RedisCacheConfigurator`。
-
-所有示例和实现只使用当前 API。业务缓存没有本地层、两级回填或内存回退。
-
-## YAML
+从 8.0 起，业务服务从 `AbsAsgardContext.Redis` 获取 `IAsgardRedis`。读取状态、配置和最近异常时无需连接 Redis。默认宿主以 `caching.enabled` 为总开关，自定义宿主使用 `AddAsgardCache(config)`。
 
 ```yaml
 caching:
   enabled: true
   redis:
-    connectionString: "localhost:6379"
-    instanceName: "MyApp:"
+    connectionString: "${env:REDIS_CONNECTION_STRING}"
+    instanceName: "Orders:"
     database: 0
-    # streamDatabase: 1  # 可选；省略时与缓存同库
     defaultExpirationMinutes: 30
 ```
 
-必须删除整个 `caching.memory` 节点、`caching.redis.enabled` 和 `caching.redis.fallbackToMemoryCache`。false、null、空节点仍是旧键，会在绑定前报迁移错误。环境变量、命令行、合并配置文件中的同名旧键也必须清理。
+主 YAML 中显式写 `enabled: false` 可以覆盖环境变量。迁移旧缓存配置时应删除 `caching.memory`、`caching.redis.enabled` 和 `caching.redis.fallbackToMemoryCache`。
 
-原来只用内存缓存的部署，应由项目明确配置 Redis 或关闭 `caching.enabled`；不能静默选择 Redis 地址或自动关闭缓存。
+## 能力清单
 
-## 使用与行为
+| 框架入口 | 能力 |
+| --- | --- |
+| `redis.Cache` | 类型化读写、批量、命中判断、TTL、指定键与前缀失效、跨实例 `GetOrCreateAsync` |
+| `redis.PipelineAsync` | 框架创建 `IBatch`，回调同步排入多条原生命令并返回任务，框架统一发送并等待所有响应。各命令独立执行 |
+| `redis.TransactionAsync`、`redis.EvaluateAsync` | 带条件的 Redis 事务、自定义 Lua，键按业务命名空间处理 |
+| `redis` 上的数据方法 | String、计数、Hash、Set、Sorted Set 排名、List、位图、Geo、HyperLogLog、业务键与缓存对象 TTL |
+| `redis.PubSub`、`redis.SubscribePatternAsync` | 字面频道发布订阅和模式订阅 |
+| `redis.Stream` | 追加、范围读取、消费组、待确认、接管、确认与裁剪，可搭配后台消费者和事务回执 |
+| `redis.Locks`、`redis.SetFencedAsync` | 互斥租约、显式重入与围栏写入 |
+| `redis.EnqueueInvalidation` | 在调用者的工作单元登记缓存失效；通过 `caching.outboxScope` 启用事务发件箱 |
+| `redis.Data`、`redis.Streams` | 带相应前缀和逻辑库的原生 StackExchange.Redis `IDatabase`。列表搬移、位运算、地理范围搜索、更细的消费组管理等通过它们调用 |
 
-- 服务优先从 `AbsAsgardContext.Cache` 获取；保留空检查，支持自定义宿主未装配的情况。
-- 仓储基类构造参数使用 `IAsgardCache`。单实体共享缓存补丁将实体键改为数据身份键，平台与所属租户共享同一条缓存；列表键/失效规则未改。先核对目标提交，按下方迁移说明处理，不沿用旧实体租户分段键。
-- 缓存关闭时默认宿主提供 `NullAsgardCache`：不创建连接，读取未命中、写入删除无操作。
-- 启用时校验 Redis 连接，运行时故障传播异常。不把删除失败当成功，不自动回退内存。
-- 显式 TTL 必须大于零；未指定时使用 `caching.redis.defaultExpirationMinutes`。TTL 只由 Redis 决定。
-- 缓存读取为独立反序列化快照，不共享可变实体引用。未命中由业务回源；缓存不是唯一数据源。
-- 前缀删除限定应用 InstanceName，前缀按字面匹配。扫描删除不保证与并发写入原子一致，Redis 单层也不消除数据库与缓存回填的竞争。
-- Yggdrasil 自动提供分布式锁并与 DataProtection 复用 Redis 连接。不要为迁移缓存另造连接或改变锁语义；宿主生命周期补丁下，DI 获得的共享连接/缓存为借用实例，不由业务或插件手动释放。宿主统一资源所有权见 `$asgard-host-project`。
-- OIDC/JWKS 的内部 IMemoryCache 独立保留，不属于业务缓存，不应一并删除。
+```csharp
+var redis = ctx.Redis;
+await redis.PipelineAsync(batch => [
+    batch.StringIncrementAsync("orders:{shop}:count"),
+    batch.SetAddAsync("orders:{shop}:active", "42")
+], cancellationToken);
+```
 
-## 单实体共享缓存
+回调中保留需要读取结果的命令任务，等待 `PipelineAsync` 完成后读取。需要条件提交时使用 `TransactionAsync`。Redis Cluster 多键事务和脚本使用同一哈希槽。对象缓存、`Data` 和 `Streams` 使用各自的编码或键空间。
 
-涉及仓储缓存、平台/租户访问、工作单元或部署迁移时，读取 [共享缓存与显式租户范围](../asgard-database/references/shared-entity-cache-tenant-scopes.md)。
+## 禁用、异常与消费
 
-- 不新增配置。复用现有 Redis 逻辑数据库与 `InstanceName`；一个缓存范围对应一个逻辑业务数据库/schema
-- 键不含调用者租户；缓存命中仍须检查真实实体归属，不能把共享缓存当跨租户授权
-- 空租户默认拒绝；跨租户访问必须由服务端授权器通过 `CreateCrossTenantScope()` 建立
-- 工作单元内不读写共享实体缓存，提交后统一失效；数据库提交后的失效异常不意味着回滚
-- cache-aside 不保证线性一致；本补丁不提供 outbox，也不修复列表缓存算法
+- `redis.Status` 为 `Disabled` 时，`redis.Cache` 读取未命中、写入和删除无操作、回源直接执行工厂。消息、锁和 Pipeline 抛 `AsgardFeatureDisabledException`。
+- 自定义容器只接入个别 Redis 后端时，根状态可为 `PartiallyEnabled`。对具体操作查看 `redis.PubSub.Status`、`redis.Stream.Status` 等，Pipeline 和原生命令查看 `redis.CommandStatus`。
+- `redis.Configuration` 展示脱敏配置。`redis.LastError` 记录框架调用、后台 Stream 和失效投递的最近失败。调用者取得原生 `IDatabase` 后自行处理该客户端命令的异常。
+- `AddAsgardRedisStreamConsumer<THandler>` 默认允许 Redis 关闭，此时消费者空闲。设置 `RedisStreamConsumerOptions.Required = true` 可让依赖 Stream 的应用在启动时检查装配。
+- `caching.redis.streamDatabase` 可选，省略时与缓存同库。切换库前迁移消息和消费组。Pub/Sub 频道不按逻辑库或租户隔离。
 
-## 批量删除边界
+## 事务与租户
 
-Redis 范围删除先验证并去重输入，再以最多 256 个单键删除任务构成有界流水线；前缀扫描结果同样分批删除。客户端按服务端能力选择 DEL/UNLINK，不发跨槽多键删除，也不建立全量历史键索引。删除失败仍传播；这不是实测 Redis Cluster 验收声明，也不改变前缀扫描与并发写入非原子的边界。
+对同一数据库和缓存范围的所有副本使用相同的 `caching.outboxScope`，使业务变更和待投递的失效记录一同提交，失败由后台重试。单实体缓存命中仍须校验实体归属。应用在授权后进入租户作用域，再访问仓储。
 
-仓储的默认批量失效、工作单元捕获前缀和自定义虚方法兼容路径见 [共享缓存契约](../asgard-database/references/shared-entity-cache-tenant-scopes.md#批量路径与扩展兼容)。
-
-## Redis 消息能力
-
-Asgard 7.x 中 `AddAsgardCache` 和 Yggdrasil 注册 `IRedisPubSub`、`IRedisStream`，可通过注入或 `AbsAsgardContext.RedisPubSub`、`RedisStream` 使用。缓存关闭时 Context 属性为 null，直接解析接口抛异常；不得静默丢弃消息。频道和流键不自动按租户隔离。缓存的单键、批量、前缀删除原子跳过 Stream；旧缓存键和 Stream 键保持不变，完全重名时不能共存。滚动升级时旧实例不具备保护。版本和实现以目标源码或包为准。完整 API 和故障恢复边界见 [Redis 消息](references/redis-messaging.md)。
-
-Stream 可通过 `caching.redis.streamDatabase` 指定独立逻辑库，默认与缓存同库。配置不同库时复用连接并在初始化时探测索引；Pub/Sub 不按库隔离。已有 Stream 切库前先排空或迁移消息及消费组。
-
-## 参考与分发
-
-- `references/CacheConfig.cs`、`references/CacheManager.cs`：当前配置与生命周期实现。
-- `templates/appsettings.yaml.template`：新配置模板。
-- 仓库 `doc/skills/asgard-cache` 提供同版 skill，团队升级时同步分发整个目录。
+接口签名可查 [IAsgardRedis](references/IAsgardRedis.cs)。版本化的方法清单、事务与部署示例见 [8.0 缓存指南](https://github.com/BenLampson/Asgard/blob/v8.0.0/src/doc/17-缓存.md)。频道与消费组示例见 [Redis 消息](references/redis-messaging.md)。

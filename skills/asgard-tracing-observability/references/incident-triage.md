@@ -4,7 +4,7 @@
 
 ## 读取实际请求
 
-1. 核对目标部署版本、环境和时间范围，按完整 TraceId 精确查询。通过 `ITraceQueryService` 读详情，或查目标环境配置指定的独立 Trace 库；它不一定是业务数据库。
+1. 核对目标部署版本、环境和时间范围。在有运维权限的服务中通过 `asgardContext.Trace.Query.GetByTraceIdAsync(traceId, cancellationToken)` 查询详情。独立 Trace 库的位置由 `Trace` 配置指定。
 2. 同时读取请求方法、路径、状态码、时间、顶层异常字段和完整 `StepsJson`、备注/标签/分支。记录所用时区，避免把 UTC 与服务器/用户本地时间混成同一时间窗口。
 3. 若 `ExceptionSummary` 为空，继续看失败步骤及其异常内容。Controller/Service 捕获并转换的异常可能只在步骤中留下线索；数据库日志没有同 TraceId 行也不等于链路没有失败。
 4. 将 `IdentitySnapshotJson` 的采集时点与认证中间件、授权过滤器、Controller 执行顺序对齐。入口快照匿名可能早于认证；结合具体路由授权及步骤证据判断，不能据此直接认定 token 无效。

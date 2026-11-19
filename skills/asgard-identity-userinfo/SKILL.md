@@ -266,7 +266,8 @@ public class CurrentUserService(AbsAsgardContext asgardContext)
 
     public string? GetCurrentUserId()
     {
-        return _asgardContext.IdentityContext?.UserInfo?.UserId;
+        var identity = _asgardContext.IdentityContext;
+        return identity.Status == AsgardFeatureStatus.Enabled ? identity.UserInfo?.UserId : null;
     }
 }
 ```
@@ -282,7 +283,7 @@ public class CurrentUserService(AbsAsgardContext asgardContext)
 都应该优先从身份上下文填充，而不是留空：
 
 ```csharp
-var userInfo = _asgardContext.IdentityContext?.UserInfo;
+var userInfo = _asgardContext.IdentityContext.UserInfo;
 if (string.IsNullOrWhiteSpace(userInfo?.UserId))
 {
     throw new UnauthorizedAccessException("当前登录信息无效，无法确定用户标识。");

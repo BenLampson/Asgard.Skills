@@ -7,6 +7,13 @@ public sealed class AsgardConfigurationBuilder
 {
     private readonly Dictionary<object, object> _data = new();
 
+    /// <summary>添加一个配置值，供宿主在外部配置源之前填入平台默认值。</summary>
+    internal AsgardConfigurationBuilder AddValue(string path, string value)
+    {
+        AsgardConfigurationRoot.SetValueByPath(_data, path, value);
+        return this;
+    }
+
     /// <summary>
     /// 将 YAML 配置文件加入合并管线。
     /// </summary>
@@ -72,7 +79,6 @@ public sealed class AsgardConfigurationBuilder
 
         foreach (var (key, value) in ParseCommandLine(args))
         {
-            // 命令行参数优先级最高，因此最后写入配置图。
             AsgardConfigurationRoot.SetValueByPath(_data, key, value);
         }
 

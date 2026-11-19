@@ -23,9 +23,8 @@ public class {JobName} : IJob
     /// 执行作业
     /// </summary>
     /// <param name="context">作业执行上下文</param>
-    /// <param name="cancellationToken">取消令牌</param>
     /// <returns>表示异步操作的任务</returns>
-    public async Task Execute(IJobExecutionContext context, CancellationToken cancellationToken)
+    public async Task ExecuteAsync(IJobExecutionContext context)
     {
         {ExecuteBody}
     }

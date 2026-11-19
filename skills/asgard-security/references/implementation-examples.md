@@ -1,105 +1,27 @@
-## 代码示例
+# 通过 Context 使用安全能力
 
-### 加密解密（通过 Context）
-
-```csharp
-/// <summary>
-/// {MethodSummary}
-/// </summary>
-/// <param name="{ParameterName}">{ParameterSummary}</param>
-/// <returns>操作结果</returns>
-public async Task<{ResultType}?> {MethodName}({ParameterType} {ParameterName})
-{
-    if (AsgardContext.Encryption == null)
-    {
-        // 加密模块未启用，降级处理
-        return null;
-    }
-
-    var encrypted = AsgardContext.Encryption.Encrypt({plainText});
-    // 保存 encrypted 到数据库...
-    return encrypted;
-}
-
-/// <summary>
-/// {MethodSummary}
-/// </summary>
-/// <param name="encrypted">{encryptedSummary}</param>
-/// <returns>解密后的数据</returns>
-public async Task<string?> {DecryptMethodName}(string encrypted)
-{
-    if (AsgardContext.Encryption == null)
-    {
-        // 加密模块未启用，降级处理
-        return null;
-    }
-
-    var decrypted = AsgardContext.Encryption.Decrypt(encrypted);
-    return decrypted;
-}
-```
-
-### 用户注册与登录（密码哈希）
+## 加解密
 
 ```csharp
-/// <summary>
-/// 用户注册，密码哈希
-/// </summary>
-/// <param name="email">邮箱</param>
-/// <param name="password">明文密码</param>
-/// <returns>注册结果</returns>
-public async Task<Result> RegisterAsync(string email, string password)
-{
-    if (AsgardContext.PasswordHasher == null)
-    {
-        // 密码哈希模块未启用，降级处理（直接存储明文是不安全的）
-        return Result.Fail("密码哈希服务未启用");
-    }
+/// <summary>加密字段，缺少配置时由框架报告模块关闭。</summary>
+public string? EncryptField(string? plainText) => AsgardContext.Encryption.Encrypt(plainText);
 
-    var passwordHash = AsgardContext.PasswordHasher.Hash(password);
-    var user = new User { Email = email, PasswordHash = passwordHash };
-    await _userRepository.AddAsync(user);
-    return Result.Ok();
-}
-
-/// <summary>
-/// 用户登录，密码验证
-/// </summary>
-/// <param name="email">邮箱</param>
-/// <param name="password">明文密码</param>
-/// <returns>登录结果</returns>
-public async Task<Result<LoginResponse>> LoginAsync(string email, string password)
-{
-    if (AsgardContext.PasswordHasher == null)
-    {
-        // 密码哈希模块未启用
-        return Result.Fail<LoginResponse>("密码验证服务未启用");
-    }
-
-    var user = await _userRepository.FindByEmailAsync(email);
-    if (user == null)
-    {
-        return Result.Fail<LoginResponse>("用户不存在");
-    }
-
-    if (!AsgardContext.PasswordHasher.Verify(password, user.PasswordHash, out var needsRehash))
-    {
-        return Result.Fail<LoginResponse>("密码不正确");
-    }
-
-    // 如果密码哈希需要升级工作因子，自动重新哈希
-    if (needsRehash)
-    {
-        var newHash = AsgardContext.PasswordHasher.Hash(password);
-        await _userRepository.UpdatePasswordHashAsync(user.Id, newHash);
-    }
-
-    // 生成登录凭证...
-    return Result.Ok(new LoginResponse(token));
-}
+/// <summary>解密字段。</summary>
+public string? DecryptField(string? encrypted) => AsgardContext.Encryption.Decrypt(encrypted);
 ```
 
-### 密钥生成
+## 密码哈希与验证
+
+```csharp
+/// <summary>生成用户密码的哈希。</summary>
+public string HashPassword(string password) => AsgardContext.PasswordHasher.Hash(password);
+
+/// <summary>验证密码，并指示调用方是否应在成功后更新旧哈希。</summary>
+public bool VerifyPassword(string password, string storedHash, out bool needsRehash) =>
+    AsgardContext.PasswordHasher.Verify(password, storedHash, out needsRehash);
+```
+
+## 生成密钥
 
 ```csharp
 /// <summary>
@@ -108,7 +30,7 @@ public async Task<Result<LoginResponse>> LoginAsync(string email, string passwor
 /// <returns>密钥和 IV（Base64 编码）</returns>
 public (string Key, string Iv) GenerateAesKey()
 {
-    if (AsgardContext.KeyGenerator == null)
+    if (AsgardContext.KeyGenerator.Status == AsgardFeatureStatus.Disabled)
     {
         throw new InvalidOperationException("密钥生成服务未启用");
     }
@@ -122,7 +44,7 @@ public (string Key, string Iv) GenerateAesKey()
 /// <returns>Base64 编码的密钥</returns>
 public string GenerateHmacKey()
 {
-    if (AsgardContext.KeyGenerator == null)
+    if (AsgardContext.KeyGenerator.Status == AsgardFeatureStatus.Disabled)
     {
         throw new InvalidOperationException("密钥生成服务未启用");
     }
@@ -137,7 +59,7 @@ public string GenerateHmacKey()
 /// <returns>Base64 编码的密钥</returns>
 public string GenerateRandomKey(int keySizeInBytes)
 {
-    if (AsgardContext.KeyGenerator == null)
+    if (AsgardContext.KeyGenerator.Status == AsgardFeatureStatus.Disabled)
     {
         throw new InvalidOperationException("密钥生成服务未启用");
     }

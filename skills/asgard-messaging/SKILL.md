@@ -55,7 +55,7 @@ messaging:
 
 ## 使用方式
 
-通过 `AbsAsgardContext.MessageQueue` 获取消息队列能力，该属性可为 `null`（模块未启用时），必须做空检查。
+`ctx.MessageQueue` 的公开类型是 `IAsgardMessageQueue`。通过 `Status` 判断模块开关，通过 `IsHealthyAsync` 检查连接。订阅方保存订阅 ID 并通过 `UnsubscribeAsync` 退订，队列实例由宿主管理。
 
 ### 常用操作
 
@@ -87,13 +87,13 @@ messaging:
 - 消费者逻辑保持简洁，复杂业务下沉到服务层
 - 默认 `AutoAck=false` 时，业务成功后调用 `context.AcknowledgeAsync()`；`AutoAck=true` 的确认/拒绝无操作
 - 处理异常后正常抛出，让框架负责重试和死信路由
-- 访问 `AbsAsgardContext.MessageQueue` 前先做空检查，支持模块动态禁用
+- 访问 `AbsAsgardContext.MessageQueue` 时按业务契约检查 `Status`
 
 ## 不要这样做
 
 ❌ 不要继续沿用已经移除的旧配置字段，统一使用当前的 RabbitMQ 配置结构
 
-❌ 不要忽略 `MessageQueue` 可能为 `null`
+必需消息应直接调用并传播失败，跳过可选通知时先检查 `MessageQueue.Status`。
 
 ❌ 不要在消费者 handler 中编写大段业务逻辑，委托给服务层保持简洁
 
@@ -106,7 +106,7 @@ messaging:
 完整源码拷贝请参考 `references/` 目录：
 - `MQConfig.cs` - 消息队列配置类
 - `MQManager.cs` - 消息队列管理器
-- `IMessageQueue.cs` - 消息队列核心接口
+- `IAsgardMessageQueue.cs`（业务）与 `IMessageQueue.cs`（运行时）- 消息队列核心接口
 - `SubscribeOptions.cs` - 默认值、确认与重试选项契约
 
 代码范本请参考 `templates/` 目录：

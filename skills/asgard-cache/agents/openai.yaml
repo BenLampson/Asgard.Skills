@@ -1,4 +1,4 @@
 interface:
   display_name: "Asgard Redis Cache"
-  short_description: "配置 Asgard 6.0 Redis 缓存、过期时间与业务失效行为"
-  default_prompt: "Use $asgard-cache to configure and use Asgard 6.0 Redis business caching."
+  short_description: "使用 Asgard Redis 统一入口、Pipeline、消息、锁与缓存失效"
+  default_prompt: "Use $asgard-cache to configure and use Asgard 8 Redis features through AbsAsgardContext.Redis."

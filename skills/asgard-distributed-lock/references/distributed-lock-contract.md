@@ -14,7 +14,7 @@
 
 ## 单次获取参数
 
-`DistributedLockAcquireOptions` 的所有属性都可空；空值回退到全局默认值：
+租期、等待和续租选项缺省时使用全局默认值。围栏令牌通过单次获取显式启用。
 
 | 属性 | 作用 |
 |---|---|
@@ -22,6 +22,7 @@
 | `AcquireTimeout` | 覆盖 `AcquireAsync` 等待上限 |
 | `RetryInterval` | 覆盖当前等待轮询间隔 |
 | `AutoRenewal` | 覆盖当前句柄自动续租行为 |
+| `UseFencingToken` | 设为 true 时新所有权获得递增的 `FencingToken` |
 
 ## 句柄契约
 

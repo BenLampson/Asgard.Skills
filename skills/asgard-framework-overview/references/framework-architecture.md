@@ -99,7 +99,7 @@ Build() → RunAsync() → 启动宿主
   ↓
 HTTP Request → Controller → Service → Repository → Database
   ↓
-AbsAsgardContext.Cache → 缓存读取/写入
+AbsAsgardContext.Redis.Cache → 缓存读取/写入
   ↓
 Controller(DTO → VO → Response) → JSON → Client
 ```

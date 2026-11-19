@@ -1,16 +1,3 @@
-/// <summary>
-/// {MethodSummary}
-/// </summary>
-/// <param name="{ParameterName}">{ParameterSummary}</param>
-/// <returns>操作结果</returns>
-public async Task<{ResultType}> {MethodName}({ParameterType} {ParameterName})
-{
-    if (AsgardContext.JobScheduler == null)
-    {
-        // 作业调度未启用，降级处理
-        return {FallbackResult};
-    }
-
-    var result = await AsgardContext.JobScheduler.{Operation}(jobKey, cancellationToken);
-    return result;
-}
+/// <summary>检查一个已装配的调度器中是否存在指定作业。</summary>
+public Task<bool> JobExistsAsync(JobKey jobKey, CancellationToken cancellationToken) =>
+    AsgardContext.JobScheduler.CheckJobExistsAsync(jobKey, cancellationToken);

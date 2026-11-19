@@ -11,6 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Asgard.Yggdrasil.AspNetCore" />
     <ProjectReference Include="..\\{PluginProjectName}\\{PluginProjectName}.csproj" />
   </ItemGroup>
 

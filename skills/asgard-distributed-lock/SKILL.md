@@ -8,7 +8,7 @@ description: "配置、使用或排查 Asgard Redis 分布式锁 IDistributedLoc
 ## 核心契约
 
 - 把分布式锁视为 Redis 可用时的宿主基础能力，不要求业务插件显式注册。
-- 使用 Yggdrasil 时，只要 `caching.enabled` 与 `caching.redis.enabled` 同时为 `true`，宿主就自动注册 `IDistributedLock` 并注入 `AbsAsgardContext.DistributedLock`。
+- 使用 Yggdrasil 时，当 `caching.enabled` 为 `true`，宿主就自动注册 `IDistributedLock` 并注入 `AbsAsgardContext.Redis.Locks`。
 - 不要添加 `distributedLock.enabled`。`distributedLock` 配置节只覆盖行为参数，可以完全省略。
 - 使用独立 DI 容器而非 Yggdrasil 时，先注册启用 Redis 的 `CacheConfig`，再调用无参 `services.AddDistributedLock()`。
 - 长时间持锁的业务必须监听 `IDistributedLockHandle.LockLostToken`，不能只依赖自动续租。
@@ -23,7 +23,6 @@ description: "配置、使用或排查 Asgard Redis 分布式锁 IDistributedLoc
 caching:
   enabled: true
   redis:
-    enabled: true
     connectionString: "127.0.0.1:6379"
 ```
 
@@ -45,7 +44,7 @@ distributedLock:
 立即竞争、拿不到就退出时使用 `TryAcquireAsync`：
 
 ```csharp
-await using var handle = await AsgardContext.DistributedLock.TryAcquireAsync(
+await using var handle = await AsgardContext.Redis.Locks.TryAcquireAsync(
     $"jobs:{jobName}",
     cancellationToken: cancellationToken);
 
@@ -107,17 +106,17 @@ services.AddDistributedLock(options =>
 
 ## 能力选择
 
-- 业务服务已经依赖 `AbsAsgardContext` 时，优先使用 `AsgardContext.DistributedLock` 并做空检查。
+- 业务服务已经依赖 `AbsAsgardContext` 时，优先使用 `AsgardContext.Redis.Locks` ，可选场景检查 `Status`。
 - 只需要锁能力、希望依赖更明确时，可以直接注入 `IDistributedLock`。
 - 需要缓存配置与行为时转到 `$asgard-cache`。
 - 需要宿主启动和服务注册顺序时转到 `$asgard-host-project`。
-- 需要 Context 生命周期与可空能力语义时转到 `$asgard-context-usage`。
+- 需要 Context 生命周期与能力状态语义时转到 `$asgard-context-usage`。
 
 ## 不要这样做
 
-- 不要把 Redis 分布式锁描述成金融级强一致或可重入锁。
+- 显式重入使用 `AcquireReentrantAsync` 和 `ReenterAsync`，将同一上级句柄传给嵌套操作。需要防止过期持有者写入时，用 `UseFencingToken = true` 并在下游原子比较围栏序号。
 - 不要使用锁保护无法响应取消的无限长任务。
 - 不要忽略 `LockLostToken` 后继续提交受保护写操作。
 - 不要手写 `SET NX` 和无 owner token 校验的 `DEL`。
-- 不要把缓存启用等同于 Redis 启用；自动装配要求缓存总开关与 Redis 子开关同时开启。
+- 启用 Redis 使用 `caching.enabled`。旧键 `caching.redis.enabled` 应从配置中删除。
 - 不要通过已废弃的 `DistributedLockOptions.Enabled` 控制注册；该属性只为 5.1.x API 兼容保留，运行时忽略。

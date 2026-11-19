@@ -5,6 +5,9 @@ description: "创建或修改 Asgard host/starter、Program.cs、YggdrasilHost �
 
 # Asgard Host Project
 
+
+Asgard 8.0 的业务插件引用 `Asgard.PluginSdk`。Starter 显式引用 `Asgard.Yggdrasil.AspNetCore`，使用 `Asgard.PluginSdk` 命名空间调用 `PluginWebAppDefaults.RunAsync<TPlugin>()`。仅开发插件约定、作用域或映射时，只需插件 SDK。
+
 ## 作用
 
 编写 Asgard 宿主 / starter 项目时，负责选择正确入口、组织 `Program.cs` 结构、使用钩子扩展宿主行为。本 skill 定义了不同场景下的启动路径选择、宿主职责和钩子约定。
@@ -191,7 +194,7 @@ await YggdrasilHost.RunAsync(app);
 
 ```
 1. BeforeConfigurationLoad → 调用你的钩子
-2. 合并 YAML、环境 YAML、环境变量和命令行参数
+2. 按主 YAML、环境 YAML、进程环境变量、命令行的优先级选取有效值
 3. AfterConfigurationLoad → 提供不可变配置快照
 4. BeforeServiceRegistration → 调用你的钩子
 5. 框架注册基础设施服务（缓存、数据库、消息队列、作业调度）
@@ -205,7 +208,7 @@ await YggdrasilHost.RunAsync(app);
 
 ## 构建失败与资源所有权
 
-宿主统一拥有构建前创建的缓存、MQ、作业调度、追踪和引导日志资源；DI 中注入的相关实例是借用。不要在业务服务或插件里分别 Dispose 宿主提供的管理器/连接/调度器。
+宿主按最终 DI 注册选择缓存连接、消息队列和调度后端。框架创建的资源按宿主生命周期释放。`AfterServiceRegistration` 替换的后端同时用于 Context 和宿主运行。依赖注入的外部实例保留原有所有权。
 
 - 宿主停止时先关闭作业、清理插件，期间 MQ/缓存/追踪仍可用；随后释放基础设施，最后排空追踪并关闭引导日志
 - 构建失败会回滚已创建资源；构建后即使未 Start，Dispose 也会清理；重复停止/释放复用同一清理过程
@@ -241,8 +244,8 @@ await YggdrasilHost.RunAsync(app);
 
 完整源码拷贝请参考 `references/` 目录：
 - `YggdrasilHost.cs` - 静态入口
-- `YggdrasilHostBuilder.cs` - 历史构建器快照，当前配置钩子签名以上面的说明和目标源码为准
-- `PluginWebAppDefaults.cs` - 历史快捷入口快照；运行失败清理以目标源码为准
+- `YggdrasilHostBuilder.cs` - 8.0 的构建顺序与最终服务注册
+- `PluginWebAppDefaults.cs` - 宿主包中的快捷启动入口
 
 源码锚点：
 

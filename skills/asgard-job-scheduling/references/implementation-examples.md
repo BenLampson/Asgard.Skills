@@ -1,6 +1,6 @@
-## 代码示例
+# 作业示例
 
-### 作业实现
+## 作业实现
 
 ```csharp
 namespace {Namespace}.Jobs;
@@ -28,56 +28,31 @@ public class {JobName} : IJob
     /// 执行作业
     /// </summary>
     /// <param name="context">作业执行上下文</param>
-    /// <param name="cancellationToken">取消令牌</param>
     /// <returns>表示异步操作的任务</returns>
-    public async Task Execute(IJobExecutionContext context, CancellationToken cancellationToken)
+    public async Task ExecuteAsync(IJobExecutionContext context)
     {
         {ExecuteBody}
     }
 }
 ```
 
-### 插件动态注册
+## 插件初始化
 
 ```csharp
-/// <summary>
-/// 初始化完成后动态注册作业
-/// </summary>
-/// <param name="cancellationToken">取消令牌</param>
-public override async Task InitializeAsync(CancellationToken cancellationToken)
+/// <summary>在插件初始化作用域中登记作业。</summary>
+protected override async Task OnInitializeAsync(CancellationToken cancellationToken)
 {
-    await base.InitializeAsync(cancellationToken);
-
-    if (AsgardContext.JobScheduler != null)
-    {
-        await AsgardContext.JobScheduler.ScheduleJobAsync<{JobName}>(
-            new JobKey("{JobKey}"),
-            trigger =>
-            {
-                trigger.WithCronSchedule("{CronExpression}");
-            },
-            cancellationToken);
-    }
+    var scheduler = GetAsgardContext().JobScheduler;
+    if (scheduler.Status == AsgardFeatureStatus.Disabled) return;
+    await scheduler.ScheduleJobAsync<{JobName}>(new JobKey("{JobKey}"),
+        new TriggerOptions { Type = "cron", Cron = "{CronExpression}" }, cancellationToken);
 }
 ```
 
-### 通过 Context 操作作业
+## 检查作业
 
 ```csharp
-/// <summary>
-/// {MethodSummary}
-/// </summary>
-/// <param name="{ParameterName}">{ParameterSummary}</param>
-/// <returns>操作结果</returns>
-public async Task<{ResultType}> {MethodName}({ParameterType} {ParameterName})
-{
-    if (AsgardContext.JobScheduler == null)
-    {
-        // 作业调度未启用，降级处理
-        return {FallbackResult};
-    }
-
-    var result = await AsgardContext.JobScheduler.{Operation}(jobKey, cancellationToken);
-    return result;
-}
+/// <summary>检查一个已装配的调度器中是否存在指定作业。</summary>
+public Task<bool> JobExistsAsync(JobKey jobKey, CancellationToken cancellationToken) =>
+    AsgardContext.JobScheduler.CheckJobExistsAsync(jobKey, cancellationToken);
 ```

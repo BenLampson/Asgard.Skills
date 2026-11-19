@@ -2,10 +2,11 @@
 /// {MethodSummary}
 /// </summary>
 /// <param name="{ParameterName}">{ParameterSummary}</param>
+/// <param name="cancellationToken">取消令牌。</param>
 /// <returns>异步任务</returns>
-public async Task {MethodName}({ParameterType} {ParameterName})
+public async Task {MethodName}({ParameterType} {ParameterName}, CancellationToken cancellationToken)
 {
-    if (AsgardContext.MessageQueue == null)
+    if (AsgardContext.MessageQueue.Status == AsgardFeatureStatus.Disabled)
     {
         // 消息队列未启用，降级处理
         {FallbackCode}

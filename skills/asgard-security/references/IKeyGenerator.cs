@@ -33,7 +33,7 @@ namespace Asgard.Abstractions.Security;
 /// </code>
 /// </para>
 /// </remarks>
-public interface IKeyGenerator
+public interface IKeyGenerator : IAsgardFeature
 {
     /// <summary>
     /// 创建新的 AES 加密密钥和初始化向量。

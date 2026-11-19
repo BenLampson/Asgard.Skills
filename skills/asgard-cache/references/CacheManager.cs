@@ -27,6 +27,11 @@ public sealed class CacheManager : ICacheManager
     private IAsgardCache? _cache;
     private int _disposed;
     private bool _adapterOwnsConnection;
+    private IConnectionMultiplexer? _externalConnection;
+
+    /// <summary>宿主可借用调用者或最终容器拥有的连接，缓存适配器只拥有自己的资源。</summary>
+    internal void UseConnection(IConnectionMultiplexer connection) => _externalConnection = connection;
+
     /// <inheritdoc />
     public IAsgardCache Cache => _cache ?? throw new InvalidOperationException("缓存管理器尚未初始化。");
     /// <inheritdoc />
@@ -53,9 +58,11 @@ public sealed class CacheManager : ICacheManager
             try
             {
                 var options = RedisCacheConfigurator.CreateRedisCacheOptions(_config);
-                ConnectionMultiplexer = await _connectAsync(options.ConfigurationOptions!);
+                ConnectionMultiplexer = _externalConnection ?? await _connectAsync(options.ConfigurationOptions!);
                 options.ConnectionMultiplexerFactory = () => Task.FromResult(
-                    RedisConnectionOwnership.Track(ConnectionMultiplexer!, () => _adapterOwnsConnection = true));
+                    _externalConnection is null
+                        ? RedisConnectionOwnership.Track(ConnectionMultiplexer!, () => _adapterOwnsConnection = true)
+                        : RedisConnectionOwnership.Borrow(_externalConnection, _config.Redis.Database));
                 DistributedCache = new Microsoft.Extensions.Caching.StackExchangeRedis.RedisCache(options);
                 // 显式验证连接；启用的 Redis 不可用时终止启动，不静默降级。
                 _ = await DistributedCache.GetAsync("__asgard_health_check__", cancellationToken);
@@ -113,7 +120,7 @@ public sealed class CacheManager : ICacheManager
         }
         try
         {
-            if (releaseConnection && ConnectionMultiplexer is not null)
+            if (releaseConnection && _externalConnection is null && ConnectionMultiplexer is not null)
                 await ConnectionMultiplexer.DisposeAsync();
         }
         catch (Exception ex) { failures.Add(ex); }

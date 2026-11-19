@@ -48,7 +48,7 @@ namespace Asgard.Abstractions.Security;
 /// ]]></code>
 /// </para>
 /// </remarks>
-public interface IPasswordHasher
+public interface IPasswordHasher : IAsgardFeature
 {
     /// <summary>
     /// 对密码进行哈希处理，使用默认工作因子。

@@ -1,20 +1,19 @@
-## 代码示例
+# 消息示例
 
-### 发布消息
+## 发布消息
 
 ```csharp
 /// <summary>
 /// {MethodSummary}
 /// </summary>
 /// <param name="{ParameterName}">{ParameterSummary}</param>
-/// <param name="cancellationToken">取消令牌</param>
+/// <param name="cancellationToken">取消令牌。</param>
 /// <returns>异步任务</returns>
-public async Task {MethodName}Async(
-    {ParameterType} {ParameterName},
-    CancellationToken cancellationToken = default)
+public async Task {MethodName}({ParameterType} {ParameterName}, CancellationToken cancellationToken)
 {
-    if (AsgardContext.MessageQueue is null)
+    if (AsgardContext.MessageQueue.Status == AsgardFeatureStatus.Disabled)
     {
+        // 消息队列未启用，降级处理
         {FallbackCode}
         return;
     }
@@ -34,55 +33,31 @@ public async Task {MethodName}Async(
 }
 ```
 
-### 订阅消息
+## 插件随宿主订阅
 
 ```csharp
-/// <summary>
-/// 初始化消息订阅。
-/// </summary>
-/// <param name="cancellationToken">取消令牌</param>
-/// <returns>异步任务</returns>
-public override async Task InitializeAsync(CancellationToken cancellationToken)
+/// <summary>当前插件拥有的订阅 ID。</summary>
+private string? _subscriptionId;
+
+/// <summary>订阅在启动时建立，业务处理使用投递上下文。</summary>
+protected override async Task OnStartAsync(CancellationToken cancellationToken)
 {
-    await base.InitializeAsync(cancellationToken);
-
-    if (AsgardContext.MessageQueue is null)
+    var queue = GetAsgardContext().MessageQueue;
+    if (queue.Status == AsgardFeatureStatus.Disabled) return;
+    _subscriptionId = await queue.SubscribeAsync<{MessageType}>("{Topic}", async (message, delivery) =>
     {
-        return;
-    }
-
-    _ = await AsgardContext.MessageQueue.SubscribeAsync<{MessageType}>(
-        "{Topic}",
-        async (message, context) =>
-        {
-            await ProcessMessageAsync(message.Value!, cancellationToken);
-            await context.AcknowledgeAsync();
-        },
-        new SubscribeOptions
-        {
-            AutoAck = false
-        },
-        cancellationToken);
+        await ProcessMessageAsync(message.Value!);
+        await delivery.AcknowledgeAsync();
+    }, new SubscribeOptions { QueueName = "{QueueName}", AutoAck = false }, cancellationToken);
 }
 
-/// <summary>
-/// 处理接收的消息。
-/// </summary>
-/// <param name="message">消息实例</param>
-/// <param name="cancellationToken">取消令牌</param>
-/// <returns>异步任务</returns>
-private async Task ProcessMessageAsync(
-    {MessageType} message,
-    CancellationToken cancellationToken)
+/// <summary>在宿主释放队列前结束本插件的订阅。</summary>
+protected override async Task OnStopAsync(CancellationToken cancellationToken)
 {
-    try
+    if (_subscriptionId is { } id)
     {
-        {ProcessingLogic}
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "处理消息 {Topic} 发生异常", "{Topic}");
-        throw;
+        await GetAsgardContext().MessageQueue.UnsubscribeAsync(id, cancellationToken);
+        _subscriptionId = null;
     }
 }
 ```

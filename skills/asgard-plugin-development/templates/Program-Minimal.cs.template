@@ -1,10 +1,4 @@
 using Asgard.PluginSdk;
 
-// 这是 starter / 启动项目中的 Program.cs 模板。
-await PluginWebAppDefaults.RunAsync<{PluginClassName}>(
-    "app.yaml",
-    app =>
-    {
-        _ = app.UseAuthentication();
-        _ = app.UseAuthorization();
-    });
+// Starter 引用 Asgard.Yggdrasil.AspNetCore。
+await PluginWebAppDefaults.RunAsync<{PluginClassName}>("app.yaml");

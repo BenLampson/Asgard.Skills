@@ -59,7 +59,7 @@ job:
 
 ## 访问方式
 
-通过 `AbsAsgardContext.JobScheduler` 获取调度器，该属性可为 `null`（模块未启用时），必须做空检查后使用。
+`ctx.JobScheduler` 的公开类型为 `IAsgardJobScheduler`。通过 `Status` 检查是否装配，使用 `IsStarted`、`IsShutdown` 查看运行状态。调度器全局启停、暂停全部和释放均由宿主管理。实现自定义 `IJobScheduler` 时，`StartAsync(CancellationToken)` 和 `ShutdownAsync(bool, CancellationToken)` 需透传宿主令牌。
 
 ## 常用操作
 
@@ -107,14 +107,14 @@ job:
 - 启用模块必须设置 `job.enabled: true`，默认是 false
 - `JobKey` 保持稳定命名，不要随意变化
 - 静态作业定义在配置，动态注册在插件 `InitializeAsync` 阶段做
-- 通过 `AbsAsgardContext.JobScheduler` 访问，始终做空检查
+- 通过 `AbsAsgardContext.JobScheduler` 访问，按需读取 `Status`
 - 插件自带作业放在 `plugin.yaml` 中，由框架自动加载
 
 ## 不要这样做
 
 ❌ 不要在 `ConfigureServices` 阶段注册动态作业，应该在初始化阶段做
 
-❌ 不要忽略 `AbsAsgardContext.JobScheduler` 可能为 null，模块可以被禁用
+关闭时依赖调度器的业务调用会抛出 `AsgardFeatureDisabledException`。
 
 ❌ 不要同一个作业使用随机变化的 JobKey，会导致重复注册
 
@@ -127,7 +127,7 @@ job:
 完整源码拷贝请参考 `references/` 目录：
 - `JobConfig.cs` - 作业调度配置类
 - `JobManager.cs` - 作业调度管理器
-- `IJobScheduler.cs` - 作业调度器接口
+- `IAsgardJobScheduler.cs`（业务）与 `IJobScheduler.cs`（运行时）- 作业调度器接口
 
 代码范本请参考 `templates/` 目录：
 - `app.yaml.template` - 配置片段范本，合并到项目根目录 `app.yaml`
