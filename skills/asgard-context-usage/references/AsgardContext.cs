@@ -55,17 +55,43 @@ public class AsgardContext : AbsAsgardContext
         if (service is not null) (_manual ??= [])[typeof(T)] = service;
     }
 
+    /// <inheritdoc />
+    internal override ISystemConfig? ResolveConfiguration(Type configType) =>
+        _services?.GetService(configType) as ISystemConfig;
+
+    /// <summary>完整宿主复用宿主校验器；只注册具体配置的自定义容器也能按类型读取。</summary>
+    internal override IAsgardConfig CreateConfig()
+    {
+        if (_services is null) return base.CreateConfig();
+        if (_registered!.IsService(typeof(IAsgardConfig)))
+        {
+            var reader = Bind<IAsgardConfig>(nameof(Config));
+            return new SystemConfigFeature(new(reader.Descriptor, () => reader.Service), ResolveConfiguration);
+        }
+        if (_registered.IsService(typeof(ISystemConfig))) return base.CreateConfig();
+        var types = _registrations!.ConfigurationTypes();
+        if (types.Length == 0) return base.CreateConfig();
+        var descriptor = FeatureRegistrations.Describe(_services, nameof(Config));
+        return new SystemConfigFeature(new(descriptor, () => new RegisteredConfiguration(_services, types)), ResolveConfiguration);
+    }
+
     /// <summary>结合配置与容器的注册状态，实际服务在第一次业务调用时解析。</summary>
     internal override FeatureBinding<T> Bind<T>(string name, T? fallback = null) where T : class
     {
         var (allowed, values) = FeatureConfiguration.Read(_services, name);
         object? instance = null;
         var present = _manual?.TryGetValue(typeof(T), out instance) == true || _registered?.IsService(typeof(T)) == true;
-        var descriptor = new FeatureDescriptor(name, allowed && present, values, _history,
-            _services?.GetService<ILoggerFactory>()?.CreateLogger($"Asgard.Features.{name.Split('.')[0]}"));
+        // 能力诊断查询不会启动日志工厂。写日志本身只记录提供方异常，避免再向同一提供方写入日志。
+        var descriptor = new FeatureDescriptor(name, allowed && present, values, _history, resolveLogger:
+            name == "Log" || _registered?.IsService(typeof(ILoggerFactory)) != true ? null :
+            () => _services!.GetRequiredService<ILoggerFactory>().CreateLogger($"Asgard.Features.{name.Split('.')[0]}"));
         descriptor.Attach(instance as IAsgardFeature ?? _registrations?.Declaration<T>());
         return new(descriptor, () => (T?)instance ?? _services?.GetService<T>(), fallback);
     }
+
+    /// <summary>类型化消息助手和自定义重试策略始终在持有当前 Context 的作用域中解析。</summary>
+    internal override IAsgardMessageQueue CreateMessageQueue() => new MessageQueueFeature(Bind<IMessageQueue>(nameof(MessageQueue)),
+        new MessageQueueHelpers(_services, _registrations));
 
     /// <summary>默认 Redis 直接复用宿主提供的同一门面。单独装配的子服务也能从同一入口访问。</summary>
     internal override IAsgardRedis CreateRedis()

@@ -57,12 +57,13 @@ app.MapHealthChecks("/health");
 
 ## Logging
 
-Inject `ILogger<T>` where `T` is the class:
+Use `ctx.Log` for application logging. Use a type category when separate log filtering is needed.
 
 ```csharp
-public class UserService(ILogger<UserService> logger)
+public class UserService(AbsAsgardContext ctx)
 {
-    // Use logger.LogInformation, logger.LogWarning, etc.
+    public void RecordCreated(Guid userId) =>
+        ctx.Log.CreateLogger<UserService>().LogInformation("Created user {UserId}", userId);
 }
 ```
 

@@ -29,6 +29,8 @@ description: "在 Asgard 中使用加密、密码哈希和密钥生成，处理 
 
 所有安全能力都通过 `AbsAsgardContext` 获取，模块关闭时 `Status` 为 `Disabled`。需要该能力的密码或加密操作会抛 `AsgardFeatureDisabledException`。
 
+最小 Yggdrasil 自动装配 `PasswordHasher` 和 `KeyGenerator`。省略 `Asgard.Encryption.Key` 与 `Iv` 会关闭 AES。只提供其中一项、Base64 错误或字节长度不合要求时，宿主在构建时报告配置错误。仅调用 `AddAsgardContext()` 的空容器中三者都是 Disabled。[各能力默认状态](../asgard-context-usage/references/context-feature-matrix.md)
+
 | 属性 | 说明 |
 |------|------|
 | `AbsAsgardContext.Encryption` | AES 加密/解密服务，关闭时可检查状态和配置 |

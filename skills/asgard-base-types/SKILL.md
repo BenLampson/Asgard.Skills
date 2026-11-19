@@ -162,7 +162,7 @@ var cached = await context.Redis.Cache.GetAsync<Order>(key, cancellationToken);
 context.Trace.AddTag("OrderId", orderId);
 ```
 
-Redis 的子能力统一位于 `context.Redis`。`context.Database` 暴露工作单元。`context.JobScheduler` 和 `context.MessageQueue` 负责业务操作，资源启停和释放由宿主管理。完整能力表、未配置行为和历史查询见 [Context 用法](../asgard-context-usage/SKILL.md)。
+`context.GetFeatures()` 枚举规范入口。Redis 子能力使用 `context.Redis`，数据库工作单元和受租户过滤的 ORM 使用 `context.Database`，日志使用 `context.Log`，强类型配置使用 `context.Config.Get<TConfig>()`。共享资源的启停和释放由宿主管理。最小宿主和空容器的默认状态、兼容属性见 [Context 能力表](../asgard-context-usage/references/context-feature-matrix.md)。
 
 ## AbsAsgardUserInfo（统一用户信息基类）
 

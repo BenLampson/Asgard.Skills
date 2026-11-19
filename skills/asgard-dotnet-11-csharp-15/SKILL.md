@@ -7,7 +7,7 @@ description: "编写、修改或审查 Asgard C# 代码的编码规则权威：A
 
 ## 作用
 
-Asgard 8.x 的运行库、starter、插件和测试统一使用 `net11.0` / C# 15；构建使用仓库 `global.json` 锁定的 .NET 11 SDK。旧应用见 [升级到 Asgard 7.x](../asgard-host-features/references/openapi-scalar.md#升级到-asgard-7x)。
+Asgard 8.x 的运行库、starter、插件和测试统一使用 `net11.0` / C# 15；构建使用仓库 `global.json` 锁定的 .NET 11 SDK。旧应用见 [迁移到 Asgard 8.x](../asgard-host-features/references/openapi-scalar.md#迁移到-asgard-8x)。
 
 **重要**：
 

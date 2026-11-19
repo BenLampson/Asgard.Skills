@@ -1,6 +1,6 @@
 ---
 name: asgard-context-usage
-description: "通过 AbsAsgardContext 使用 Asgard 8 的非空能力入口、模块状态、脱敏配置、最近异常、租户作用域和历史 Trace 查询。各模块操作见对应 skill。"
+description: "使用 Asgard 8.1 的 AbsAsgardContext 查看完整能力及缺省状态，访问日志、配置、Redis、数据库、消息和其他模块。"
 ---
 
 # Asgard Context
@@ -9,15 +9,17 @@ description: "通过 AbsAsgardContext 使用 Asgard 8 的非空能力入口、�
 
 ## 能力入口
 
+查看宿主默认装配、独立容器、子模块或旧版用法时，读 [完整状态与兼容属性表](references/context-feature-matrix.md)。`ctx.GetFeatures()` 枚举当前容器里的 14 个规范根入口。每个条目都能读取 `Status`、`Configuration` 和 `LastError`。
+
 | 入口 | 用途 |
 | --- | --- |
 | `ctx.Redis` | `Cache`、`PubSub`、`Stream`、`Locks`、Pipeline、条件事务、Lua、数据结构及原生 `Data` / `Streams`。见 [Redis](../asgard-cache/SKILL.md) |
-| `ctx.Database` | 在业务数据库上创建工作单元，或通过 `InTransactionAsync` 执行、提交与回滚事务 |
-| `ctx.JobScheduler`、`ctx.MessageQueue` | 业务调度、发布和订阅。单个作用域可以管理自己创建的订阅，宿主负责共享服务的启停与释放 |
+| `ctx.Database` | `Orm` 提供当前租户边界内的业务 ORM。`InTransactionAsync` 中使用 `unit.Orm`。见 [数据库](../asgard-database/SKILL.md) |
+| `ctx.JobScheduler`、`ctx.MessageQueue` | 调度和查询作业，发布、订阅消息。队列还提供 `Producer<T>()`、`DeadLetters<T>()`、`RetryPolicy` 和 `Tracer`。宿主负责共享服务启停 |
 | `ctx.IdentityContext`、`ctx.TenantScopeFactory` | 当前身份及授权后的显式租户作用域。具体字段见 [身份](../asgard-identity-userinfo/SKILL.md) |
 | `ctx.Trace`、`ctx.Trace.Query` | 为当前请求追加标签、分支、备注。历史查询可按时间、TraceId 检索持久化记录 |
-| `ctx.DatabaseLogQuery` | 查询宿主级持久化日志。应用先做运维授权，再裁剪可返回的字段 |
-| `ctx.SystemConfig` | `Validate()` 校验配置，`Configuration` 展示白名单中的宿主有效配置 |
+| `ctx.Log` | `LogInformation(...)` 写业务日志，`CreateLogger<T>()` 选择分类。`Log.Query` 查询持久化日志。见 [日志与追踪](../asgard-tracing-observability/SKILL.md) |
+| `ctx.Config` | `Get<TConfig>()` 读取当前作用域的强类型配置，`Configuration` 展示白名单配置，`Validate()` 校验。见 [配置](../asgard-configuration/SKILL.md) |
 | `ctx.Encryption`、`ctx.PasswordHasher`、`ctx.KeyGenerator` | 加解密、密码哈希和密钥生成 |
 | `ctx.Compression`、`ctx.WildcardMatcher` | 压缩和通配符匹配 |
 
@@ -39,4 +41,4 @@ ctx.Trace.AddNote("已完成订单校验");
 
 Yggdrasil 在服务注册钩子执行完毕后固定声明。自定义容器可先注册模块，再调用 `AddAsgardContext()`；需要在 Context 注册之后声明惰性能力时，用 `AddAsgardFeature<T>` 指定 `status` 和可展示的 `configuration`。普通工厂在首次业务操作时解析并补充自身状态。若要反复修改同一服务集合、构建多个相互独立的容器，使用 `services.BuildAsgardServiceProvider()`，每个容器会固定自己最终的声明。
 
-已有 `ctx.Cache`、`RedisPubSub`、`RedisStream`、`DistributedLock` 为兼容别名，新代码统一从 `ctx.Redis` 调用。接口契约见 [IAsgardFeature](references/IAsgardFeature.cs)。更多示例见 [业务调用](references/implementation-examples.md)。
+8.1 保留六个兼容属性，映射见 [状态表](references/context-feature-matrix.md)。接口契约见 [IAsgardFeature](references/IAsgardFeature.cs)。更多示例见 [业务调用](references/implementation-examples.md)。

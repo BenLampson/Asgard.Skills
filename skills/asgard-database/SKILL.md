@@ -7,11 +7,15 @@ description: "配置 Asgard 数据库或编写 FreeSql 实体、仓储和更新�
 
 ## 数据库与事务
 
-`ctx.Database` 暴露 `Status`、脱敏配置和最近异常。`CreateUnitOfWork()` 返回由调用者持有的 FreeSql 工作单元。`InTransactionAsync((unit, ct) => ..., token)` 在回调成功后提交，异常或提交前取消时回滚。参与同一事务的写入使用 `unit.Orm` 或绑定同一工作单元的仓储。
+`ctx.Database.Orm` 借用宿主最终装配的 `IFreeSql`，其连接和生命周期由宿主管理。将查询保留在当前租户作用域内执行。业务数据库关闭时，仍可查看 `ctx.Database.Status`、`Configuration` 和 `LastError`，读取 `Orm` 会抛 `AsgardFeatureDisabledException`。
+
+`CreateUnitOfWork()` 返回由调用者持有的工作单元。`InTransactionAsync((unit, ct) => ..., token)` 在回调成功后提交，异常或提交前取消时回滚。需要加入这笔事务的写入使用 `unit.Orm` 或绑定同一工作单元的仓储。普通业务的租户过滤、审计、乐观锁和实体缓存沿用下文仓储契约。原生 SQL 需要实现相应的访问范围和一致性约束。
+
+业务数据库的完整公共签名见 [IAsgardDatabase](references/IAsgardDatabase.cs)。
 
 ## 缓存版本边界
 
-8.0 的业务入口是 `ctx.Redis.Cache`。仓储内部继续使用 `IAsgardCache`。未启用时读返回未命中，写入与失效为空操作。缓存契约见 `$asgard-cache`。
+业务入口是 `ctx.Redis.Cache`。仓储内部继续使用 `IAsgardCache`。未启用时读返回未命中，写入与失效为空操作。缓存契约见 `$asgard-cache`。
 
 
 ## 作用

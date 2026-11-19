@@ -5,6 +5,7 @@ namespace Asgard.Abstractions;
 public abstract class AbsAsgardContext
 {
     private FeatureHistory? _history;
+    private IReadOnlyDictionary<string, IAsgardFeature>? _features;
 
     /// <summary>自定义上下文继承到的默认能力为关闭状态。</summary>
     internal virtual FeatureBinding<T> Bind<T>(string name, T? fallback = null) where T : class =>
@@ -53,8 +54,10 @@ public abstract class AbsAsgardContext
         () => new JobSchedulerFeature(Bind<IJobScheduler>(nameof(JobScheduler))));
 
     /// <summary>消息队列。</summary>
-    public virtual IAsgardMessageQueue MessageQueue => LazyInitializer.EnsureInitialized(ref field,
-        () => new MessageQueueFeature(Bind<IMessageQueue>(nameof(MessageQueue))));
+    public virtual IAsgardMessageQueue MessageQueue => LazyInitializer.EnsureInitialized(ref field, CreateMessageQueue);
+
+    /// <summary>让宿主从当前作用域装配消息队列及其类型化子能力。</summary>
+    internal virtual IAsgardMessageQueue CreateMessageQueue() => new MessageQueueFeature(Bind<IMessageQueue>(nameof(MessageQueue)));
 
     /// <summary>加密服务。</summary>
     public virtual IEncryptionService Encryption => LazyInitializer.EnsureInitialized(ref field,
@@ -68,9 +71,46 @@ public abstract class AbsAsgardContext
     public virtual IKeyGenerator KeyGenerator => LazyInitializer.EnsureInitialized(ref field,
         () => new KeyGeneratorFeature(Bind<IKeyGenerator>(nameof(KeyGenerator))));
 
-    /// <summary>查看宿主公开的生效配置并执行校验。</summary>
+    /// <summary>查看宿主公开的生效配置并执行校验，保留既有属性签名。</summary>
     public virtual ISystemConfig SystemConfig => LazyInitializer.EnsureInitialized(ref field,
-        () => new SystemConfigFeature(Bind<ISystemConfig>(nameof(SystemConfig))));
+        CreateConfig);
+
+    /// <summary>读取当前宿主和插件注册的强类型配置。兼容自定义上下文重写的 SystemConfig。</summary>
+    public virtual IAsgardConfig Config => LazyInitializer.EnsureInitialized(ref field, () =>
+    {
+        var existing = SystemConfig;
+        if (existing is IAsgardConfig reader) return reader;
+        var descriptor = new FeatureDescriptor(nameof(Config), true, history: LazyInitializer.EnsureInitialized(ref _history));
+        descriptor.Attach(existing);
+        return new SystemConfigFeature(new(descriptor, () => existing), ResolveConfiguration);
+    });
+
+    /// <summary>按需装配校验和强类型配置的共同入口。</summary>
+    internal virtual IAsgardConfig CreateConfig() =>
+        new SystemConfigFeature(Bind<ISystemConfig>(nameof(Config)), ResolveConfiguration);
+
+    /// <summary>从当前作用域解析已注册的业务配置。</summary>
+    internal virtual ISystemConfig? ResolveConfiguration(Type configType) => null;
+
+    /// <summary>列出框架的规范顶层入口。通过接口序列化只会展示状态、脱敏配置和最近异常，别名不会重复出现。</summary>
+    public virtual IReadOnlyDictionary<string, IAsgardFeature> GetFeatures() => LazyInitializer.EnsureInitialized(ref _features,
+        () => new Dictionary<string, IAsgardFeature>(StringComparer.Ordinal)
+        {
+            [nameof(Redis)] = Redis,
+            [nameof(Database)] = Database,
+            [nameof(MessageQueue)] = MessageQueue,
+            [nameof(JobScheduler)] = JobScheduler,
+            [nameof(IdentityContext)] = IdentityContext,
+            [nameof(TenantScopeFactory)] = TenantScopeFactory,
+            [nameof(Trace)] = Trace,
+            [nameof(Log)] = Log,
+            [nameof(Config)] = Config,
+            [nameof(Encryption)] = Encryption,
+            [nameof(PasswordHasher)] = PasswordHasher,
+            [nameof(KeyGenerator)] = KeyGenerator,
+            [nameof(Compression)] = Compression,
+            [nameof(WildcardMatcher)] = WildcardMatcher
+        }.AsReadOnly());
 
     /// <summary>通配符匹配。</summary>
     public virtual IWildcardMatcher WildcardMatcher => LazyInitializer.EnsureInitialized(ref field,
@@ -81,7 +121,13 @@ public abstract class AbsAsgardContext
         () => new TraceFeature(Bind<IAsgardTraceContext>(nameof(Trace), DisabledTraceContext.Instance),
             () => new TraceQueryFeature(Bind<ITraceQueryService>("Trace.Query"))));
 
-    /// <summary>宿主数据库日志查询，调用方负责运维授权。</summary>
+    /// <summary>业务结构化日志，兼容标准 ILogger 的级别、分类和作用域。</summary>
+    public virtual Logging.IAsgardLog Log => LazyInitializer.EnsureInitialized(ref field,
+        () => new LogFeature(Bind<ILoggerFactory>(nameof(Log), Microsoft.Extensions.Logging.Abstractions.NullLoggerFactory.Instance),
+            () => DatabaseLogQuery));
+
+    /// <summary>兼容入口，与 Log.Query 共用同一数据库日志查询服务。</summary>
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public virtual IDatabaseLogQueryService DatabaseLogQuery => LazyInitializer.EnsureInitialized(ref field,
-        () => new DatabaseLogQueryFeature(Bind<IDatabaseLogQueryService>(nameof(DatabaseLogQuery))));
+        () => new DatabaseLogQueryFeature(Bind<IDatabaseLogQueryService>("Log.Query")));
 }

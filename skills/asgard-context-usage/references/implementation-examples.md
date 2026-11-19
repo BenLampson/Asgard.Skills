@@ -1,5 +1,17 @@
 ## 代码示例
 
+### 按模块查看运行诊断
+
+运维入口先校验访问权限，再遍历 `GetFeatures()`。每项都有稳定的名字和只读诊断契约。
+
+```csharp
+var statuses = ctx.GetFeatures().ToDictionary(entry => entry.Key, entry => entry.Value.Status);
+var redisFailure = ctx.Redis.LastError;
+ctx.Log.LogInformation("作业模块状态为 {JobStatus}", statuses[nameof(ctx.JobScheduler)]);
+```
+
+应用内可通过 `ctx.Config.Get<OrdersConfig>()` 获取已在 DI 注册的配置。返回给运维调用方的配置字段取自 `ctx.Config.Configuration`。租户数据访问继续使用授权后的作用域与仓储。
+
 ### 业务服务注入
 
 ```csharp

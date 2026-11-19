@@ -65,6 +65,14 @@ messaging:
 | 订阅消息 | `SubscribeAsync<T>(topic, handler, options)` | 订阅指定主题消息，返回订阅标识 |
 | 取消订阅 | `UnsubscribeAsync(subscriptionId)` | 取消订阅并释放资源 |
 | 批量发布 | `PublishBatchAsync<T>(topic, messages)` | 批量发布消息 |
+| 类型化生产者 | `Producer<T>(topic)` | 获取 `IMessageProducer<T>`，使用 `ProduceAsync` 或 `ProduceBatchAsync` 发布 |
+| 死信处理 | `DeadLetters<T>()` | 已授权的重放作业可调用 `RetryAsync` 回放或 `ForwardAsync` 转发，检查返回值后再确认原投递 |
+| 重试策略 | `RetryPolicy` | 读取实际的 `IRetryPolicy`，以 `RetryContext` 询问重试决定和下一次间隔 |
+| 消息追踪 | `Tracer` | 追踪单独装配。开启队列后仍须检查 `Tracer.Status` |
+
+获取生产者、死信处理器或重试策略后，使用其 `Status`、`Configuration`、`LastError` 检查子能力。默认宿主关闭 MQ 时可先取得这些对象，依赖队列的操作会抛关闭异常。原生队列连接的启停与释放由宿主管理。[缺省状态](../asgard-context-usage/references/context-feature-matrix.md)
+
+`Producer<T>()` 优先使用当前作用域注册的生产者，省略自定义注册时使用默认实现。`Producer<T>(topic)` 为给定主题创建生产者。`DeadLetters<T>()` 和 `RetryPolicy` 同样复用本作用域的注册，未注册时沿用当前消息队列的配置。
 
 ## 确认与重试契约
 
