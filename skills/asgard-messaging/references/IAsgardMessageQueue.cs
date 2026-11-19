@@ -3,6 +3,15 @@ namespace Asgard.Abstractions.Messaging;
 /// <summary>业务作用域的消息队列入口，提供发布、消费、健康状态与追踪能力。</summary>
 public interface IAsgardMessageQueue : IAsgardFeature
 {
+    /// <summary>取得当前作用域中的类型化生产者。显式给定主题时使用该主题创建定向生产者。</summary>
+    IMessageProducer<T> Producer<T>(string? topic = null) => MessageQueueFeature.For(this).Producer<T>(topic);
+
+    /// <summary>取得当前消息类型的死信处理、精确重试和转发入口。</summary>
+    IDeadLetterHandler<T> DeadLetters<T>() => MessageQueueFeature.For(this).DeadLetters<T>();
+
+    /// <summary>独立查询消息重试条件和间隔，使用当前作用域注册的策略或消息配置。</summary>
+    IRetryPolicy RetryPolicy => MessageQueueFeature.For(this).RetryPolicy;
+
     /// <summary>消息追踪能力；未配置时可读取 Disabled 状态。</summary>
     IMessageTracer Tracer => MessageTracerFeature.Disabled(this);
 

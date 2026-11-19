@@ -79,6 +79,8 @@ description: "定义或排查 Asgard AbsAsgardUserInfo、标准 claims、身份�
 
 ### 解析行为
 
+最小 Yggdrasil 已装配 `ctx.IdentityContext`。在未建立身份的执行流中，`Current` 返回空身份快照，`UserInfo` 为 `null`，`TenantId` 为 `Guid.Empty`。空容器仅调用 `AddAsgardContext()` 时，身份能力 Disabled，读取身份会抛关闭异常。构造指定租户或跨租户作用域前须完成相应授权。
+
 - `DefaultAsgardIdentityContextResolver` 会从 `HttpContext.User.Claims` 创建 `DefaultAsgardUserInfo`
 - 然后调用 `InitFromClaims(...)` 还原基础字段
 - 如果 `TenantId` 能解析成 `Guid`，用户类型会被判定为 `UserType.Tenant`

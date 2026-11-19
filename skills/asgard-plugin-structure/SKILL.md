@@ -32,7 +32,7 @@ Asgard 8.0 的业务插件引用 `Asgard.PluginSdk`。Starter 显式引用 `Asga
 - 生命周期：`$asgard-plugin-lifecycle`
 - 强制编码规则：`$asgard-dotnet-11-csharp-15`
 
-starter 和插件统一使用 `net11.0` / C# 15，Asgard 包版本保持一致。旧应用见 [升级到 Asgard 7.x](../asgard-host-features/references/openapi-scalar.md#升级到-asgard-7x)。
+starter 和插件统一使用 `net11.0` / C# 15，Asgard 包版本保持一致。旧应用见 [迁移到 Asgard 8.x](../asgard-host-features/references/openapi-scalar.md#迁移到-asgard-8x)。
 
 使用项目模板时，在仓库的中央包配置中给 `Asgard.PluginSdk`、`Asgard.Yggdrasil.AspNetCore` 和 `Asgard.Analyzers` 指定同一版；未启用中央管理时在项目引用上指定版本。启动前通过 `ASGARD_ENCRYPTION_KEY`（16、24 或 32 字节）和 `ASGARD_ENCRYPTION_IV`（16 字节）注入 Base64 值。
 

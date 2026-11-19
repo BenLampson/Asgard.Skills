@@ -264,7 +264,7 @@ host:
 
 按应用接流量的依赖填写 `requiredFeatures`，默认 `[]`。支持 `Redis`（PING 业务库）、`Database`（只读探测）、`MessageQueue`（连接健康）和 `JobScheduler`（已启动且未关闭）。名称忽略大小写。声明的依赖关闭、失联或超时会使 `/health/ready` 和总览 `/health` 返回 503，`/health/live` 保持探测进程。
 
-应用扩展通过 `services.AddHealthChecks()` 注册检查，并按用途加 `ready` 或 `live` 标签。`timeoutSeconds` 提供默认时限，单个检查可以显式设置时限，异步探测应响应取消令牌。运维代码可从 `asgardContext.SystemConfig.Configuration` 查看生效的模块开关和 `host.healthCheck.requiredFeatures`。
+应用扩展通过 `services.AddHealthChecks()` 注册检查，并按用途加 `ready` 或 `live` 标签。`timeoutSeconds` 提供默认时限，单个检查可以显式设置时限，异步探测应响应取消令牌。运维代码通过 `asgardContext.Config.Configuration` 查看生效的模块开关与 `host.healthCheck.requiredFeatures`，通过 `GetFeatures()` 查看当前装配状态。
 
 ## 推荐中间件顺序
 

@@ -16,7 +16,7 @@ description: "为跨模块或入口不明确的 Asgard 框架任务选择专项 
 
 ## 开发基线
 
-- Asgard 7.x 运行库只支持 `net11.0`，宿主和插件使用 C# 15。API 文档由 ASP.NET Core OpenAPI 与 Scalar 提供；旧应用见 [升级到 Asgard 7.x](../asgard-host-features/references/openapi-scalar.md#升级到-asgard-7x)。
+- Asgard 8.x 运行库只支持 `net11.0`，宿主和插件使用 C# 15。API 文档由 ASP.NET Core OpenAPI 与 Scalar 提供；旧应用见 [迁移到 Asgard 8.x](../asgard-host-features/references/openapi-scalar.md#迁移到-asgard-8x)。
 
 - 检查项目的包引用、中央包版本和 `Directory.Build.props` 是否对齐基线；需要升级时按迁移指引处理。
 - 缓存使用 `IAsgardCache` 和 Redis；旧缓存配置按 `$asgard-cache` 的迁移步骤处理。

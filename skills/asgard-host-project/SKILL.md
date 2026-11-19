@@ -18,7 +18,7 @@ Asgard 8.0 的业务插件引用 `Asgard.PluginSdk`。Starter 显式引用 `Asga
 - 插件内部目录结构见 `$asgard-plugin-structure`
 - 代码实现必须遵守 `$asgard-dotnet-11-csharp-15`
 
-starter 和插件统一使用 `net11.0` / C# 15，Asgard 包版本保持一致。旧应用见 [升级到 Asgard 7.x](../asgard-host-features/references/openapi-scalar.md#升级到-asgard-7x)。
+starter 和插件统一使用 `net11.0` / C# 15，Asgard 包版本保持一致。旧应用见 [迁移到 Asgard 8.x](../asgard-host-features/references/openapi-scalar.md#迁移到-asgard-8x)。
 
 ## 什么时候使用
 

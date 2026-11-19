@@ -11,9 +11,9 @@ Asgard 框架的 AI 技能仓库。
 - 集中管理和版本控制技能定义文件
 - 方便在不同开发环境间同步技能配置
 
-## Asgard 8.0 开发基线
+## Asgard 8.1 开发基线
 
-Asgard 开发统一使用 .NET 11 / C# 15。starter 和插件都以 `net11.0` 为目标；通过 `host.openApi` 开启 [OpenAPI + Scalar](skills/asgard-host-features/references/openapi-scalar.md)。编码入口是 `$asgard-dotnet-11-csharp-15`，更新技能后可重新运行下方安装脚本。旧应用见 [升级指引](skills/asgard-host-features/references/openapi-scalar.md#升级到-asgard-7x)。
+Asgard 开发统一使用 .NET 11 / C# 15。starter 和插件都以 `net11.0` 为目标；通过 `host.openApi` 开启 [OpenAPI + Scalar](skills/asgard-host-features/references/openapi-scalar.md)。编码入口是 `$asgard-dotnet-11-csharp-15`，更新技能后可重新运行下方安装脚本。旧应用见 [升级指引](skills/asgard-host-features/references/openapi-scalar.md#迁移到-asgard-8x)。
 
 ## 技能结构
 
@@ -51,7 +51,7 @@ python -X utf8 scripts/validate_skills.py
 
 description 的仓库维护上限为 180 字符，触发条件和边界前置。这个上限是本仓库约定，不是平台限制。长示例保存在 references，入口写明读取场景；静态校验通过不代表自动触发率已经验证。
 
-业务统一使用 `AbsAsgardContext`。可选能力提供 `Status`、`Configuration` 和 `LastError`。Redis 的缓存、Pipeline、消息、锁和原生客户端位于 `ctx.Redis`。见 [Context](skills/asgard-context-usage/SKILL.md) 和 [Redis](skills/asgard-cache/SKILL.md)。
+业务统一使用 `AbsAsgardContext`。通过 `ctx.GetFeatures()` 检查规范入口。Redis 能力集中在 `ctx.Redis`，日志、强类型配置和数据库分别使用 `ctx.Log`、`ctx.Config` 与 `ctx.Database`。宿主有默认装配的工具，可选模块亦有非空关闭对象。见 [全部入口、默认状态和兼容属性](skills/asgard-context-usage/references/context-feature-matrix.md)。
 
 在 Yggdrasil 中，主 YAML 的显式值优先于环境 YAML、进程环境变量和命令行参数。见 [配置优先级](skills/asgard-configuration/SKILL.md#配置加载优先级)。
 

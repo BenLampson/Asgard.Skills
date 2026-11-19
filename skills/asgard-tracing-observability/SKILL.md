@@ -1,9 +1,23 @@
 ---
 name: asgard-tracing-observability
-description: "按 TraceId 排查 Asgard 异常，或配置请求追踪、自定义请求采集回调、独立持久化和数据库日志。业务故障定位与脱敏复现用此 skill。"
+description: "通过 Asgard Context 写结构化日志，使用 Trace 与日志历史查询排查异常，配置请求采集、脱敏与独立持久化。"
 ---
 
 # Asgard Tracing And Observability
+
+## 业务日志
+
+8.1 的 `ctx.Log` 实现标准 `ILogger`。通过 `Microsoft.Extensions.Logging` 的扩展方法写结构化日志，也可按类型或名称选分类。
+
+```csharp
+ctx.Log.LogInformation("已处理订单 {OrderId}", orderId);
+var logger = ctx.Log.CreateLogger<OrderService>();
+logger.LogWarning("订单 {OrderId} 等待确认", orderId);
+```
+
+默认分类是 `Asgard.Business`。`ctx.Log.WriteStatus` 表示日志工厂是否装配，`ctx.Log.IsEnabled(level)` 表示当前级别是否输出。缺少写入服务时日志为空操作。数据库日志读取看 `ctx.Log.Query.Status`，它与日志写入、当前请求追踪和 Trace 历史存储均可独立配置。[完整状态表](../asgard-context-usage/references/context-feature-matrix.md)
+
+日志分类、写入状态和查询属性的完整签名见 [IAsgardLog](references/IAsgardLog.cs)。
 
 ## 作用
 
@@ -24,7 +38,7 @@ description: "按 TraceId 排查 Asgard 异常，或配置请求追踪、自定�
 - **需要在 Controller / Service / Repository 中追加业务备注时**
 - **需要开启或解释 `Trace.Enabled` / `Trace.CaptureAllRequest` 独立持久化时**
 - **需要给插件或业务系统提供 Trace / 数据库日志查询接口时**
-- **需要通过 `AsgardContext.Trace.Query` 或 `DatabaseLogQuery` 查询历史记录时**
+- **需要通过 `AsgardContext.Trace.Query` 或 `AsgardContext.Log.Query` 查询历史记录时**
 - **需要为异常或 5xx 请求保存可复现现场，供 AI 调试时**
 - **需要判断该用中间件追踪、Context 备注还是仓储自动步骤时**
 - **需要解释 `AsyncLocal<T>` 在 Asgard 中如何承载请求追踪时**
@@ -44,7 +58,7 @@ description: "按 TraceId 排查 Asgard 异常，或配置请求追踪、自定�
 | **普通日志策略** | 每请求输出一条轻量 `AsgardTrace` 摘要日志，不再把完整 request snapshot 拼进普通日志 |
 | **持久化策略** | `Trace.Enabled=false` 不落库；`Trace.Enabled=true` 只持久化异常/5xx；`Trace.CaptureAllRequest=true` 时所有请求落库 |
 | **错误快照** | 异常/5xx 可采集请求数据，应用通过回调筛选；正常请求即使落库也不保存 body |
-| **历史查询** | `AsgardContext.Trace.Query` 和 `DatabaseLogQuery` 返回宿主级只读数据，应用决定 HTTP 路由、运维授权和返回字段 |
+| **历史查询** | `AsgardContext.Trace.Query` 和 `AsgardContext.Log.Query` 返回宿主级只读数据，应用决定 HTTP 路由、运维授权和返回字段 |
 
 ## 推荐入口
 
@@ -59,7 +73,7 @@ description: "按 TraceId 排查 Asgard 异常，或配置请求追踪、自定�
 | **自动记录仓储关键调用** | `AbsAsgardRepositoryBase` 统一封装 |
 | **Trace 独立落库** | `Trace.Enabled` + 独立 `FreeSqlTraceStore` |
 | **Trace 分页查询** | `AsgardContext.Trace.Query.QueryAsync(...)` |
-| **数据库日志分页查询** | `AsgardContext.DatabaseLogQuery.QueryAsync(...)` |
+| **数据库日志分页查询** | `AsgardContext.Log.Query.QueryAsync(...)` |
 | **AI 复现错误现场** | `asgard_trace` 表里的 request snapshot + steps/tags/notes/branches |
 
 ## Trace 独立持久化配置
@@ -112,7 +126,7 @@ Trace:
 
 ## 持久化记录查询
 
-Asgard 8 的业务入口是 `asgardContext.Trace.Query` 和 `asgardContext.DatabaseLogQuery`。关闭对应的持久化或省略该服务时，读取入口仍有 `Status`、`Configuration` 和 `LastError`，状态为 `Disabled`。执行关闭的查询会抛出 `AsgardFeatureDisabledException`。历史追踪查询失败可以从同一宿主作用域中的 `Trace.LastError` 查看脱敏摘要。
+业务入口是 `asgardContext.Trace.Query` 和 `asgardContext.Log.Query`。8.0 的 `asgardContext.DatabaseLogQuery` 在 8.1 保留为同一个日志查询对象。关闭对应的持久化或省略该服务时仍可读取 `Status`、`Configuration` 和 `LastError`，执行关闭的查询会抛出 `AsgardFeatureDisabledException`。历史追踪、日志查询的脱敏故障摘要分别见 `Trace.LastError` 和 `Log.LastError`。
 
 `Trace.IsEnabled` 表示当前有活动追踪请求，`Trace.Query.Status` 表示历史查询是否已装配。只注册查询的自定义宿主会显示 `Trace.Status == AsgardFeatureStatus.PartiallyEnabled`。Yggdrasil 自动装配，自定义宿主注册 `TraceOptions`、`LogConfig`、`AddAsgardObservabilityQueries()` 和 `AddAsgardContext()`。
 
@@ -131,7 +145,7 @@ Asgard 8 的业务入口是 `asgardContext.Trace.Query` 和 `asgardContext.Datab
 已授权的运维服务可直接从 Context 查询，无需知道表结构。请求类型位于 `Asgard.Abstractions.Observability`：
 
 ```csharp
-var logs = asgardContext.DatabaseLogQuery;
+var logs = asgardContext.Log.Query;
 if (logs.Status == AsgardFeatureStatus.Enabled)
 {
     var result = await logs.QueryAsync(new DatabaseLogQueryRequest

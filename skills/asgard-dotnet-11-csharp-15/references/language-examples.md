@@ -4,7 +4,7 @@
 
 | 特性 | 使用场景 | 示例 |
 |------|----------|------|
-| **Primary Constructors** | 依赖注入注入、简单类型 | `public class UserService(IOptions<Settings> settings, ILogger<UserService> logger)` |
+| **Primary Constructors** | 构造注入作用域依赖 | `public class UserService(AbsAsgardContext ctx)` |
 | **Collection Expressions** | 数组、列表、字典初始化 | `int[] numbers = [1, 2, 3];` |
 | **`field` keyword** | 自动属性带逻辑 | `set => field = value.Trim();` |
 | **Extension Blocks** | 扩展方法组织 | `extension<T>(IQueryable<T> query)`（位于 static class 内） |
@@ -20,14 +20,11 @@ namespace {Namespace};
 /// <summary>
 /// {ServiceSummary}
 /// </summary>
-public class {ServiceName}(
-    IOptions<{SettingsName}> settings,
-    ILogger<{ServiceName}> logger,
-    AbsAsgardContext asgardContext)
+public class {ServiceName}(AbsAsgardContext asgardContext)
 {
-    private readonly {SettingsType} _settings = settings.Value;
-    private readonly ILogger<{ServiceName}> _logger = logger;
-    protected readonly AbsAsgardContext AsgardContext = asgardContext;
+    protected AbsAsgardContext AsgardContext { get; } = asgardContext;
+    protected {SettingsName} Settings => AsgardContext.Config.Get<{SettingsName}>();
+    protected ILogger<{ServiceName}> Logger { get; } = asgardContext.Log.CreateLogger<{ServiceName}>();
 }
 ```
 

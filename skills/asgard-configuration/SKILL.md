@@ -26,7 +26,7 @@ Asgard 使用强类型配置系统，从 YAML 文件、环境变量、命令行�
 
 ## 配置加载优先级
 
-Yggdrasil 8.0 在同一个键有多个值时，按下列顺序选取。表首优先。
+Yggdrasil 8.x 在同一个键有多个值时，按下列顺序选取。表首优先。
 
 | 顺序 | 来源 |
 | --- | --- |
@@ -42,6 +42,14 @@ Yggdrasil 8.0 在同一个键有多个值时，按下列顺序选取。表首优
 自定义 `AsgardConfigurationBuilder` 按调用者添加来源的顺序合并，后加入的值生效。`AddPluginConventions` 从该插件的清单绑定配置。需要读取部署变量时在 `plugin.yaml` 中写 `${env:变量名}`，并确保进程实际收到该变量。见 [插件配置注入](../asgard-plugin-development/SKILL.md#插件配置注入硬规则)。
 
 `AfterConfigurationLoad` 执行时配置已经合并，只能读取不可变快照。修改 `host.*` 应在启动前设置配置源；钩子签名和迁移见 [宿主钩子](../asgard-host-project/SKILL.md#构建钩子顺序)。
+
+## 通过 Context 读取已注册配置
+
+8.1 的 `ctx.Config.Get<TConfig>()` 读取当前作用域注册的同一个配置对象，类型约束为 `class, ISystemConfig`。例如已由插件清单装配的 `OrdersConfig` 可写为 `var settings = ctx.Config.Get<OrdersConfig>();`。模块已启用但类型未注册时，调用会抛出明确异常，并记入配置模块的 `LastError`。
+
+运维展示使用 `ctx.Config.Configuration` 的白名单快照。业务读取到的强类型对象可能包含连接串、令牌或密码，只取本次业务需要的字段。`ctx.SystemConfig` 是原有校验与摘要入口。各类容器的默认状态见 [Context 能力表](../asgard-context-usage/references/context-feature-matrix.md)。
+
+自定义配置读取器的契约见 [IAsgardConfig](references/IAsgardConfig.cs)。
 
 ## 占位符解析
 

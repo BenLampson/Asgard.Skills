@@ -1,5 +1,18 @@
 # 消息示例
 
+## 类型化生产和已授权的死信重放
+
+```csharp
+var producer = ctx.MessageQueue.Producer<OrderCreated>("orders.created");
+await producer.ProduceAsync(orderCreated, cancellationToken: cancellationToken);
+
+var handler = ctx.MessageQueue.DeadLetters<OrderCreated>();
+var accepted = await handler.RetryAsync(deadLetter, cancellationToken: cancellationToken);
+if (accepted) await delivery.AcknowledgeAsync();
+```
+
+重放前先校验运维权限和消息归属，并让接收方按消息标识做幂等处理。运行时的精确投递和失败确认规则见 [确认与重试](settlement-and-retry.md)。
+
 ## 发布消息
 
 ```csharp
