@@ -1,23 +1,8 @@
 namespace {Namespace}.Services;
 
-public class {ServiceName}Service : I{ServiceName}Service
+/// <summary>通过作用域内的统一入口读取缓存。未启用时按未命中处理。</summary>
+public class {ServiceName}Service(AbsAsgardContext context)
 {
-    private readonly AbsAsgardContext _context;
-
-    public {ServiceName}Service(AbsAsgardContext context)
-    {
-        _context = context;
-    }
-
-    public async Task<{ResultType}> DoSomethingAsync()
-    {
-        // 使用上下文能力，检查 null 因为模块可能未启用
-        var cache = _context.Cache;
-        if (cache != null)
-        {
-            // 缓存操作
-        }
-
-        return default;
-    }
+    public Task<{ResultType}?> ReadCachedAsync(string key, CancellationToken cancellationToken) =>
+        context.Redis.Cache.GetAsync<{ResultType}>(key, cancellationToken);
 }

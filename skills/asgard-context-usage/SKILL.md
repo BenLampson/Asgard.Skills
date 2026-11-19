@@ -1,125 +1,42 @@
 ---
 name: asgard-context-usage
-description: "使用 AbsAsgardContext 的公共能力，包括可空性、生命周期、租户作用域、Trace 备注和数据库日志查询。各模块详细契约使用对应 skill。"
+description: "通过 AbsAsgardContext 使用 Asgard 8 的非空能力入口、模块状态、脱敏配置、最近异常、租户作用域和历史 Trace 查询。各模块操作见对应 skill。"
 ---
 
-# Asgard Context Usage
+# Asgard Context
 
-## 缓存版本边界
+在业务服务构造函数注入 `AbsAsgardContext`。控制器使用 `BaseController.AsgardContext`，插件及后台任务在各自 DI 作用域中解析。Context 的生命周期是 Scoped。需要独立处理多项工作的单例应为每次处理创建作用域。
 
-使用 `IAsgardCache`。默认 Yggdrasil 宿主自动装配缓存；关闭时提供 `NullAsgardCache`，自定义宿主仍需判空。旧缓存配置迁移见 `$asgard-cache`；实现以 7.x 源码为准。
+## 能力入口
 
+| 入口 | 用途 |
+| --- | --- |
+| `ctx.Redis` | `Cache`、`PubSub`、`Stream`、`Locks`、Pipeline、条件事务、Lua、数据结构及原生 `Data` / `Streams`。见 [Redis](../asgard-cache/SKILL.md) |
+| `ctx.Database` | 在业务数据库上创建工作单元，或通过 `InTransactionAsync` 执行、提交与回滚事务 |
+| `ctx.JobScheduler`、`ctx.MessageQueue` | 业务调度、发布和订阅。单个作用域可以管理自己创建的订阅，宿主负责共享服务的启停与释放 |
+| `ctx.IdentityContext`、`ctx.TenantScopeFactory` | 当前身份及授权后的显式租户作用域。具体字段见 [身份](../asgard-identity-userinfo/SKILL.md) |
+| `ctx.Trace`、`ctx.Trace.Query` | 为当前请求追加标签、分支、备注。历史查询可按时间、TraceId 检索持久化记录 |
+| `ctx.DatabaseLogQuery` | 查询宿主级持久化日志。应用先做运维授权，再裁剪可返回的字段 |
+| `ctx.SystemConfig` | `Validate()` 校验配置，`Configuration` 展示白名单中的宿主有效配置 |
+| `ctx.Encryption`、`ctx.PasswordHasher`、`ctx.KeyGenerator` | 加解密、密码哈希和密钥生成 |
+| `ctx.Compression`、`ctx.WildcardMatcher` | 压缩和通配符匹配 |
 
-## 作用
+## 状态与错误
 
-`AbsAsgardContext` 是 Asgard 框架的**公共能力聚合入口**，所有可选基础设施能力（缓存、消息队列、分布式锁、作业调度、加密、轻量追踪等）都通过 Context 统一访问。这种设计避免了循环依赖，支持可选模块优雅降级。
+`ctx.Redis` 的静态类型为 `IAsgardRedis`。每个 Context 能力都实现 `IAsgardFeature`，未配置时也可读取 `Status`、`Configuration`、`LastError`。`Disabled` 表示关闭；自定义容器只装配部分 Redis 能力时，根对象可为 `PartiallyEnabled`。检查相应子模块，命令与 Pipeline 查看 `ctx.Redis.CommandStatus`。观察模块状态不会连接服务。就绪探测配置见 [宿主功能](../asgard-host-features/SKILL.md)。
 
-## 什么时候使用
+`Configuration` 只供展示，`LastError` 是当前宿主内最近一次失败的脱敏摘要，含操作名、异常类型、时间和可用的 TraceId。取消保持原有故障记录。通过应用作用域执行的两次调用可以观察到同一模块的故障。
 
-- **需要访问公共基础设施能力时** - 通过 Context 获取缓存、消息队列、加密等服务
-- **在业务服务中需要跨模块能力** - 通过 Context 聚合入口避免直接依赖多个模块
-- **需要处理可选模块降级** - 未装配的能力可能返回 null；默认宿主关闭缓存时提供 NullAsgardCache
-- **需要在后台任务中创建租户作用域** - 通过 `TenantScopeFactory` 创建隔离作用域
+对象缓存关闭时读取未命中，`GetOrCreateAsync` 直接运行回源函数。当前请求未采集追踪时，追加备注可直接调用。需要 Redis、加密、消息或租户隔离的操作在模块关闭时抛 `AsgardFeatureDisabledException`。业务要求互斥或隔离时，应让失败传播。
 
-## Context 可获取的能力列表
+```csharp
+var item = await ctx.Redis.Cache.GetOrCreateAsync(key, ct => repository.LoadAsync(id, ct),
+    cancellationToken: cancellationToken);
+ctx.Trace.AddNote("已完成订单校验");
+```
 
-| 属性 | 能力说明 | 模块 |
-|------|----------|------|
-| `Cache` | Redis 单层业务缓存 | 缓存模块 |
-| `Compression` | 数据压缩（Brotli）| 压缩模块 |
-| `TenantScopeFactory` | 租户作用域工厂 | 租户模块 |
-| `IdentityContext` | 当前身份上下文 | 身份认证模块 |
-| `JobScheduler` | 作业调度器 | 作业调度模块 |
-| `MessageQueue` | 消息队列 | 消息模块 |
-| `DistributedLock` | 基于 Redis 的分布式锁 | 分布式锁模块 |
-| `Encryption` | 加密服务（AES、MD5）| 加密模块 |
-| `PasswordHasher` | 密码哈希（BCrypt）| 安全模块 |
-| `KeyGenerator` | 密钥生成 | 加密模块 |
-| `SystemConfig` | 系统配置 | 配置模块 |
-| `WildcardMatcher` | 通配符匹配 | 工具模块 |
-| `Trace` | 当前请求轻量追踪上下文 | 可观测性 / 追踪模块 |
-| `DatabaseLogQuery` | 宿主数据库日志只读查询，支持分页和详情 | 可观测性模块 |
+后台访问指定租户时先验证权限，再调用 `ctx.TenantScopeFactory.CreateScope(tenantId)`，并在所得作用域内执行仓储操作。跨租户查询需要服务端授权。见 [范围与缓存契约](../asgard-database/references/shared-entity-cache-tenant-scopes.md)。
 
-## 获取方式
+Yggdrasil 在服务注册钩子执行完毕后固定声明。自定义容器可先注册模块，再调用 `AddAsgardContext()`；需要在 Context 注册之后声明惰性能力时，用 `AddAsgardFeature<T>` 指定 `status` 和可展示的 `configuration`。普通工厂在首次业务操作时解析并补充自身状态。若要反复修改同一服务集合、构建多个相互独立的容器，使用 `services.BuildAsgardServiceProvider()`，每个容器会固定自己最终的声明。
 
-| 获取场景 | 方式 |
-|----------|------|
-| **控制器中** | 继承 `BaseController` 后直接使用 `AsgardContext` 字段 |
-| **业务服务中** | 构造函数注入 `AbsAsgardContext` |
-| **插件中** | `InitializeAsync` 之后通过 `GetAsgardContext()` 获取 |
-
-## 核心规则
-
-| 规则 | 说明 |
-|------|------|
-| **生命周期** | `AbsAsgardContext` 是 **Scoped** 生命周期，每次请求创建新实例 |
-| **可空性** | 能力声明可空；自定义宿主未装配时可能为 `null`，默认宿主关闭缓存时提供 `NullAsgardCache` |
-| **调用方式** | 使用 `?.` 调用，必须做空检查 |
-| **降级策略** | 缓存未装配或未命中时可回源；身份、租户隔离与分布式互斥不能静默跳过 |
-| **注册顺序** | 先注册其他模块，**最后**调用 `AddAsgardContext()` |
-| **身份模型** | `IdentityContext.UserInfo` 的统一模型是 `AbsAsgardUserInfo`，需要字段语义与 claim 契约时转到 `$asgard-identity-userinfo` |
-| **租户注入** | `TenantScopeFactory` 创建的作用域会把租户写入身份上下文，随后 FreeSql 仓储和全局过滤会自动读取 |
-| **追踪补充** | `Trace` 只允许追加备注、标签和分支说明，不暴露框架步骤的修改入口 |
-
-## `IdentityContext` 特别说明
-
-- `IdentityContext` 负责暴露当前请求的身份快照，而不是让业务层自己到处解析 `ClaimsPrincipal`
-- `IdentityContext.UserInfo` 的标准模型是 `AbsAsgardUserInfo`
-- 如果你需要定义 IDP 输出、用户字段扩展、claim 命名、测试登录态，请不要在本 skill 里自行发挥，直接切到 `$asgard-identity-userinfo`
-
-## `Trace` 特别说明
-
-- `Trace` 用于给当前 HTTP 请求补充**可用于定位问题和反推测试条件**的信息
-- 它不是全量审计日志，也不是给你转储任意对象图的入口
-- 业务代码可以调用：
-  - `AsgardContext.Trace?.AddNote(...)`
-  - `AsgardContext.Trace?.AddTag(...)`
-  - `AsgardContext.Trace?.AddBranch(...)`
-- 如果问题本身是“框架追踪能力怎么设计、为什么只记录轻量摘要、哪些入口会自动记步骤”，直接切到 `$asgard-tracing-observability`
-
-## 数据库日志查询
-
-- Yggdrasil 自动装配查询服务；通过 `AsgardContext.DatabaseLogQuery` 取得，未启用 `logging.database.enabled` 或未注册服务时返回 `null`。
-- 这是宿主级运维数据。对外查询先校验运维权限，再按 [可观测性技能](../asgard-tracing-observability/SKILL.md#持久化记录查询) 调用并裁剪返回字段。
-
-## 代码示例
-
-需要编写该模块代码时，按场景读取 [实现示例](references/implementation-examples.md)，只采用与当前任务和目标版本匹配的示例。
-
-## 推荐做法
-
-- 把 `AbsAsgardContext` 当作公共能力的统一入口，简化依赖注入
-- 访问任何能力**先判空**，支持模块动态启用禁用
-- 可选能力缺失时按业务契约降级；租户隔离、身份与分布式互斥是前提时，缺失必须终止，不能脱离保护继续执行
-- 需要多实例互斥时，优先通过 `AsgardContext.DistributedLock` 获取锁能力
-- 长时间持锁时，把 `handle.LockLostToken` 与业务取消令牌合并，锁所有权丢失后立即停止受保护操作
-- 需要后台租户作用域时，优先使用 `TenantScopeFactory`
-- 需要后台租户数据库访问时，先授权目标租户，再进入 `TenantScopeFactory.CreateScope(tenantId)`，在同一作用域构造并执行仓储/FreeSql 操作；`Guid.Empty` 非法
-- 目标包含单实体共享缓存补丁时，空租户不代表平台权限；跨租户访问使用经服务端授权的 `CreateCrossTenantScope()`。读取 [范围与缓存契约](../asgard-database/references/shared-entity-cache-tenant-scopes.md)，不要用请求布尔值或用户类型代替授权
-- 在其他模块都注册完成后，再调用 `AddAsgardContext()`
-- 需要定位运行链路或补充测试线索时，优先用 `AsgardContext.Trace` 追加简明备注和标签
-
-## 不要这样做
-
-❌ 不要假设 `Cache`、`MessageQueue`、`DistributedLock`、`JobScheduler` 一定存在，始终做空检查
-
-❌ 不要把所有依赖都替换成 `IServiceProvider`，`AbsAsgardContext` 已经提供了更稳定的类型入口
-
-❌ 不要在单例服务中长期持有 scoped 的 `AbsAsgardContext`，会造成生命周期问题
-
-❌ 不要先注册 `AddAsgardContext()` 再注册其他模块，这样无法注入已注册的服务
-
-❌ 不要跳过空检查直接使用 `!` 强制非空，模块未启用时会抛出空引用异常
-
-❌ 不要在后台任务里手动拼接默认租户过滤，如果已经进入 `TenantScopeFactory` 作用域，框架会自动把租户传给 FreeSql
-
-❌ 不要把 `AsgardContext.Trace` 当作大对象序列化出口，它应该只承载轻量说明信息
-
-## 参考资料
-
-完整源码拷贝请参考 `references/` 目录：
-- `AbsAsgardContext.cs` - 上下文抽象类，定义所有能力属性
-- `AsgardContext.cs` - 具体实现类
-- `AsgardContextServiceCollectionExtensions.cs` - DI 注册扩展
-
-代码范本请参考 `templates/` 目录，可直接替换占位符使用。
+已有 `ctx.Cache`、`RedisPubSub`、`RedisStream`、`DistributedLock` 为兼容别名，新代码统一从 `ctx.Redis` 调用。接口契约见 [IAsgardFeature](references/IAsgardFeature.cs)。更多示例见 [业务调用](references/implementation-examples.md)。

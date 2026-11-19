@@ -5,6 +5,9 @@ description: "创建或调整 Asgard 插件与 starter 的目录、依赖、Glob
 
 # Asgard Plugin Structure
 
+
+Asgard 8.0 的业务插件引用 `Asgard.PluginSdk`。Starter 显式引用 `Asgard.Yggdrasil.AspNetCore`，使用 `Asgard.PluginSdk` 命名空间调用 `PluginWebAppDefaults.RunAsync<TPlugin>()`。仅开发插件约定、作用域或映射时，只需插件 SDK。
+
 ## 作用
 
 这个 skill 是 **Asgard 插件项目结构的权威来源**。
@@ -31,7 +34,7 @@ description: "创建或调整 Asgard 插件与 starter 的目录、依赖、Glob
 
 starter 和插件统一使用 `net11.0` / C# 15，Asgard 包版本保持一致。旧应用见 [升级到 Asgard 7.x](../asgard-host-features/references/openapi-scalar.md#升级到-asgard-7x)。
 
-使用项目模板时，在仓库的中央包配置中给 `Asgard.PluginSdk` 和 `Asgard.Analyzers` 指定同一版；未启用中央管理时在项目引用上指定版本。启动前通过 `ASGARD_ENCRYPTION_KEY`（16、24 或 32 字节）和 `ASGARD_ENCRYPTION_IV`（16 字节）注入 Base64 值。
+使用项目模板时，在仓库的中央包配置中给 `Asgard.PluginSdk`、`Asgard.Yggdrasil.AspNetCore` 和 `Asgard.Analyzers` 指定同一版；未启用中央管理时在项目引用上指定版本。启动前通过 `ASGARD_ENCRYPTION_KEY`（16、24 或 32 字节）和 `ASGARD_ENCRYPTION_IV`（16 字节）注入 Base64 值。
 
 ## 什么时候使用
 

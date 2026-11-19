@@ -10,9 +10,9 @@
 /// <returns>订单标识</returns>
 public async Task<Guid> CreateOrderAsync(CreateOrderCommand command)
 {
-    AsgardContext.Trace?.AddTag("OrderId", command.OrderId.ToString());
-    AsgardContext.Trace?.AddBranch("OrderCreate", "ValidateBeforePersist");
-    AsgardContext.Trace?.AddNote("创建订单前已完成业务规则校验，可据此反推测试前置条件。");
+    AsgardContext.Trace.AddTag("OrderId", command.OrderId.ToString());
+    AsgardContext.Trace.AddBranch("OrderCreate", "ValidateBeforePersist");
+    AsgardContext.Trace.AddNote("创建订单前已完成业务规则校验，可据此反推测试前置条件。");
 
     return await _orderRepository.InsertAsync(command.ToEntity());
 }
@@ -29,8 +29,8 @@ public async Task<Guid> CreateOrderAsync(CreateOrderCommand command)
 [HttpGet("{id:guid}")]
 public async Task<ActionResult<Response<OrderDto>>> GetByIdAsync(Guid id)
 {
-    AsgardContext.Trace?.AddTag("Endpoint", "Orders/GetById");
-    AsgardContext.Trace?.AddNote("该接口默认期望有效 Guid 且命中已登录用户上下文。");
+    AsgardContext.Trace.AddTag("Endpoint", "Orders/GetById");
+    AsgardContext.Trace.AddNote("该接口默认期望有效 Guid 且命中已登录用户上下文。");
 
     var result = await _orderService.GetByIdAsync(id);
     return Success(result);

@@ -36,8 +36,6 @@ public partial class YggdrasilHostBuilder
             _ = app.UseAuthentication();
         }
 
-        _ = app.UseAsgardTenant();
-
         _configureMiddleware?.Invoke(app);
 
         if (_pluginManager != null && _pluginManager.LoadedPlugins.Any())
@@ -50,6 +48,9 @@ public partial class YggdrasilHostBuilder
         {
             _logger.LogDebug("No loaded plugins, skipping plugin middleware configuration");
         }
+
+        // 外部认证和声明补充可以替换 principal，完成后再建立授权和仓储共享的租户快照。
+        _ = app.UseAsgardTenant();
 
         if (_hostConfig.RateLimiting is { Enabled: true, User: { Enabled: true } })
         {
@@ -74,26 +75,54 @@ public partial class YggdrasilHostBuilder
     /// <summary>
     /// 执行第一阶段：构建配置图。
     /// </summary>
-    private void ExecutePhase1ConfigurationLoading(WebApplicationBuilder builder)
+    private WebApplicationBuilder ExecutePhase1ConfigurationLoading()
     {
-        _beforeConfigurationLoad?.Invoke(builder.Host);
-
-        var commandLineArgs = Environment.GetCommandLineArgs().Skip(1).ToArray();
-        _asgardConfiguration = new AsgardConfigurationBuilder()
+        // 先确定要读取哪个环境文件。显式 YAML 可以选定环境，省略时使用部署环境。
+        var arguments = Environment.GetCommandLineArgs().Skip(1);
+        var selection = CreateProcessConfiguration(arguments).AddYamlFile(_configFilePath).Build();
+        var profilePath = GetEnvironmentConfigPath(selection.GetScalar("host.application.environment")!);
+        AsgardConfigurationRoot LoadConfiguration() => CreateProcessConfiguration(arguments)
+            .AddYamlFile(profilePath, optional: true)
             .AddYamlFile(_configFilePath)
-            .AddYamlFile(GetEnvironmentConfigPath(builder.Environment.EnvironmentName), optional: true)
-            .AddEnvironmentVariables()
-            .AddCommandLine(commandLineArgs)
             .Build();
 
-        _ = builder.Configuration.AddInMemoryCollection(_asgardConfiguration.ToConfigurationDictionary());
+        _asgardConfiguration = LoadConfiguration();
+        var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+        {
+            EnvironmentName = _asgardConfiguration.GetScalar("host.application.environment")
+        });
+        if (_beforeConfigurationLoad is not null)
+        {
+            _beforeConfigurationLoad(builder.Host);
+            // 钩子可以调整配置来源。重新读取后让观察回调、强类型配置和运行环境使用同一值。
+            _asgardConfiguration = LoadConfiguration();
+            builder.Environment.EnvironmentName = _asgardConfiguration.GetScalar("host.application.environment")!;
+        }
 
-        _afterConfigurationLoad?.Invoke(builder.Host, builder.Configuration);
+        var snapshot = _asgardConfiguration.ToConfigurationDictionary();
+        builder.Configuration.Sources.Add(new AsgardHostConfigurationProvider(_asgardConfiguration, snapshot));
+
+        _logConfig = _asgardConfiguration.Load<LogConfig>();
+        _logConfig.Validate();
+        _bootstrapLoggerFactory = CreateStartupLoggerFactory(_logConfig);
+        _runtimeLifetime.BootstrapLoggerFactory = _bootstrapLoggerFactory;
+        _logger = _bootstrapLoggerFactory.CreateLogger("YggdrasilHostBuilder");
+        _logger.LogInformation("Asgard Yggdrasil host starting...");
+        _afterConfigurationLoad?.Invoke(snapshot);
         _logger.LogInformation("[Phase 1/5] Configuration graph built from Asgard sources ({Path})", _configFilePath);
+        return builder;
     }
+
+    /// <summary>进程配置补齐 YAML 中缺少的键，环境变量优先于命令行参数。</summary>
+    internal static AsgardConfigurationBuilder CreateProcessConfiguration(IEnumerable<string> arguments) => new AsgardConfigurationBuilder()
+        .AddValue("host.application.environment", Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+            ?? Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? Environments.Development)
+        .AddCommandLine(arguments)
+        .AddEnvironmentVariables();
 
     private string GetEnvironmentConfigPath(string environmentName)
     {
+        ApplicationOptions.ValidateEnvironmentName(environmentName);
         var directory = Path.GetDirectoryName(_configFilePath) ?? "config";
         var fileNameWithoutExt = Path.GetFileNameWithoutExtension(_configFilePath);
         var extension = Path.GetExtension(_configFilePath);
@@ -101,30 +130,13 @@ public partial class YggdrasilHostBuilder
     }
 
     /// <summary>
-    /// 创建宿主启动阶段使用的引导日志工厂。
+    /// 从最终生效的日志配置创建宿主或插件装配阶段使用的日志工厂。
     /// </summary>
-    private ILoggerFactory CreateBootstrapLoggerFactory()
+    private static ILoggerFactory CreateStartupLoggerFactory(LogConfig logConfig)
     {
-        var logConfig = YamlConfigLoader.LoadFromFile<LogConfig>(_configFilePath);
-        logConfig.Validate();
-
-        var serilogConfig = SerilogConfigurator.FromConfig(logConfig);
+        var serilogConfig = SerilogConfigurator.FromConfig(logConfig, startRetentionCleanup: false);
         var serilogLogger = serilogConfig.CreateLogger();
-        return new LoggerFactory().AddSerilog(serilogLogger);
-    }
-
-    /// <summary>
-    /// 创建插件服务发现阶段使用的日志记录器。
-    /// </summary>
-    private Microsoft.Extensions.Logging.ILogger CreatePluginServiceConfiguratorLogger()
-    {
-        var logConfig = _logConfig ?? YamlConfigLoader.LoadFromFile<LogConfig>(_configFilePath);
-        logConfig.Validate();
-
-        var serilogConfig = SerilogConfigurator.FromConfig(logConfig);
-        var serilogLogger = serilogConfig.CreateLogger();
-        var loggerFactory = new LoggerFactory().AddSerilog(serilogLogger);
-        return loggerFactory.CreateLogger("PluginServiceConfigurator");
+        return new LoggerFactory().AddSerilog(serilogLogger, dispose: true);
     }
 
     private void MapHealthChecks(WebApplication app)

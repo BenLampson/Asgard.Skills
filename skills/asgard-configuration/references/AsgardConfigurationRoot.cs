@@ -3,7 +3,7 @@ namespace Asgard.Core.SystemConfig;
 /// <summary>
 /// 表示合并后的 Asgard 配置图。
 /// </summary>
-public sealed class AsgardConfigurationRoot
+public sealed partial class AsgardConfigurationRoot
 {
     private static readonly Regex _indexedSegmentRegex = new(@"\[(\d+)\]", RegexOptions.Compiled);
     private static readonly Regex _placeholderRegex = new(@"\$\{([^}]+)\}", RegexOptions.Compiled);
@@ -38,12 +38,12 @@ public sealed class AsgardConfigurationRoot
     /// <summary>
     /// 以冒号分隔的键值对形式暴露合并后的配置，便于兼容 ASP.NET 配置系统。
     /// </summary>
-    /// <returns>拍平后的配置字典。</returns>
+    /// <returns>不区分键大小写的不可变配置快照。</returns>
     public IReadOnlyDictionary<string, string?> ToConfigurationDictionary()
     {
         var flattened = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         Flatten(CreateResolvedSnapshot(), flattened);
-        return flattened;
+        return flattened.ToFrozenDictionary(flattened.Comparer);
     }
 
     internal Dictionary<object, object> CreateResolvedSnapshot()

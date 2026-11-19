@@ -26,17 +26,22 @@ Asgard 使用强类型配置系统，从 YAML 文件、环境变量、命令行�
 
 ## 配置加载优先级
 
-优先级从低到高（后加载覆盖先加载）：
+Yggdrasil 8.0 在同一个键有多个值时，按下列顺序选取。表首优先。
 
-| 优先级 | 来源 | 说明 |
-|--------|------|------|
-| 1 | YAML 配置文件 | 基础配置，从文件加载 |
-| 2 | 环境变量 | 可以覆盖 YAML 配置 |
-| 3 | 命令行参数 | 最高优先级，临时覆盖 |
+| 顺序 | 来源 |
+| --- | --- |
+| 1 | `CreateBuilder(path)` 显式指定的主 YAML，例如 `app.yaml` |
+| 2 | 同目录环境 YAML，例如 `app.Production.yaml` |
+| 3 | 进程环境变量，例如 `caching__enabled` |
+| 4 | 命令行参数，例如 `--caching:enabled=true` |
 
-**记住**：后加入的数据覆盖先加入的数据。修复配置问题时先确认覆盖链路，不要只看单个文件。
+例如部署设了 `caching__enabled=true`，主 YAML 写 `caching: { enabled: false }`，最终 Redis 为 `Disabled`。映射按键合并，显式列表整体替换，`[]`、`false` 和 `0` 都有效。需要让部署决定某个值时，可从高优先级文件省略该键，或显式写 `${env:变量名}`。
 
-**先区分实际加载入口**：上表的环境变量合并优先级适用于显式调用 `AsgardConfigurationBuilder.AddEnvironmentVariables(...)` 的配置链。`AddPluginConventions` / `LoadPluginConfig` 直接走 `YamlConfigLoader.LoadFromFile<T>(plugin.yaml)` 时，不会自动将进程环境变量按 `__` 路径合并进插件配置。此时应在 YAML 中使用 `${env:变量名}` 读取部署变量，或使用目标框架版本支持的统一配置构建链。Docker Compose 的 `.env` 仅负责变量替换；还必须将变量传入容器，并由插件实际加载入口读取，不能仅凭容器存在该变量就判断配置已生效。
+宿主按主配置和进程配置中的 `host.application.environment` 选环境文件，缺省依次取 `ASPNETCORE_ENVIRONMENT`、`DOTNET_ENVIRONMENT` 和 `Development`。部署可使用 `Integration` 等自定义环境名。`IConfiguration`、强类型对象和配置观察回调使用同一份合并结果。
+
+自定义 `AsgardConfigurationBuilder` 按调用者添加来源的顺序合并，后加入的值生效。`AddPluginConventions` 从该插件的清单绑定配置。需要读取部署变量时在 `plugin.yaml` 中写 `${env:变量名}`，并确保进程实际收到该变量。见 [插件配置注入](../asgard-plugin-development/SKILL.md#插件配置注入硬规则)。
+
+`AfterConfigurationLoad` 执行时配置已经合并，只能读取不可变快照。修改 `host.*` 应在启动前设置配置源；钩子签名和迁移见 [宿主钩子](../asgard-host-project/SKILL.md#构建钩子顺序)。
 
 ## 占位符解析
 

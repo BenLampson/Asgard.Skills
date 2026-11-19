@@ -130,10 +130,10 @@ auth:
 - 宿主内置认证当前是 Bearer JWT 模式
 - 认证实现基于 OIDC discovery + JWKS 自发现
 - 签名密钥按 issuer 缓存；遇到未知 `kid` 可提前刷新 discovery 和 JWKS，同一 issuer 的并发刷新合并，每次提前刷新后冷却 30 秒
+- Asgard 7.1 起，没有公钥缓存的 issuer 共用单实例发现预算：`host.auth.jwt.coldIssuerDiscoveryLimit` 默认 8 次，`coldIssuerDiscoveryWindowSeconds` 默认 1 秒，`coldIssuerDiscoveryConcurrencyLimit` 默认同时 4 次在途。到达上限立即拒绝认证；缓存命中和现有公钥轮换不消耗冷发现预算。
 - `host.auth.enabled` 只控制宿主默认 JWT 注册与 `UseAuthentication()` 接线
 - 即使关闭宿主内置 JWT，`UseAuthorization()`、`AsgardAuth`、租户和身份上下文链路仍可能由外部认证方案继续工作
-- 宿主会在 `OnTokenValidated` 时检查当前身份是否已有 `tenant_id`
-- 如果 token 中没有 `tenant_id`，但 `issuer` 能匹配 `issuerTemplate`，宿主会自动补上 `tenant_id` claim
+- 宿主内置 JWT 在 `OnTokenValidated` 绑定 issuer 租户与 `tenant_id`；缺少声明时从发行者补齐，发现重复或冲突声明时拒绝认证。
 
 ### 框架托底事实
 
@@ -166,11 +166,11 @@ auth:
 - `IAsgardIdentityContext` / `AbsAsgardContext.IdentityContext` 负责向业务代码暴露当前身份快照
 - `UseAuthorization()` 和 `AsgardAuth` 负责基于这些信息做鉴权
 
-也就是说，业务代码真正应该读取的是 `AsgardContext.IdentityContext?.UserInfo`，而不是自己重新拼装 claim。
+业务代码可通过 `AsgardContext.IdentityContext.UserInfo` 取得当前身份快照。
 
 ### OpenAPI 与 Scalar（host.openApi）
 
-Asgard 7.0 使用 ASP.NET Core OpenAPI 生成 JSON，Scalar 提供交互页面。默认关闭；在宿主 `app.yaml` 设置 `host.openApi.enabled: true` 后，访问 `/openapi/v1.json` 和 `/scalar`。Yggdrasil 和快速 starter 入口会自动接线。
+Asgard 8 使用 ASP.NET Core OpenAPI 生成 JSON，Scalar 提供交互页面。默认关闭。在宿主 `app.yaml` 设置 `host.openApi.enabled: true` 后，访问 `/openapi/v1.json` 和 `/scalar`。Yggdrasil 和快速 starter 入口会自动接线。
 
 修改版本、配置代理、使用 Bearer 调试或从旧版迁移，读取 [OpenAPI 与 Scalar](references/openapi-scalar.md)。
 
@@ -242,7 +242,7 @@ host:
 关键语义：
 
 - 旧 YAML 无需迁移；没有 `ip`、`user` 时仍只运行原有实例总量桶。
-- 多实例部署时，每个实例各自维护实例、IP、用户桶；它不是 Redis 分布式限流。
+- 默认每个实例独立计算额度。`host.rateLimiting.useRedis: true` 时，同一 Redis 范围的宿主共享 IP 和用户额度，实例总量和等待队列仍由本机管理。启用共享额度需要装配 Redis 连接。
 - IP 层使用 `HttpContext.Connection.RemoteIpAddress`，并规范化 IPv4-mapped IPv6 地址；反向代理场景必须保证可信转发头在限流前已经生效，否则多个客户端可能落入代理 IP 的同一个桶。
 - 用户层只处理已认证且有稳定身份声明的请求，身份键按 `tenant_id + user_id`、`sub`、`client_id`、`application_id` 的优先级选择。匿名请求或缺少稳定身份标识的请求跳过用户层，但仍受实例与 IP 层保护。
 - 任意一层超限都返回 HTTP `429`。端点标注 `[DisableRateLimiting]` 时跳过宿主限流；用户层不会重新解析业务端点上的 `[EnableRateLimiting("named-policy")]`，因此不会覆盖或破坏业务命名策略。
@@ -253,10 +253,18 @@ host:
 ### 健康检查（host.healthCheck）
 
 ```yaml
-healthCheck:
-  enabled: true
-  path: "/health"
+host:
+  healthCheck:
+    enabled: true
+    readyPath: "/health/ready"
+    livePath: "/health/live"
+    timeoutSeconds: 30
+    requiredFeatures: [Redis, Database]
 ```
+
+按应用接流量的依赖填写 `requiredFeatures`，默认 `[]`。支持 `Redis`（PING 业务库）、`Database`（只读探测）、`MessageQueue`（连接健康）和 `JobScheduler`（已启动且未关闭）。名称忽略大小写。声明的依赖关闭、失联或超时会使 `/health/ready` 和总览 `/health` 返回 503，`/health/live` 保持探测进程。
+
+应用扩展通过 `services.AddHealthChecks()` 注册检查，并按用途加 `ready` 或 `live` 标签。`timeoutSeconds` 提供默认时限，单个检查可以显式设置时限，异步探测应响应取消令牌。运维代码可从 `asgardContext.SystemConfig.Configuration` 查看生效的模块开关和 `host.healthCheck.requiredFeatures`。
 
 ## 推荐中间件顺序
 
@@ -297,10 +305,7 @@ app.UseAuthorization();
 
 // 默认宿主按 host.openApi.enabled 映射 OpenAPI JSON 和 Scalar 端点。
 
-if (hostConfig.HealthCheck?.Enabled == true)
-{
-    app.MapHealthChecks(hostConfig.HealthCheck.Path);
-}
+// 宿主自动映射健康总览，以及按 ready 和 live 标签筛选的端点。
 
 app.MapControllers();
 ```
@@ -330,7 +335,7 @@ app.MapControllers();
 
 需要查看配置定义或验证规则时读 `references/`：
 - `HostConfig.cs` - 宿主根配置类
-- `OpenApiHostOptions.cs` - 7.0 文档开关、版本与 Scalar 路由约束
+- `OpenApiHostOptions.cs` - 文档开关、版本与 Scalar 路由约束
 - `StaticFileHostOptions.cs` - 静态文件配置选项
 - `TsGenHostOptions.cs` - 可选 TypeScript 客户端导出配置
 - `nginx-ip-rate-limiting.md` - Nginx 转发头、可信代理接线与 IP 限流验证

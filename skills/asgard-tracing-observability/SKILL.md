@@ -14,7 +14,7 @@ description: "按 TraceId 排查 Asgard 异常，或配置请求追踪、自定�
 - 保留足以帮助定位问题、反推测试输入、解释分支走向的信息
 - 在请求结束时输出一条汇总日志
 - 允许业务代码通过 `AsgardContext.Trace` 追加备注、标签与分支说明
-- 可按 `Trace.*` 配置把 Trace 独立持久化到 `asgard_trace`，错误请求可采集脱敏后的 request snapshot，供 AI 复现问题
+- 可通过 `Trace.*` 将 Trace 持久化到 `asgard_trace`；需要落库请求数据时，由应用的采集回调筛选和脱敏，供故障复现
 - 可通过框架内置只读查询服务查询 `asgard_trace` 与 `asgard_logs`，但具体 Controller、权限、VO 暴露边界由插件或业务系统自行实现
 
 ## 什么时候使用
@@ -24,7 +24,7 @@ description: "按 TraceId 排查 Asgard 异常，或配置请求追踪、自定�
 - **需要在 Controller / Service / Repository 中追加业务备注时**
 - **需要开启或解释 `Trace.Enabled` / `Trace.CaptureAllRequest` 独立持久化时**
 - **需要给插件或业务系统提供 Trace / 数据库日志查询接口时**
-- **需要说明 `ITraceQueryService` / `IDatabaseLogQueryService` 如何注入和使用时**
+- **需要通过 `AsgardContext.Trace.Query` 或 `DatabaseLogQuery` 查询历史记录时**
 - **需要为异常或 5xx 请求保存可复现现场，供 AI 调试时**
 - **需要判断该用中间件追踪、Context 备注还是仓储自动步骤时**
 - **需要解释 `AsyncLocal<T>` 在 Asgard 中如何承载请求追踪时**
@@ -39,27 +39,27 @@ description: "按 TraceId 排查 Asgard 异常，或配置请求追踪、自定�
 | **上下文承载** | 通过 `AsyncLocal` 保存当前请求的追踪会话 |
 | **入口建立** | 顶层中间件进入请求时创建追踪会话，结束时统一输出 |
 | **框架步骤** | 控制器入口、仓储入口等框架可控位置自动记录步骤 |
-| **用户扩展** | 业务代码通过 `AbsAsgardContext.Trace` 只能追加备注/标签/分支说明，不能篡改框架步骤 |
+| **当前请求** | 业务代码通过 `AbsAsgardContext.Trace` 追加备注、标签与分支说明，框架持有步骤写入权限 |
 | **参数策略** | 简单类型全量，复杂对象只记录类型名、关键标识字段和集合数量摘要 |
 | **普通日志策略** | 每请求输出一条轻量 `AsgardTrace` 摘要日志，不再把完整 request snapshot 拼进普通日志 |
 | **持久化策略** | `Trace.Enabled=false` 不落库；`Trace.Enabled=true` 只持久化异常/5xx；`Trace.CaptureAllRequest=true` 时所有请求落库 |
-| **错误快照** | 异常/5xx 请求默认保存脱敏 headers/body/identity，正常请求即使落库也不保存 body |
-| **查询暴露** | 框架只提供 `ITraceQueryService` / `IDatabaseLogQueryService`，不内置 Controller，权限由插件或业务系统控制 |
+| **错误快照** | 异常/5xx 可采集请求数据，应用通过回调筛选；正常请求即使落库也不保存 body |
+| **历史查询** | `AsgardContext.Trace.Query` 和 `DatabaseLogQuery` 返回宿主级只读数据，应用决定 HTTP 路由、运维授权和返回字段 |
 
 ## 推荐入口
 
 | 场景 | 正确入口 |
 |------|----------|
-| **业务代码追加说明** | `AsgardContext.Trace?.AddNote(...)` |
-| **补充结构化标签** | `AsgardContext.Trace?.AddTag(...)` |
-| **补充分支判断** | `AsgardContext.Trace?.AddBranch(...)` |
+| **业务代码追加说明** | `AsgardContext.Trace.AddNote(...)` |
+| **补充结构化标签** | `AsgardContext.Trace.AddTag(...)` |
+| **补充分支判断** | `AsgardContext.Trace.AddBranch(...)` |
 | **自动记录请求链路** | 顶层请求追踪中间件 |
 | **应用决定 Trace 快照字段** | 通过 `AddAsgardTraceRequestCapture` 注册[请求采集回调](references/request-capture.md) |
 | **自动记录控制器执行** | MVC 全局 Action Filter |
 | **自动记录仓储关键调用** | `AbsAsgardRepositoryBase` 统一封装 |
 | **Trace 独立落库** | `Trace.Enabled` + 独立 `FreeSqlTraceStore` |
-| **Trace 分页查询** | 注入 `ITraceQueryService`，插件自行写 Controller 和授权 |
-| **数据库日志分页查询** | 使用 `AsgardContext.DatabaseLogQuery` 或直接注入 `IDatabaseLogQueryService` |
+| **Trace 分页查询** | `AsgardContext.Trace.Query.QueryAsync(...)` |
+| **数据库日志分页查询** | `AsgardContext.DatabaseLogQuery.QueryAsync(...)` |
 | **AI 复现错误现场** | `asgard_trace` 表里的 request snapshot + steps/tags/notes/branches |
 
 ## Trace 独立持久化配置
@@ -89,7 +89,8 @@ Trace:
 - `Trace.Enabled: true` 且 `Trace.CaptureAllRequest: false`：只持久化异常或 HTTP 5xx。
 - `Trace.Enabled: true` 且 `Trace.CaptureAllRequest: true`：所有请求持久化。
 - 错误/5xx 请求保存 request snapshot；正常请求即使落库，也只保存轻量链路，不保存 body。
-- 默认规则仅掩码已知字段名；业务需要按接口筛选字段时，使用[请求采集回调](references/request-capture.md)，由应用明确返回可保存的值。
+- 默认采集只能按已知字段名掩码请求头和可解析的 JSON。查询串、非 JSON 正文以及解析失败的正文会保留原值；正文可能在达到 `MaxBodyBytes` 后被截断，导致原本合法的 JSON 无法脱敏。
+- 查询串、请求头和正文的过滤责任在应用。使用 [请求采集回调](references/request-capture.md) 的 `AddAsgardTraceRequestCapture`，按接口只返回允许入库的字段或业务摘要。回调返回的内容不会再套用默认脱敏；无法确认安全时省略该字段或返回 `null`。
 
 实现边界：
 
@@ -111,7 +112,9 @@ Trace:
 
 ## 持久化记录查询
 
-Yggdrasil 自动注册 `IDatabaseLogQueryService` 和 `ITraceQueryService`。自定义宿主先注册日志配置和 `AddAsgardObservabilityQueries()`，再调用 `AddAsgardContext()`。数据库日志关闭或服务未装配时，`AsgardContext.DatabaseLogQuery` 为 `null`。
+Asgard 8 的业务入口是 `asgardContext.Trace.Query` 和 `asgardContext.DatabaseLogQuery`。关闭对应的持久化或省略该服务时，读取入口仍有 `Status`、`Configuration` 和 `LastError`，状态为 `Disabled`。执行关闭的查询会抛出 `AsgardFeatureDisabledException`。历史追踪查询失败可以从同一宿主作用域中的 `Trace.LastError` 查看脱敏摘要。
+
+`Trace.IsEnabled` 表示当前有活动追踪请求，`Trace.Query.Status` 表示历史查询是否已装配。只注册查询的自定义宿主会显示 `Trace.Status == AsgardFeatureStatus.PartiallyEnabled`。Yggdrasil 自动装配，自定义宿主注册 `TraceOptions`、`LogConfig`、`AddAsgardObservabilityQueries()` 和 `AddAsgardContext()`。
 
 框架不映射查询路由。插件需要 HTTP 接口时，由受运维权限保护的 Controller 暴露选定的字段。查询服务读取整个宿主的日志，不会按当前租户过滤，普通租户权限不能用于放行。
 
@@ -129,7 +132,7 @@ Yggdrasil 自动注册 `IDatabaseLogQueryService` 和 `ITraceQueryService`。自
 
 ```csharp
 var logs = asgardContext.DatabaseLogQuery;
-if (logs is not null)
+if (logs.Status == AsgardFeatureStatus.Enabled)
 {
     var result = await logs.QueryAsync(new DatabaseLogQueryRequest
     {
@@ -150,10 +153,7 @@ if (logs is not null)
 /// <summary>
 /// 可观测性查询控制器。
 /// </summary>
-public sealed class ObservabilityController(
-    AbsAsgardContext asgardContext,
-    ITraceQueryService traceQueryService,
-    IDatabaseLogQueryService databaseLogQueryService)
+public sealed class ObservabilityController(AbsAsgardContext asgardContext)
     : BaseController(asgardContext)
 {
     /// <summary>
@@ -166,7 +166,7 @@ public sealed class ObservabilityController(
     public async Task<ActionResult<PageResponse<TraceRecordDto>>> QueryTracesAsync(
         [FromQuery] TraceQueryRequest request)
     {
-        var result = await traceQueryService.QueryAsync(request);
+        var result = await AsgardContext.Trace.Query.QueryAsync(request, HttpContext.RequestAborted);
         return SuccessPage(result.Items, result.TotalCount, result.Page, result.Size);
     }
 }
@@ -176,7 +176,7 @@ public sealed class ObservabilityController(
 
 ## `AsgardContext.Trace` 的定位
 
-`Trace` 是给业务侧补充说明用的，不是给业务方接管框架追踪结构用的。
+`Trace` 负责当前请求的备注、标签和分支说明。其 `Query` 属性提供宿主级历史记录。
 
 可以做：
 
@@ -205,7 +205,7 @@ public sealed class ObservabilityController(
 - 优先记录“为什么走到这个分支”，而不是记录“这行代码执行了”
 - 对用户投诉“框架行为很神奇”的场景，优先看请求汇总日志里的步骤链和备注
 - 对 AI 修 bug 的场景，优先查 `asgard_trace`，拿 `TraceId` 关联普通日志和错误请求快照
-- 对后台管理、运维面板或插件内置诊断页，优先注入查询 service，再由插件自己写 Controller 和授权
+- 运维面板先校验访问权限，再通过 Context 的查询入口读取并裁剪返回字段
 - 数据库日志队列最多等待 4096 条，满时丢弃最新记录；每批最多三次写入，失败后继续处理后续批次。故障和丢弃量通过 Serilog SelfLog 报告
 - 数据库日志建表同步会补时间索引，过期日志按每批最多 256 条清理；启动前为已有大表加索引预留维护时间
 - 正常请求全量落库必须显式使用 `Trace.CaptureAllRequest=true`，避免数据库膨胀

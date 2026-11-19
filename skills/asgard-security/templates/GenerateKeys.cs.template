@@ -4,7 +4,7 @@
 /// <returns>密钥和 IV（Base64 编码）</returns>
 public (string Key, string Iv) GenerateAesKey()
 {
-    if (AsgardContext.KeyGenerator == null)
+    if (AsgardContext.KeyGenerator.Status == AsgardFeatureStatus.Disabled)
     {
         throw new InvalidOperationException("密钥生成服务未启用");
     }
@@ -18,7 +18,7 @@ public (string Key, string Iv) GenerateAesKey()
 /// <returns>Base64 编码的密钥</returns>
 public string GenerateHmacKey()
 {
-    if (AsgardContext.KeyGenerator == null)
+    if (AsgardContext.KeyGenerator.Status == AsgardFeatureStatus.Disabled)
     {
         throw new InvalidOperationException("密钥生成服务未启用");
     }
@@ -33,7 +33,7 @@ public string GenerateHmacKey()
 /// <returns>Base64 编码的密钥</returns>
 public string GenerateRandomKey(int keySizeInBytes)
 {
-    if (AsgardContext.KeyGenerator == null)
+    if (AsgardContext.KeyGenerator.Status == AsgardFeatureStatus.Disabled)
     {
         throw new InvalidOperationException("密钥生成服务未启用");
     }

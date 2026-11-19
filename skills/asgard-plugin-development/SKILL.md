@@ -5,6 +5,9 @@ description: "实现 Asgard 内建插件入口、PluginBase、AddPluginConventio
 
 # Asgard Plugin Development
 
+
+Asgard 8.0 的业务插件引用 `Asgard.PluginSdk`。Starter 显式引用 `Asgard.Yggdrasil.AspNetCore`，使用 `Asgard.PluginSdk` 命名空间调用 `PluginWebAppDefaults.RunAsync<TPlugin>()`。仅开发插件约定、作用域或映射时，只需插件 SDK。
+
 ## 作用
 
 这个 skill 只负责 **Asgard 内建插件实现与加载逻辑**。
@@ -72,7 +75,7 @@ description: "实现 Asgard 内建插件入口、PluginBase、AddPluginConventio
 
 默认先假设 `Asgard.PluginSdk` 已经处理插件常规装配，不要重复手写。
 
-`PluginWebAppDefaults.RunAsync<TPlugin>()` 已覆盖：
+宿主包中的 `PluginWebAppDefaults.RunAsync<TPlugin>()` 已覆盖：
 
 - 创建 Yggdrasil 宿主
 - 注册内建插件
@@ -82,8 +85,7 @@ description: "实现 Asgard 内建插件入口、PluginBase、AddPluginConventio
 
 - 扫描插件程序集中的 `[Repository]` 仓储
 - 扫描插件程序集中的 `[Service]` 服务
-- 加载插件项目中的 `plugin.yaml`
-- 注册强类型插件配置
+- 从宿主选定的插件清单绑定强类型配置，校验后注册具体实例
 
 仍需要显式处理的通常是非约定能力：
 
@@ -93,6 +95,22 @@ description: "实现 Asgard 内建插件入口、PluginBase、AddPluginConventio
 - 不符合 `[Repository]` / `[Service]` 约定的特殊生命周期服务
 
 如果需求只是“注册服务、仓储、插件配置”，默认写 `AddPluginConventions`，不要再生成一串 `AddScoped`、`AddRepositories`、`AddServices`。
+
+Asgard 7.1 起，`plugin.enabled` 只控制外部 DLL 列表和目录扫描。代码显式注册的内建插件仍参与装配；启用外部加载时，显式启用的 DLL 缺失会阻止宿主启动。
+
+## 插件配置注入硬规则
+
+`AddPluginConventions<TPlugin, TConfig>()` 注册的是 **具体配置类型 `TConfig`**。业务服务、作业和生命周期回调分别通过构造函数或 `GetService<TConfig>()` 直接获取它。例如把作业构造函数的 `IOptions<CleanupConfig> options` 改为 `CleanupConfig config`，并将 `options.Value.DryRun` 改为 `config.DryRun`。
+
+- 不使用 `IOptions<TConfig>`、`IOptionsSnapshot<TConfig>` 或 `IOptionsMonitor<TConfig>`，也不在宿主中为该配置另做 Options 绑定。旧包可能让 Options 返回一个默认对象；包含本次插件契约的框架在解析时明确报错。宿主及第三方自己的 Options 不受影响。
+- 每种配置用自己的类型。配置和自动作业共享同一份清单快照；`ISystemConfig.Validate()` 在注册前执行。配置必须随部署交付时，用 `context.AddPluginConventions<TPlugin, TConfig>(requireManifest: true)`，可选清单缺失时仍应用并校验默认值。使用该参数前确认目标包已包含新契约；已发布的 7.1.0 可以先完成直接注入迁移。
+- 已装配插件需要另外读取时用 `plugin.LoadPluginConfig<TConfig>()`。脱离宿主的工具必须传具体文件给 `YamlConfigLoader.LoadPluginConfigFromFile<TConfig>(manifestPath)`。多个插件共用输出目录时各用 `plugin.<插件 ID>.yaml`。
+
+## 插件路由和外部发现
+
+- 插件 Controller 由已装配的插件公开。一个程序集含多个插件且分别装配时，给 Controller 加 `[PluginController(typeof(所属插件))]`（`Asgard.Abstractions.AspNetCore.Controller`），或拆成各自程序集。Controller 单独放在不含插件入口的程序集时，也用该特性声明归属。
+- 扫描外部 DLL 时，在入口旁提供 `<入口名>.manifest.json`，例如 `Orders.Plugin.dll` 对应 `Orders.Plugin.manifest.json`，内容为 `{"id":"orders"}`。显式启用项的配置 ID、扫描清单 ID 都必须与 `IPlugin.Id` 一致；禁用项和 `excludePlugins` 优先，改目录名也不能重新启用。
+- 路由归属特性、扫描标识清单和配置错误机制适用于包含新插件契约的目标版本，生成项目时核对实际引用的 Asgard 包。
 
 ## 插件入口类职责
 

@@ -8,10 +8,10 @@ public async Task<bool> {MethodName}({ParameterType} {ParameterName})
     var result = await _{repositoryName}.{UpdateMethod}({ParameterName});
 
     // 更新后失效缓存
-    if (result && AsgardContext.Cache != null)
+    if (result)
     {
         var cacheKey = string.Concat("{ModuleName}:{EntityName}:", {ParameterName});
-        await AsgardContext.Cache.RemoveAsync(cacheKey);
+        await AsgardContext.Redis.Cache.RemoveAsync(cacheKey);
     }
 
     return result;

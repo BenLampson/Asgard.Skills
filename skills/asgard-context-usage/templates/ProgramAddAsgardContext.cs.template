@@ -1,6 +1,5 @@
-// 仅自定义宿主手动装配；默认 Yggdrasil 已自动注册，不重复调用。
-// 注册顺序：先注册其他模块，最后注册 Asgard Context
-builder.Services.AddAsgardCache(builder.Configuration);
-builder.Services.AddMessageQueue(builder.Configuration);
-builder.Services.AddJobScheduler(builder.Configuration);
-builder.Services.AddAsgardContext(); // 最后注入，确保所有服务都已注册
+// 自定义宿主使用已合并的 AsgardConfigurationRoot configuration。Yggdrasil 会自动完成这些注册。
+_ = builder.Services.AddAsgardCache(configuration.Load<CacheConfig>());
+_ = builder.Services.AddMessageQueue(configuration.Load<MQConfig>());
+_ = builder.Services.AddJobScheduler(configuration.Load<JobConfig>());
+_ = builder.Services.AddAsgardContext();

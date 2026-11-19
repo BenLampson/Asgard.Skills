@@ -78,6 +78,16 @@ for folder in skills:
         if folder.name != "asgard-cache" and re.search(r"\b(?:IMultiLevelCache|AddMultiLevelCache)\b", content):
             errors.append(f"{source}: legacy cache API in current guidance/template")
 
+        if source.suffix == ".template" and folder.name.startswith("asgard-"):
+            if re.search(r"(?:AsgardContext|[Cc]ontext)\.(?:Cache|DistributedLock|RedisPubSub|RedisStream)\b", content):
+                errors.append(f"{source}: use the Asgard 8 Context.Redis entry point")
+            if re.search(r"(?:AsgardContext|[Cc]ontext)\.(?:Redis|MessageQueue|JobScheduler|Encryption|PasswordHasher|KeyGenerator|TenantScopeFactory|Trace|DatabaseLogQuery)\s*(?:[!=]=\s*null|is(?: not)? null|\?\.)", content):
+                errors.append(f"{source}: inspect the feature status on the non-null Context property")
+
+starter = ROOT / "skills/asgard-plugin-structure/templates/AsgardStarter.csproj.template"
+if 'PackageReference Include="Asgard.Yggdrasil.AspNetCore"' not in starter.read_text(encoding="utf-8"):
+    errors.append(f"{starter}: the starter needs a direct reference to the Web host package")
+
 if errors:
     print("\n".join(errors))
     sys.exit(1)

@@ -7,7 +7,7 @@ description: "实现 Asgard 仓储与服务 DI 注册，包括 RepositoryAttribu
 
 ## 缓存版本边界
 
-使用 `IAsgardCache`。默认 Yggdrasil 宿主自动装配缓存；关闭时提供 `NullAsgardCache`，自定义宿主仍需判空。旧缓存配置迁移见 `$asgard-cache`；实现以 7.x 源码为准。
+8.0 的业务入口是 `ctx.Redis.Cache`。仓储内部继续使用 `IAsgardCache`。未启用时读返回未命中，写入与失效为空操作。缓存契约见 `$asgard-cache`。
 
 
 ## 作用

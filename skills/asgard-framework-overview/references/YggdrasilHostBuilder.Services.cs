@@ -21,12 +21,19 @@ public partial class YggdrasilHostBuilder
             _ = services.AddSingleton(_databaseConfig!);
             _ = services.AddSingleton(_mqConfig!);
             _ = services.AddSingleton(_jobConfig!);
+            services.TryAddSingleton<ISystemConfig>(new EffectiveHostConfiguration(
+                _hostConfig, _cacheConfig!, _mqConfig!, _jobConfig!, _databaseConfig!, _traceConfig!, _logConfig!));
 
             _ = services.AddAsgardSerilog(_logConfig!);
             _ = services.AddAsgardObservabilityQueries();
 
             RegisterInfrastructureManagers(services);
             _ = services.AddAsgardRedisMessaging();
+            if (!string.IsNullOrWhiteSpace(_cacheConfig!.OutboxScope))
+            {
+                if (!_databaseConfig!.Enabled) throw new InvalidOperationException("缓存失效发件箱需要启用业务数据库。");
+                _ = services.AddAsgardCacheOutbox();
+            }
 
             if (_cacheConfig!.Enabled
                 && !services.Any(descriptor => descriptor.ServiceType == typeof(IDistributedLock)))
@@ -91,65 +98,15 @@ public partial class YggdrasilHostBuilder
             }
 
             _afterServiceRegistration?.Invoke(services);
+            PluginServiceConfigurator.ValidateConfigurationServices(services);
+            // MVC、API Explorer 和 TS 导出共享同一份控制器发现边界。
+            mvcBuilder.PartManager.FeatureProviders.Add(new PluginControllerFeatureProvider(_pluginDescriptors));
+            mvcBuilder.PartManager.PopulateFeature(new ControllerFeature());
 
             RegisterOpenApi(services);
 
             _logger.LogInformation("[Phase 4/5] Service registration completed");
         });
-    }
-
-    /// <summary>
-    /// 将启动阶段预构建好的基础设施管理器回填到最终应用容器。
-    /// </summary>
-    /// <param name="services">应用服务集合。</param>
-    private void RegisterInfrastructureManagers(IServiceCollection services)
-    {
-        // 容器仅拥有统一所有者；以下资源均以借用实例注册。
-        _ = services.AddSingleton(_ => _runtimeLifetime);
-
-        // 即使缓存模块被显式关闭，也要提供一个可注入的空缓存实现。
-        // 这样业务仓储可以继续统一依赖 IAsgardCache，而不需要为“禁用缓存”分支改写构造函数。
-        if (_cacheConfig is not null && _cacheManager is null)
-        {
-            _ = services.AddSingleton<IAsgardCache>(new NullAsgardCache());
-        }
-
-        if (_cacheManager != null)
-        {
-            _ = services.AddSingleton<ICacheManager>(_cacheManager);
-            _ = services.AddSingleton(_cacheManager.Cache);
-
-            if (_cacheManager.DistributedCache != null)
-            {
-                _ = services.AddSingleton(_cacheManager.DistributedCache);
-            }
-
-            if (_cacheManager.ConnectionMultiplexer != null)
-            {
-                _ = services.AddSingleton(_cacheManager.ConnectionMultiplexer);
-                // 数据保护密钥落到 Redis 后，多实例部署时才能共享票据解密能力。
-                _ = services.AddDataProtection()
-                    .PersistKeysToStackExchangeRedis(_cacheManager.ConnectionMultiplexer, "Asgard:DataProtection-Keys")
-                    .SetApplicationName("Asgard");
-            }
-        }
-
-        if (_mqManager != null)
-        {
-            _ = services.AddSingleton<IMQManager>(_mqManager);
-            _ = services.AddSingleton(_mqManager.MessageQueue);
-        }
-
-        if (_jobManager != null)
-        {
-            _ = services.AddSingleton<IJobManager>(_jobManager);
-            _ = services.AddSingleton(_jobManager.Scheduler);
-        }
-
-        if (_traceStore != null)
-        {
-            _ = services.AddSingleton(_traceStore);
-        }
     }
 
     /// <summary>
@@ -163,16 +120,28 @@ public partial class YggdrasilHostBuilder
 
     private void RegisterHealthChecks(IServiceCollection services)
     {
-        if (_hostConfig.HealthCheck is not { Enabled: true })
+        if (_hostConfig.HealthCheck is not { Enabled: true } options)
         {
             return;
         }
 
-        _ = services.AddHealthChecks()
+        var checks = services.AddHealthChecks()
             .AddCheck(
                 "self",
                 () => HealthCheckResult.Healthy(),
                 tags: ["live", "ready"]);
+
+        foreach (var feature in options.RequiredFeatures.Distinct())
+        {
+            _ = checks.Add(new HealthCheckRegistration($"asgard.{feature}",
+                provider => new RequiredFeatureHealthCheck(feature, provider), HealthStatus.Unhealthy, ["ready"]));
+        }
+        _ = services.PostConfigure<HealthCheckServiceOptions>(configured =>
+        {
+            foreach (var registration in configured.Registrations)
+                if (registration.Timeout == Timeout.InfiniteTimeSpan)
+                    registration.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+        });
 
         _logger.LogDebug("Health check services registered");
     }
@@ -184,16 +153,22 @@ public partial class YggdrasilHostBuilder
             return;
         }
 
-        _ = services.AddRateLimiter(options =>
+        if (rateLimitingOptions.UseRedis)
         {
-            YggdrasilRateLimiterFactory.ConfigureRejection(options);
-            options.GlobalLimiter = YggdrasilRateLimiterFactory.CreatePreAuthenticationLimiter(rateLimitingOptions);
-        });
+            if (_cacheConfig?.Enabled != true)
+                throw new InvalidOperationException("host.rateLimiting.useRedis 需要启用 caching.enabled。");
+            services.TryAddSingleton(sp => new RedisQuotaStore(sp.GetRequiredService<IConnectionMultiplexer>(), _cacheConfig.Redis));
+        }
+
+        RedisQuotaStore? GetQuotaStore(IServiceProvider services) =>
+            rateLimitingOptions.UseRedis ? services.GetRequiredService<RedisQuotaStore>() : null;
+
+        _ = services.AddRateLimiter(YggdrasilRateLimiterFactory.ConfigureRejection);
+        _ = services.AddOptions<RateLimiterOptions>().Configure<IServiceProvider>((options, provider) =>
+            options.GlobalLimiter = YggdrasilRateLimiterFactory.CreatePreAuthenticationLimiter(rateLimitingOptions, GetQuotaStore(provider)));
 
         if (rateLimitingOptions.User is { Enabled: true } userRateLimitingOptions)
-        {
-            _ = services.AddSingleton(_ => new YggdrasilUserRateLimiter(userRateLimitingOptions));
-        }
+            _ = services.AddSingleton(sp => new YggdrasilUserRateLimiter(userRateLimitingOptions, GetQuotaStore(sp)));
 
         _logger.LogDebug(
             "Rate limiting services registered. IP layer enabled={IpEnabled}. User layer enabled={UserEnabled}",

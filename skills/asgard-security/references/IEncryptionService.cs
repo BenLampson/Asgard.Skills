@@ -1,6 +1,7 @@
 namespace Asgard.Abstractions.Security;
 
 
+
 /// <summary>
 /// 加密服务接口，提供对称加密、哈希计算等安全功能。
 /// </summary>
@@ -33,7 +34,7 @@ namespace Asgard.Abstractions.Security;
 /// </code>
 /// </para>
 /// </remarks>
-public interface IEncryptionService
+public interface IEncryptionService : IAsgardFeature
 {
     /// <summary>
     /// 使用 AES 算法加密指定的明文字符串。
@@ -117,4 +118,5 @@ public interface IEncryptionService
     /// </para>
     /// </remarks>
     string ComputeMd5Hash(string text);
+
 }

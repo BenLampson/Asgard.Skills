@@ -36,7 +36,7 @@ public sealed class {PluginClassName} : PluginBase
         _ = context.Services.Add{FeatureName}Module();
 
         context.Logger.LogInformation(
-            "插件 {PluginDisplayName} 已完成作业相关服务装配。",
+            "插件 {Name} 已完成作业相关服务装配。",
             Name);
 
         return Task.CompletedTask;
@@ -50,7 +50,7 @@ public sealed class {PluginClassName} : PluginBase
         var logger = CreateLogger();
 
         logger.LogInformation(
-            "插件 {PluginDisplayName} 启动完成，plugin.yaml 中定义的作业将由框架自动加载。",
+            "插件 {Name} 启动完成，plugin.yaml 中定义的作业将由框架自动加载。",
             Name);
 
         return Task.CompletedTask;
@@ -62,7 +62,7 @@ public sealed class {PluginClassName} : PluginBase
     protected override Task OnStopAsync(CancellationToken cancellationToken)
     {
         var logger = CreateLogger();
-        logger.LogInformation("插件 {PluginDisplayName} 已停止。", Name);
+        logger.LogInformation("插件 {Name} 已停止。", Name);
         return Task.CompletedTask;
     }
 }

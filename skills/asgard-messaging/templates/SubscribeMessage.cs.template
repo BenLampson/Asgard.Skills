@@ -1,45 +1,24 @@
-/// <summary>
-/// 初始化消息订阅
-/// </summary>
-/// <param name="cancellationToken">取消令牌</param>
-/// <returns>订阅标识</returns>
-public override async Task InitializeAsync(CancellationToken cancellationToken)
-{
-    await base.InitializeAsync(cancellationToken);
+/// <summary>当前插件拥有的订阅 ID。</summary>
+private string? _subscriptionId;
 
-    if (AsgardContext.MessageQueue != null)
+/// <summary>订阅在启动时建立，业务处理使用投递上下文。</summary>
+protected override async Task OnStartAsync(CancellationToken cancellationToken)
+{
+    var queue = GetAsgardContext().MessageQueue;
+    if (queue.Status == AsgardFeatureStatus.Disabled) return;
+    _subscriptionId = await queue.SubscribeAsync<{MessageType}>("{Topic}", async (message, delivery) =>
     {
-        _ = await AsgardContext.MessageQueue.SubscribeAsync<{MessageType}>(
-            "{Topic}",
-            async (message, context) =>
-            {
-                await ProcessMessageAsync(message.Value);
-                await context.AcknowledgeAsync();
-            },
-            new SubscribeOptions
-            {
-                AutoAck = false,
-                QueueName = "{QueueName}"
-            },
-            cancellationToken);
-    }
+        await ProcessMessageAsync(message.Value!);
+        await delivery.AcknowledgeAsync();
+    }, new SubscribeOptions { QueueName = "{QueueName}", AutoAck = false }, cancellationToken);
 }
 
-/// <summary>
-/// 处理接收的消息
-/// </summary>
-/// <param name="message">消息实例</param>
-/// <returns>异步任务</returns>
-private async Task ProcessMessageAsync({MessageType} message)
+/// <summary>在宿主释放队列前结束本插件的订阅。</summary>
+protected override async Task OnStopAsync(CancellationToken cancellationToken)
 {
-    try
+    if (_subscriptionId is { } id)
     {
-        {ProcessingLogic}
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "处理消息 {Topic} 发生异常", "{Topic}");
-        // 重试由框架处理，这里只记录日志
-        throw;
+        await GetAsgardContext().MessageQueue.UnsubscribeAsync(id, cancellationToken);
+        _subscriptionId = null;
     }
 }

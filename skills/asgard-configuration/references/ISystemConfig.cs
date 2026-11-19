@@ -22,7 +22,7 @@ namespace Asgard.Abstractions.SystemConfig;
 /// }
 /// </code>
 /// </example>
-public interface ISystemConfig
+public interface ISystemConfig : IAsgardFeature
 {
     /// <summary>
     /// 校验配置的有效性。

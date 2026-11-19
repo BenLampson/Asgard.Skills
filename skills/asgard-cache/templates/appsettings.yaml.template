@@ -1,5 +1,6 @@
 caching:
   enabled: true
+  # outboxScope: billing-prod  # 可选，同一业务库和缓存范围的副本使用相同值
   redis:
     connectionString: "{ConnectionString}"
     instanceName: "{InstanceName}"

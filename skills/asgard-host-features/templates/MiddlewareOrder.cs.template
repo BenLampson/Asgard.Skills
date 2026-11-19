@@ -34,9 +34,6 @@ app.UseAuthorization();
 
 // 默认宿主按 host.openApi.enabled 映射 OpenAPI JSON 和 Scalar 端点。
 
-if (hostConfig.HealthCheck?.Enabled == true)
-{
-    app.MapHealthChecks(hostConfig.HealthCheck.Path);
-}
+// 宿主自动映射健康总览，以及按 ready 和 live 标签筛选的端点。
 
 app.MapControllers();

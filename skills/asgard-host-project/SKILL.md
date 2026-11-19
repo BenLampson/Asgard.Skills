@@ -5,6 +5,9 @@ description: "创建或修改 Asgard host/starter、Program.cs、YggdrasilHost �
 
 # Asgard Host Project
 
+
+Asgard 8.0 的业务插件引用 `Asgard.PluginSdk`。Starter 显式引用 `Asgard.Yggdrasil.AspNetCore`，使用 `Asgard.PluginSdk` 命名空间调用 `PluginWebAppDefaults.RunAsync<TPlugin>()`。仅开发插件约定、作用域或映射时，只需插件 SDK。
+
 ## 作用
 
 编写 Asgard 宿主 / starter 项目时，负责选择正确入口、组织 `Program.cs` 结构、使用钩子扩展宿主行为。本 skill 定义了不同场景下的启动路径选择、宿主职责和钩子约定。
@@ -83,12 +86,23 @@ starter 和插件统一使用 `net11.0` / C# 15，Asgard 包版本保持一致�
 
 | 钩子 | 执行时机 | 使用场景 |
 |------|----------|----------|
-| `BeforeConfigurationLoad` | 配置加载之前 | 添加额外配置源、环境配置覆盖 |
-| `AfterConfigurationLoad` | 配置加载之后 | 根据配置动态调整服务 |
+| `BeforeConfigurationLoad` | 配置加载之前 | 调整 ASP.NET Core 的 HostBuilder |
+| `AfterConfigurationLoad` | 配置合并完成后 | 读取 Asgard 的不可变配置快照 |
 | `BeforeServiceRegistration` | 框架服务注册之前 | 注册自定义服务覆盖框架默认 |
 | `AfterServiceRegistration` | 框架服务注册之后 | 添加额外服务注册 |
 | `ConfigureMiddleware` | 中间件管道构建 | 配置中间件顺序 |
 | `AfterHostBuild` | 宿主构建完成之后 | 最后调整，注册启动任务 |
+
+`AfterConfigurationLoad` 只接受 `Action<IReadOnlyDictionary<string, string?>>`。旧的 `(hostBuilder, configuration)` 双参数写法已移除，迁移时改成单参数：
+
+```csharp
+.AfterConfigurationLoad(configuration =>
+{
+    var appName = configuration.GetValueOrDefault("host:application:name");
+});
+```
+
+快照使用冒号分隔的键，且不区分大小写。宿主配置在启动前通过 YAML、环境变量或命令行参数覆盖；需要注册服务时，使用服务注册钩子。
 
 ## 什么时候需要手写 `UseAuthentication()` / `UseAuthorization()`
 
@@ -161,10 +175,12 @@ var builder = YggdrasilHost.CreateBuilder("app.yaml")
         {ExtraMiddleware}
     });
 
-var app = builder.Build();
+var app = await builder.BuildAsync();
 {AfterBuild}
-await app.RunAsync();
+await YggdrasilHost.RunAsync(app);
 ```
+
+不需要在 Build 后调整 `app` 时，直接 `await builder.RunAsync();`。需要先 Build 时，把已构建的 app 交给 `YggdrasilHost.RunAsync(app)`。两个运行入口在监听或托管启动失败时都会先停止再释放容器。它们需要目标框架包含新插件契约；已发布的 7.1.0 没有这两个入口。
 
 ## 内建插件注册
 
@@ -178,8 +194,8 @@ await app.RunAsync();
 
 ```
 1. BeforeConfigurationLoad → 调用你的钩子
-2. 加载 YAML 配置文件
-3. AfterConfigurationLoad → 调用你的钩子
+2. 按主 YAML、环境 YAML、进程环境变量、命令行的优先级选取有效值
+3. AfterConfigurationLoad → 提供不可变配置快照
 4. BeforeServiceRegistration → 调用你的钩子
 5. 框架注册基础设施服务（缓存、数据库、消息队列、作业调度）
 6. AfterServiceRegistration → 调用你的钩子
@@ -192,7 +208,7 @@ await app.RunAsync();
 
 ## 构建失败与资源所有权
 
-宿主统一拥有构建前创建的缓存、MQ、作业调度、追踪和引导日志资源；DI 中注入的相关实例是借用。不要在业务服务或插件里分别 Dispose 宿主提供的管理器/连接/调度器。
+宿主按最终 DI 注册选择缓存连接、消息队列和调度后端。框架创建的资源按宿主生命周期释放。`AfterServiceRegistration` 替换的后端同时用于 Context 和宿主运行。依赖注入的外部实例保留原有所有权。
 
 - 宿主停止时先关闭作业、清理插件，期间 MQ/缓存/追踪仍可用；随后释放基础设施，最后排空追踪并关闭引导日志
 - 构建失败会回滚已创建资源；构建后即使未 Start，Dispose 也会清理；重复停止/释放复用同一清理过程
@@ -228,8 +244,8 @@ await app.RunAsync();
 
 完整源码拷贝请参考 `references/` 目录：
 - `YggdrasilHost.cs` - 静态入口
-- `YggdrasilHostBuilder.cs` - 构建器核心
-- `PluginWebAppDefaults.cs` - 默认快捷入口
+- `YggdrasilHostBuilder.cs` - 8.0 的构建顺序与最终服务注册
+- `PluginWebAppDefaults.cs` - 宿主包中的快捷启动入口
 
 源码锚点：
 
@@ -246,6 +262,6 @@ await app.RunAsync();
 
 ## 作业延迟到托管启动
 
-宿主 Build/BuildAsync 只通过 `JobManager.PrepareAsync` 准备调度器并注册配置作业，随后设置最终 DI 提供者，完成插件初始化/启动钩子及中间件配置。宿主 `StartAsync` 的运行时托管服务才调用管理器初始化并真正启动 Quartz，传递宿主取消令牌；仅 Build 后调度器 `IsStarted=false`，`StartNow` 不能提前执行。排队注册错误或启动取消传播并使用清理路径；未 Start 的宿主释放仍清理准备资源。
+宿主 Build/BuildAsync 只通过 `JobManager.PrepareAsync` 准备调度器并注册配置作业，随后设置最终 DI 提供者，完成插件初始化与中间件装配。宿主 `StartAsync` 在选项校验通过后执行插件 `OnStartAsync`，然后启动 Quartz，两者都早于 Web 监听并接收宿主取消令牌；仅 Build 后调度器 `IsStarted=false`，`StartNow` 不能提前执行。排队注册错误或启动取消传播并使用清理路径；未 Start 的宿主释放仍清理准备资源。
 
 独立 `JobManager.InitializeAsync` 保持立即准备并启动，不能把宿主延迟启动规则套用到独立用法。配置限制、每次触发的 DI 作用域与作业资源所有权见 `$asgard-job-scheduling`。核对当前接线时读取 `YggdrasilHostBuilder`、`AsgardRuntimeHostedService`和 `JobManager`。

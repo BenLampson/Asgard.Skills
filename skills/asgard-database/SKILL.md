@@ -5,9 +5,13 @@ description: "配置 Asgard 数据库或编写 FreeSql 实体、仓储和更新�
 
 # Asgard 数据库模块
 
+## 数据库与事务
+
+`ctx.Database` 暴露 `Status`、脱敏配置和最近异常。`CreateUnitOfWork()` 返回由调用者持有的 FreeSql 工作单元。`InTransactionAsync((unit, ct) => ..., token)` 在回调成功后提交，异常或提交前取消时回滚。参与同一事务的写入使用 `unit.Orm` 或绑定同一工作单元的仓储。
+
 ## 缓存版本边界
 
-使用 `IAsgardCache`。默认 Yggdrasil 宿主自动装配缓存；关闭时提供 `NullAsgardCache`，自定义宿主仍需判空。旧缓存配置迁移见 `$asgard-cache`；实现以 7.x 源码为准。
+8.0 的业务入口是 `ctx.Redis.Cache`。仓储内部继续使用 `IAsgardCache`。未启用时读返回未命中，写入与失效为空操作。缓存契约见 `$asgard-cache`。
 
 
 ## 作用

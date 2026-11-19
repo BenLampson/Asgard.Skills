@@ -58,3 +58,5 @@ host:
   healthCheck:
     enabled: {healthCheck_enabled}
     path: {health_check_path}
+    timeoutSeconds: 30
+    requiredFeatures: []  # 填入服务接流量所需的 Redis、MessageQueue、JobScheduler 或 Database

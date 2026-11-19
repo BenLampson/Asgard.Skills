@@ -37,7 +37,7 @@ public sealed class {PluginClassName} : PluginBase
         IPluginServiceConfigurationContext context,
         CancellationToken cancellationToken)
     {
-        context.Logger.LogInformation("开始注册插件 {PluginDisplayName} 的服务。", Name);
+        context.Logger.LogInformation("开始注册插件 {Name} 的服务。", Name);
         return Task.CompletedTask;
     }
 
@@ -47,7 +47,7 @@ public sealed class {PluginClassName} : PluginBase
     protected override Task OnInitializeAsync(CancellationToken cancellationToken)
     {
         var logger = CreateLogger();
-        logger.LogInformation("插件 {PluginDisplayName} 初始化完成。", Name);
+        logger.LogInformation("插件 {Name} 初始化完成。", Name);
         return Task.CompletedTask;
     }
 
@@ -57,7 +57,7 @@ public sealed class {PluginClassName} : PluginBase
     protected override Task OnStartAsync(CancellationToken cancellationToken)
     {
         var logger = CreateLogger();
-        logger.LogInformation("插件 {PluginDisplayName} 启动完成。", Name);
+        logger.LogInformation("插件 {Name} 启动完成。", Name);
         return Task.CompletedTask;
     }
 
@@ -67,7 +67,7 @@ public sealed class {PluginClassName} : PluginBase
     protected override Task OnStopAsync(CancellationToken cancellationToken)
     {
         var logger = CreateLogger();
-        logger.LogInformation("插件 {PluginDisplayName} 已停止。", Name);
+        logger.LogInformation("插件 {Name} 已停止。", Name);
         return Task.CompletedTask;
     }
 }

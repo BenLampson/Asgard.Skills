@@ -16,9 +16,7 @@ public static class PluginWebAppDefaults
     /// <returns>可继续链式调用的同一个 <see cref="IApplicationBuilder"/> 实例。</returns>
     /// <remarks>
     /// 当前默认管道会启用 Asgard 异常处理器和 HTTPS 重定向。
-    /// 如果插件或应用自行注册了认证/授权服务，而不是依赖宿主 <c>host.auth</c>，
-    /// 则仍需要在 <c>RunAsync(..., configure)</c> 或 <c>ConfigureMiddleware</c> 中显式补齐
-    /// <c>UseAuthentication()</c> 与 <c>UseAuthorization()</c>。
+    /// 静态文件、CORS、认证、授权以及身份上下文等由宿主管理的能力，仍由 Yggdrasil 自身负责接线。
     /// </remarks>
     /// <exception cref="ArgumentNullException">当 <paramref name="app"/> 为 <see langword="null" /> 时抛出。</exception>
     public static IApplicationBuilder UseRecommendedPluginDefaults(this IApplicationBuilder app)
@@ -35,14 +33,28 @@ public static class PluginWebAppDefaults
     /// <typeparam name="TPlugin">要注册为内建插件的插件类型。</typeparam>
     /// <param name="configPath">传递给宿主构建器的应用配置文件路径。</param>
     /// <param name="configure">用于在推荐默认值之后追加额外中间件的可选回调。</param>
+    /// <param name="cancellationToken">用于取消宿主构建和运行的令牌。</param>
     /// <returns>当宿主关闭时完成的任务。</returns>
     /// <remarks>
     /// 此重载适用于希望通过单一入口完成 Yggdrasil 宿主创建、内建插件注册和推荐中间件配置的插件项目。
     /// </remarks>
-public static Task RunAsync<TPlugin>(string configPath = "app.yaml", Action<IApplicationBuilder>? configure = null)
+    public static Task RunAsync<TPlugin>(
+        string configPath = "config/app.yaml",
+        Action<IApplicationBuilder>? configure = null,
+        CancellationToken cancellationToken = default)
         where TPlugin : class, IPlugin
     {
-        var builder = YggdrasilHost.CreateBuilder(configPath)
+        return RunCoreAsync<TPlugin>(configPath, configure, cancellationToken);
+    }
+
+    /// <summary>异步执行内建插件宿主启动核心流程。</summary>
+    private static async Task RunCoreAsync<TPlugin>(
+        string configPath,
+        Action<IApplicationBuilder>? configure,
+        CancellationToken cancellationToken)
+        where TPlugin : class, IPlugin
+    {
+        var builder = Yggdrasil.AspNetCore.YggdrasilHost.CreateBuilder(configPath)
             .UseBuiltInPlugin<TPlugin>()
             .ConfigureMiddleware(app =>
             {
@@ -50,8 +62,7 @@ public static Task RunAsync<TPlugin>(string configPath = "app.yaml", Action<IApp
                 configure?.Invoke(app);
             });
 
-        var app = builder.Build();
-        return app.RunAsync();
+        await builder.RunAsync(cancellationToken);
     }
 
     /// <summary>
@@ -59,20 +70,33 @@ public static Task RunAsync<TPlugin>(string configPath = "app.yaml", Action<IApp
     /// </summary>
     /// <param name="configPath">传递给宿主构建器的应用配置文件路径。</param>
     /// <param name="configure">用于在推荐默认值之后追加额外中间件的可选回调。</param>
+    /// <param name="cancellationToken">用于取消宿主构建和运行的令牌。</param>
     /// <returns>当宿主关闭时完成的任务。</returns>
     /// <remarks>
     /// 当插件注册在其他位置处理，而这里只需要套用标准宿主与中间件接线时，使用此重载。
     /// </remarks>
-public static Task RunAsync(string configPath = "app.yaml", Action<IApplicationBuilder>? configure = null)
+    public static Task RunAsync(
+        string configPath = "config/app.yaml",
+        Action<IApplicationBuilder>? configure = null,
+        CancellationToken cancellationToken = default)
     {
-        var builder = YggdrasilHost.CreateBuilder(configPath)
+        return RunCoreAsync(configPath, configure, cancellationToken);
+    }
+
+    /// <summary>异步执行默认宿主启动核心流程。</summary>
+    private static async Task RunCoreAsync(
+        string configPath,
+        Action<IApplicationBuilder>? configure,
+        CancellationToken cancellationToken)
+    {
+        var builder = Yggdrasil.AspNetCore.YggdrasilHost.CreateBuilder(configPath)
             .ConfigureMiddleware(app =>
             {
                 _ = app.UseRecommendedPluginDefaults();
                 configure?.Invoke(app);
             });
 
-        var app = builder.Build();
-        return app.RunAsync();
+        await builder.RunAsync(cancellationToken);
     }
+
 }

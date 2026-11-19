@@ -31,7 +31,7 @@ BeforeConfigurationLoad → 用户钩子
     ↓
 加载配置文件 + 环境变量 + 命令行
     ↓
-AfterConfigurationLoad → 用户钩子
+AfterConfigurationLoad → 读取不可变配置快照
     ↓
 加载并验证模块配置（database, caching, messaging, job 等）
     ↓
@@ -49,10 +49,12 @@ AfterServiceRegistration → 用户钩子
     ↓
 AfterHostBuild → 用户钩子
     ↓
-返回构建完成的 app
+返回构建完成的 app（插件已初始化，尚未启动）
     ↓
-app.RunAsync() → 启动
+YggdrasilHost.RunAsync(app) → 校验选项 → 启动插件与作业 → Web 监听
 ```
+
+使用包含新插件契约的框架时，`BuildAsync` 后可检查设置和路由；启动期副作用放在 `OnStartAsync`。使用 `builder.RunAsync()`、`YggdrasilHost.RunAsync(app)` 或 `PluginWebAppDefaults.RunAsync<TPlugin>()` 启动，让端口占用等启动错误在容器存活时触发停止回调。使用旧包时先核对实际启动顺序。
 
 ## 插件生命周期阶段
 
@@ -103,12 +105,14 @@ protected override Task OnConfigureMiddlewareAsync(
 
 | 钩子 | 执行时机 | 使用场景 |
 |------|----------|----------|
-| `BeforeConfigurationLoad` | 配置加载之前 | 添加额外配置源 |
-| `AfterConfigurationLoad` | 配置加载之后 | 根据配置动态调整服务 |
+| `BeforeConfigurationLoad` | 配置加载之前 | 调整 ASP.NET Core 的 HostBuilder |
+| `AfterConfigurationLoad` | 配置合并完成后 | 单参数读取不可变配置快照 |
 | `BeforeServiceRegistration` | 框架注册服务之前 | 覆盖框架默认注册 |
 | `AfterServiceRegistration` | 框架注册服务之后 | 添加额外服务注册 |
 | `ConfigureMiddleware` | 中间件配置阶段 | 配置 HTTP 管道 |
 | `AfterHostBuild` | 宿主构建完成之后 | 最后调整、启动任务 |
+
+`AfterConfigurationLoad` 只传只读快照；旧的双参数签名已移除。调用方式与迁移见 [宿主钩子](../asgard-host-project/SKILL.md#构建钩子顺序)。
 
 ## 插件状态转换流程
 
@@ -193,7 +197,7 @@ public class {PluginName} : PluginBase
     protected override Task OnStartAsync(CancellationToken cancellationToken)
     {
         // ✅ 正确：这里启动后台任务
-        // 框架已经自动加载 plugin.yaml 中的作业
+        // 该钩子成功后，框架自动排入插件清单中的作业
 
         return Task.CompletedTask;
     }
@@ -233,7 +237,7 @@ public class {PluginName} : PluginBase
 
 完整源码拷贝请参考 `references/` 目录：
 - `PluginState.cs` - 插件状态枚举
-- `IPluginServiceConfigurationContext.cs` - 服务配置上下文接口
+- `IPluginServiceConfigurationContext.cs` - 历史上下文快照；当前配置绑定方式见 [插件配置注入硬规则](../asgard-plugin-development/SKILL.md#插件配置注入硬规则)
 - `IPluginMiddlewareConfigurationContext.cs` - 中间件配置上下文接口
 
 代码范本请参考 `templates/` 目录：

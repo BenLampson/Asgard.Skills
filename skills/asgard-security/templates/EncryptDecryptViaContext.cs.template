@@ -1,34 +1,5 @@
-/// <summary>
-/// {MethodSummary}
-/// </summary>
-/// <param name="{ParameterName}">{ParameterSummary}</param>
-/// <returns>操作结果</returns>
-public async Task<{ResultType}?> {MethodName}({ParameterType} {ParameterName})
-{
-    if (AsgardContext.Encryption == null)
-    {
-        // 加密模块未启用，降级处理
-        return null;
-    }
+/// <summary>加密字段，缺少配置时由框架报告模块关闭。</summary>
+public string? EncryptField(string? plainText) => AsgardContext.Encryption.Encrypt(plainText);
 
-    var encrypted = AsgardContext.Encryption.Encrypt({plainText});
-    // 保存 encrypted 到数据库...
-    return encrypted;
-}
-
-/// <summary>
-/// {MethodSummary}
-/// </summary>
-/// <param name="encrypted">{encryptedSummary}</param>
-/// <returns>解密后的数据</returns>
-public async Task<string?> {DecryptMethodName}(string encrypted)
-{
-    if (AsgardContext.Encryption == null)
-    {
-        // 加密模块未启用，降级处理
-        return null;
-    }
-
-    var decrypted = AsgardContext.Encryption.Decrypt(encrypted);
-    return decrypted;
-}
+/// <summary>解密字段。</summary>
+public string? DecryptField(string? encrypted) => AsgardContext.Encryption.Decrypt(encrypted);
