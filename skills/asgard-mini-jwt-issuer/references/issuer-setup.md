@@ -18,7 +18,7 @@ builder.Services.AddAsgardHeimdallJwtSigning(options =>
 
 必要配置：
 
-- `Issuer`：签发者地址，必须与资源服务 `issuerTemplate` 对齐
+- `Issuer`：签发者地址，须与 Asgard 8.2 起资源服务 `trustedIssuers` 中登记的 `issuer` 精确一致
 - `Audience`：默认受众，必须与资源服务 `audience` 对齐
 - `KeyId`：当前签名密钥 ID，会进入 JWT header 和 JWKS
 - `RsaPrivateKeyPem` 或 `SymmetricSecurityKey`：二选一

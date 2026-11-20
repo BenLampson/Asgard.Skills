@@ -24,7 +24,7 @@ public class AuthOptions
     /// JWT Bearer 认证运行时配置。
     /// </summary>
     /// <remarks>
-    /// 包含 issuer 模板、audience、HTTPS 约束和 discovery/JWKS 缓存策略。
+    /// 包含签发方与受众的信任规则、HTTPS 约束和 discovery/JWKS 缓存策略。
     /// </remarks>
     /// <value>JWT Bearer 认证配置。</value>
     [ConfigPath("host.auth.jwt")]

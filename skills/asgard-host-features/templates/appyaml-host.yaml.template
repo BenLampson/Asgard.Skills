@@ -28,6 +28,7 @@ host:
   auth:
     enabled: {auth_enabled}
     jwt:
+      # Asgard 8.2 起，独立签发方可用 trustedIssuers 替换下方模板与全局受众。
       issuerTemplate: "{issuer_template}"  # 必须包含一个 {tenant}
       audience: {audience}
       requireHttpsMetadata: true
