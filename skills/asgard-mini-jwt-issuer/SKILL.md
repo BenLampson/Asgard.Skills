@@ -179,6 +179,7 @@ var token = issuer.Issue(new AsgardJwtSubject
 {
     Subject = "orders-worker",
     ClientId = "orders-worker",
+    TenantId = "scm",
     TokenType = AsgardJwtConstants.BackendServiceTokenType,
     Scope = ["jobs.execute"]
 });
@@ -189,6 +190,7 @@ var token = issuer.Issue(new AsgardJwtSubject
 - 必须提供 `Subject`
 - 必须提供 `ClientId`
 - 必须设置 `TokenType = AsgardJwtConstants.BackendServiceTokenType`
+- 使用 `trustedIssuers` 的资源 API 要求令牌携带与登记一致的 `TenantId`
 - 不能提供 `UserId`
 
 资源服务可以用授权表达式限制后端服务 token：
@@ -229,15 +231,17 @@ var token = issuer.Issue(subject, new AsgardJwtIssueOptions
 
 ## 资源服务配置
 
-资源服务继续使用 Asgard 宿主 JWT 配置，不需要引用 mini issuer 包：
+Asgard 8.2 起，资源服务可以用宿主的 `trustedIssuers` 登记 mini issuer 的固定签发地址。签发组件由登录服务引用。
 
 ```yaml
 host:
   auth:
     enabled: true
     jwt:
-      issuerTemplate: "https://auth.example.com/scm"
-      audience: "scm-api"
+      trustedIssuers:
+        - issuer: "https://auth.example.com/scm"
+          audience: "scm-api"
+          tenantId: "scm"
       requireHttpsMetadata: true
       discoveryCacheMinutes: 60
       jwksCacheMinutes: 60
@@ -245,8 +249,8 @@ host:
 
 对齐规则：
 
-- `issuerTemplate` 必须等于签发端 `Issuer`
-- `audience` 必须等于签发端 `Audience` 或单次签发覆盖的 audience
+- 登记的 `issuer` 须精确匹配签发端 `Issuer` 和 discovery 公布的地址
+- 同一条登记的 `audience` 和 `tenantId` 须与令牌的 `aud` 和唯一的 `tenant_id` 一致
 - 资源服务必须能访问签发端 discovery 和 JWKS；如果配置 `DiscoveryPathPrefix = "/scm"`，就是 `/scm/.well-known/openid-configuration` 和 `/scm/.well-known/jwks.json`
 - 生产环境保持 `requireHttpsMetadata: true`
 
@@ -274,10 +278,10 @@ host:
 - 签发端 discovery 是否可访问
 - JWKS 中是否有当前 `kid`
 - token header 的 `kid` 是否等于 `options.KeyId`
-- token 的 `iss` 是否等于资源服务 `issuerTemplate`
+- token 的 `iss` 是否等于资源服务登记的 `issuer`
 - discovery 的 `issuer` 是否等于 token 的 `iss`
 - discovery 的 `jwks_uri` 是否等于 `Issuer + "/.well-known/jwks.json"`，或显式配置的 `JwksUriOverride`
-- token 的 `aud` 是否等于资源服务 `audience`
+- token 的 `aud` 和 `tenant_id` 是否匹配该签发方登记的受众和身份租户
 - 资源服务机器时间是否明显偏差
 - token 是否过期
 - token 是否用资源服务不支持的算法签发
@@ -331,13 +335,13 @@ host:
 - 不要为了小固定项目设计 `/tenants/{tenant}/.well-known/...` 这类 tenant 级 issuer 路由
 - 不要把固定项目事实做成配置项，例如固定 SCM 项目的 `tenant_id`、默认角色、默认权限、默认 scope
 - 不要在登录时根据请求 tenant 动态 `new AsgardJwtIssuer(...)`
-- 不要把资源服务的 `issuerTemplate` 能力误读成签发端必须实现多 tenant issuer 模板
+- 固定签发端可使用 [可信 JWT 签发方](../asgard-host-features/references/jwt-trusted-issuers.md) 登记完整 issuer
 - 不要在登录接口里跳过真实账号校验直接发 token
 - 不要手写 Asgard claim JSON 字符串绕过 `AsgardJwtSubject`
 - 不要给 `BackendService` token 塞 `UserId`
 - 不要把 RSA 私钥提交到仓库
 - 不要让资源服务引用签发包后自己本地验私钥，资源服务应走 discovery/JWKS
-- 不要让签发端 `Issuer` 和资源端 `issuerTemplate` 各写一套不一致的地址
+- 签发端 `Issuer` 与资源服务登记的地址精确对齐
 
 ## 反面教材：过度工程化的 mini issuer
 

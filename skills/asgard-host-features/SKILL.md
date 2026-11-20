@@ -1,6 +1,6 @@
 ---
 name: asgard-host-features
-description: "配置 Asgard host.* 的 JWT Bearer、中间件、CORS、OpenAPI/Scalar、TsGen、限流和健康检查。前端登录、OIDC/PKCE 流程设计用 identity-integration。"
+description: "配置 Asgard host.* 的 JWT Bearer、多签发方、中间件、CORS、OpenAPI/Scalar、TsGen、限流和健康检查。前端登录、OIDC/PKCE 流程设计用 identity-integration。"
 ---
 
 # Asgard 宿主 Web 功能配置
@@ -114,6 +114,8 @@ cors:
 
 ### JWT 认证（host.auth）
 
+以下配置使用一个签发方模板，所有匹配的签发方共用一个 `audience`。
+
 ```yaml
 auth:
   enabled: true
@@ -122,8 +124,10 @@ auth:
     audience: "your-audience"
     requireHttpsMetadata: true
     discoveryCacheMinutes: 60
-    jwksCacheMinutes: 60
+    jwksCacheMinutes: 15
 ```
+
+Asgard 8.2 起，同一宿主可通过 `host.auth.jwt.trustedIssuers` 按完整 `issuer` 分别登记 `audience` 和身份租户 `tenantId`。接入多个独立登录系统、登记固定 issuer 或迁移自定义验签时，读取 [可信 JWT 签发方](references/jwt-trusted-issuers.md)。已有 `issuerTemplate` 项目可以继续沿用原配置。
 
 **关键行为：**
 
@@ -133,7 +137,7 @@ auth:
 - Asgard 7.1 起，没有公钥缓存的 issuer 共用单实例发现预算：`host.auth.jwt.coldIssuerDiscoveryLimit` 默认 8 次，`coldIssuerDiscoveryWindowSeconds` 默认 1 秒，`coldIssuerDiscoveryConcurrencyLimit` 默认同时 4 次在途。到达上限立即拒绝认证；缓存命中和现有公钥轮换不消耗冷发现预算。
 - `host.auth.enabled` 只控制宿主默认 JWT 注册与 `UseAuthentication()` 接线
 - 即使关闭宿主内置 JWT，`UseAuthorization()`、`AsgardAuth`、租户和身份上下文链路仍可能由外部认证方案继续工作
-- 宿主内置 JWT 在 `OnTokenValidated` 绑定 issuer 租户与 `tenant_id`；缺少声明时从发行者补齐，发现重复或冲突声明时拒绝认证。
+- 宿主验签后将 `tenant_id` 绑定到签发方。模板模式会补齐缺失声明。`trustedIssuers` 模式要求令牌已有唯一的 `tenant_id`，并与登记一致。两种模式均拒绝重复或冲突声明。
 
 ### 框架托底事实
 
@@ -353,6 +357,8 @@ app.MapControllers();
 - `Common/Asgard.Abstractions.AspNetCore/Host/RateLimitingPartitionOptions.cs` - IP/用户层算法参数
 - `Common/Asgard.Abstractions.AspNetCore/Authorization/AsgardAuthAttributes.cs` - `AsgardAuth*` 特性统一使用 `AsgardAuth` policy
 - `Common/Asgard.Abstractions.AspNetCore/Host/AuthOptions.cs` - `host.auth.enabled` 配置语义
+- `Common/Asgard.Abstractions.AspNetCore/Host/JwtOptions.cs` - 模板、可信签发方列表与启动校验
+- `Host/Asgard.Yggdrasil.AspNetCore/Authentication/AsgardJwtIssuerResolver.cs` - 验签、发现公钥和身份租户共用的签发方匹配
 
 ## 不要这样做
 

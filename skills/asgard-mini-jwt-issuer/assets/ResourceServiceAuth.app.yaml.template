@@ -2,12 +2,14 @@ host:
   auth:
     enabled: true
     jwt:
-      issuerTemplate: "https://auth.example.com"
-      audience: "asgard-api"
+      trustedIssuers: # Asgard 8.2 or later
+        - issuer: "https://auth.example.com"
+          audience: "asgard-api"
+          tenantId: "scm"
       requireHttpsMetadata: true
       discoveryCacheMinutes: 60
       jwksCacheMinutes: 60
 
 # If the issuer is hosted under a business prefix, configure the resource service
 # with the same issuer value used by the signing service, for example:
-# issuerTemplate: "https://auth.example.com/scm"
+# issuer: "https://auth.example.com/scm"

@@ -11,9 +11,11 @@ Asgard 框架的 AI 技能仓库。
 - 集中管理和版本控制技能定义文件
 - 方便在不同开发环境间同步技能配置
 
-## Asgard 8.1 开发基线
+## Asgard 8.2 开发基线
 
 Asgard 开发统一使用 .NET 11 / C# 15。starter 和插件都以 `net11.0` 为目标；通过 `host.openApi` 开启 [OpenAPI + Scalar](skills/asgard-host-features/references/openapi-scalar.md)。编码入口是 `$asgard-dotnet-11-csharp-15`，更新技能后可重新运行下方安装脚本。旧应用见 [升级指引](skills/asgard-host-features/references/openapi-scalar.md#迁移到-asgard-8x)。
+
+Asgard 8.2 的宿主可为多个 JWT 签发方分别登记受众和身份租户。使用原有模板的项目可沿用配置。[多签发方配置与迁移](skills/asgard-host-features/references/jwt-trusted-issuers.md)
 
 ## 技能结构
 

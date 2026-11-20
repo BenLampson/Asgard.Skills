@@ -64,13 +64,15 @@ app.MapPost("/login", (IAsgardJwtIssuer issuer) =>
 
 ## Resource Service Configuration
 
-Asgard resource services do not need to reference this package. They keep using Asgard's built-in JWT authentication and point `issuerTemplate` to the issuer hosted by this package.
+With Asgard 8.2 or later, resource services use built-in JWT authentication and register the fixed issuer in `trustedIssuers`. Use the exact published issuer and match the audience and tenant claims issued by the signing service.
 
 ```yaml
 host:
   auth:
     enabled: true
     jwt:
-      issuerTemplate: "https://auth.example.com/scm"
-      audience: "asgard-api"
+      trustedIssuers:
+        - issuer: "https://auth.example.com/scm"
+          audience: "asgard-api"
+          tenantId: "11111111-2222-3333-4444-555555555555"
 ```

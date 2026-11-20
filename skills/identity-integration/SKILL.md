@@ -245,8 +245,9 @@ builder.Services
 
 如果走 Yggdrasil / `host.auth` 默认链路：
 
-- 宿主可以代管默认 JWT Bearer 注册
-- 宿主会在认证后参与补充 `tenant_id`
+- 宿主注册内置 JWT Bearer，并在验签后将 `tenant_id` 绑定到签发方。模板模式可以补齐缺失声明，`trustedIssuers` 模式要求令牌自身携带该声明。
+- 同一身份切换业务企业或账套时，使用当前有效的 access token，由业务服务校验选中资源的访问权限。
+- 同一 API 接收多个独立 Heimdall 的令牌时，可在 Asgard 8.2 起通过 [可信 JWT 签发方](../asgard-host-features/references/jwt-trusted-issuers.md) 逐个登记 `issuer`、受众和身份租户。
 - 授权链路与 `AsgardAuth` 仍由 Asgard 统一接管
 
 详细配置和中间件顺序请继续读 `$asgard-host-features`。
